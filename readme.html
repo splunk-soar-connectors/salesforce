@@ -1,0 +1,13 @@
+<p>
+In order to create an app asset, there needs to be a corresponding Salesforce App created, which has OAuth enabled.
+The newly created salesforce app must have the scopes enabled to allow access to the API, as well as refresh tokens and offline access.
+Set the callback URL to the provided URL at the bottom of the asset page, and append <b>/start_oauth</b> to the end.
+For example, https://172.16.217.129/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/salesforce/start_oauth.
+After creating the Salesforce App, or updating an existing one, you will be able to copy the Client ID and Client Secret
+the asset configuration.
+</p>
+<p>
+In order to run any actions on this app, you must first authorize the use of this app by running test connectivty.
+During test connectivty, you will be instructed to to follow a link, which will redirect you to the Salesforce login
+and ask you to login and authorize usage of the Salesforce app.
+</p>
