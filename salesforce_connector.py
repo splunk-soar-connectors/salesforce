@@ -490,7 +490,6 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
-        self.save_progress(str(response))
         self.save_progress("Test Connectivity Passed")
 
         return action_result.set_status(phantom.APP_SUCCESS)
