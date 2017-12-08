@@ -174,6 +174,9 @@
                 {
                     "data_path": "action_result.data.*.id",
                     "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "example_values": [
                         "5001I000002SfMMQA0"
                     ]
@@ -191,14 +194,21 @@
                     "data_type": "string",
                     "example_values": [
                         "5001I000002SfMMQA0"
-                    ]
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "column_name": "ID",
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully created a new Case"
-                    ]
+                        "Successfully created a new Object"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -228,7 +238,7 @@
             "read_only": true,
             "parameters": {
                 "parent_case_id": {
-                    "description": "ID Of Parent Case",
+                    "description": "Object ID of Parent Case",
                     "data_type": "string",
                     "required": false,
                     "primary": true,
@@ -313,6 +323,9 @@
                 {
                     "data_path": "action_result.data.*.id",
                     "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "example_values": [
                         "5001I000002SfMMQA0"
                     ]
@@ -330,14 +343,169 @@
                     "data_type": "string",
                     "example_values": [
                         "5001I000002SfMMQA0"
-                    ]
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "column_name": "ID",
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
                         "Successfully created a new Case"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
                     ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "table"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "delete object",
+            "identifier": "delete_object",
+            "description": "Delete an object",
+            "type": "correct",
+            "read_only": false,
+            "parameters": {
+                "sobject": {
+                    "description": "Name of object",
+                    "data_type": "string",
+                    "required": false,
+                    "default": "Case",
+                    "primary": false,
+                    "contains": [
+                        "salesforce object name"
+                    ],
+                    "order": 0
+                },
+                "id": {
+                    "description": "Salesforce Object ID",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "order": 1
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.id",
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "example_values": [
+                        "5001I000002StPCQA0"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.sobject",
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object name"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully deleted Contact"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "table"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "delete ticket",
+            "identifier": "delete_ticket",
+            "description": "Delete a case",
+            "type": "correct",
+            "read_only": false,
+            "parameters": {
+                "id": {
+                    "description": "Object ID of the Case",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "order": 0
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.id",
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "example_values": [
+                        "5001I000002StPCQA0"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully deleted Case"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -434,8 +602,10 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully updated Case"
-                    ]
+                        "Successfully updated Contact"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -465,7 +635,7 @@
             "read_only": false,
             "parameters": {
                 "id": {
-                    "description": "ID Of the Case",
+                    "description": "Object ID of the Case",
                     "data_type": "string",
                     "required": true,
                     "primary": true,
@@ -475,7 +645,7 @@
                     "order": 0
                 },
                 "parent_case_id": {
-                    "description": "ID Of Parent Case",
+                    "description": "Object ID of Parent Case",
                     "data_type": "string",
                     "required": false,
                     "primary": true,
@@ -595,7 +765,9 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully updated Case"
-                    ]
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -677,6 +849,15 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.data.*.columns.Id.value",
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "column_name": "Object ID",
+                    "column_order": 0
+                },
+                {
                     "data_path": "action_result.summary.num_objects",
                     "data_type": "numeric",
                     "example_values": [
@@ -695,10 +876,8 @@
                     "data_type": "string",
                     "example_values": [
                         "Created a list of valid view names",
-                        "Successfully created a list of Case objects"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 1
+                        "Successfully created a list of Contact objects"
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -766,11 +945,17 @@
                 },
                 {
                     "data_path": "action_result.data.*.columns.ContactId.value",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.columns.Contact_Id.value",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.columns.Contact_Name.value",
@@ -804,6 +989,9 @@
                 },
                 {
                     "data_path": "action_result.data.*.columns.OwnerId.value",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "data_type": "string",
                     "example_values": [
                         "0051I000000PRsCQAW"
@@ -811,6 +999,9 @@
                 },
                 {
                     "data_path": "action_result.data.*.columns.Owner_Id.value",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "data_type": "string",
                     "example_values": [
                         "0051I000000PRsCQAW"
@@ -966,6 +1157,13 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ]
+                },
+                {
                     "data_path": "action_result.summary",
                     "data_type": "string"
                 },
@@ -973,7 +1171,7 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully retrieved Salesforce Object"
+                        "Successfully retrieved Contact"
                     ],
                     "column_name": "Message",
                     "column_order": 0
@@ -1007,7 +1205,7 @@
             "read_only": true,
             "parameters": {
                 "id": {
-                    "description": "ID Of the Case",
+                    "description": "Object ID of the Case",
                     "data_type": "string",
                     "required": true,
                     "primary": true,
@@ -1037,7 +1235,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.AccountId",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.AssetId",
@@ -1075,7 +1276,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.ContactId",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactMobile",
@@ -1088,9 +1292,14 @@
                 {
                     "data_path": "action_result.data.*.CreatedById",
                     "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "example_values": [
                         "0051I000000PRsCQAW"
-                    ]
+                    ],
+                    "column_name": "Created By ID",
+                    "column_order": 3
                 },
                 {
                     "data_path": "action_result.data.*.CreatedDate",
@@ -1121,7 +1330,7 @@
                         "Case Description"
                     ],
                     "column_name": "Description",
-                    "column_order": "Description"
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.data.*.Discovery_Method__c",
@@ -1142,6 +1351,9 @@
                 {
                     "data_path": "action_result.data.*.Id",
                     "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "example_values": [
                         "5001I000002SfMMQA0"
                     ]
@@ -1221,6 +1433,9 @@
                 {
                     "data_path": "action_result.data.*.LastModifiedById",
                     "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "example_values": [
                         "0051I000000PRsCQAW"
                     ]
@@ -1230,7 +1445,9 @@
                     "data_type": "string",
                     "example_values": [
                         "2017-12-01T21:32:33.000+0000"
-                    ]
+                    ],
+                    "column_name": "Last Modified",
+                    "column_order": 2
                 },
                 {
                     "data_path": "action_result.data.*.LastReferencedDate",
@@ -1253,13 +1470,19 @@
                 {
                     "data_path": "action_result.data.*.OwnerId",
                     "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ],
                     "example_values": [
                         "0051I000000PRsCQAW"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.ParentId",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.PotentialLiability__c",
