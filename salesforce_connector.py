@@ -195,7 +195,7 @@ class SalesforceConnector(BaseConnector):
 
     def _process_empty_reponse(self, response, action_result):
 
-        if self.get_action_identifier() in ('update_ticket', 'update_object'):
+        if self.get_action_identifier() in ('update_ticket', 'update_object', 'delete_object', 'delete_ticket'):
             return RetVal(phantom.APP_SUCCESS, {})
 
         if response.status_code == 200:
@@ -547,7 +547,7 @@ class SalesforceConnector(BaseConnector):
         summary = action_result.update_summary({})
         summary['obj_id'] = response['id']
 
-        return phantom.APP_SUCCESS
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully created a new {}".format(sobject))
 
     def _handle_create_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
@@ -561,11 +561,7 @@ class SalesforceConnector(BaseConnector):
                 e
             )
 
-        ret_val = self._create_object(action_result, param, other_dict)
-        if phantom.is_fail(ret_val):
-            return ret_val
-
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully created object")
+        return self._create_object(action_result, param, other_dict)
 
     def _handle_create_ticket(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
@@ -587,11 +583,30 @@ class SalesforceConnector(BaseConnector):
             if k in CASE_FIELD_MAP:
                 other_dict[CASE_FIELD_MAP[k]] = v
 
-        ret_val = self._create_object(action_result, param, other_dict)
+        return self._create_object(action_result, param, other_dict)
+
+    def _delete_object(self, param):
+        action_result = self.add_action_result(ActionResult(dict(param)))
+        sobject = param.get('sobject', 'Case')
+        obj_id = param['id']
+
+        endpoint = API_ENDPOINT_OBJECT_ID.format(
+            version=self._version_uri,
+            sobject=sobject,
+            id=obj_id
+        )
+
+        ret_val, response = self._make_rest_call_helper(endpoint, action_result, method="delete")
         if phantom.is_fail(ret_val):
             return ret_val
 
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully created a new Case")
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully deleted {}".format(sobject))
+
+    def _handle_delete_object(self, param):
+        return self._delete_object(param)
+
+    def _handle_delete_ticket(self, param):
+        return self._delete_object(param)
 
     def _update_object(self, action_result, param, field_values):
         sobject = param.get('sobject', 'Case')
@@ -611,7 +626,7 @@ class SalesforceConnector(BaseConnector):
         summary = action_result.update_summary({})
         summary['obj_id'] = obj_id
 
-        return phantom.APP_SUCCESS
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully updated {}".format(sobject))
 
     def _handle_update_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
@@ -625,16 +640,12 @@ class SalesforceConnector(BaseConnector):
                 e
             )
 
-        ret_val = self._update_object(action_result, param, other_dict)
-        if phantom.is_fail(ret_val):
-            return ret_val
-
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully updated object")
+        return self._update_object(action_result, param, other_dict)
 
     def _handle_update_ticket(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
-        other = param['field_values']
+        other = param.get('field_values')
         if other:
             try:
                 other_dict = json.loads(other)
@@ -651,11 +662,7 @@ class SalesforceConnector(BaseConnector):
             if k in CASE_FIELD_MAP:
                 other_dict[CASE_FIELD_MAP[k]] = v
 
-        ret_val = self._update_object(action_result, param, other_dict)
-        if phantom.is_fail(ret_val):
-            return ret_val
-
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully updated Case")
+        return self._update_object(action_result, param, other_dict)
 
     def _get_listview_results_url(self, action_result, endpoint, view_name):
         found_views = []
@@ -739,7 +746,8 @@ class SalesforceConnector(BaseConnector):
     def _handle_list_tickets(self, param):
         return self._list_objects(param)
 
-    def _get_object(self, action_result, param):
+    def _get_object(self, param):
+        action_result = self.add_action_result(ActionResult(dict(param)))
         sobject = param.get('sobject', 'Case')
         obj_id = param['id']
 
@@ -755,21 +763,13 @@ class SalesforceConnector(BaseConnector):
 
         action_result.add_data(response)
 
-        return phantom.APP_SUCCESS
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully retrieved {}".format(sobject))
 
     def _handle_get_object(self, param):
-        action_result = self.add_action_result(ActionResult(dict(param)))
-        ret_val = self._get_object(action_result, param)
-        if phantom.is_fail(ret_val):
-            return ret_val
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully retrieved object")
+        return self._get_object(param)
 
     def _handle_get_ticket(self, param):
-        action_result = self.add_action_result(ActionResult(dict(param)))
-        ret_val = self._get_object(action_result, param)
-        if phantom.is_fail(ret_val):
-            return ret_val
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully retrieved Case")
+        return self._get_object(param)
 
     def handle_action(self, param):
 
@@ -791,6 +791,12 @@ class SalesforceConnector(BaseConnector):
 
         elif action_id == 'create_ticket':
             ret_val = self._handle_create_ticket(param)
+
+        elif action_id == 'delete_object':
+            ret_val = self._handle_delete_object(param)
+
+        elif action_id == 'delete_ticket':
+            ret_val = self._handle_delete_ticket(param)
 
         elif action_id == 'update_object':
             ret_val = self._handle_update_object(param)
