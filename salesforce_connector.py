@@ -183,6 +183,9 @@ def _get_dir_name_from_app_name(app_name):
 
 class SalesforceConnector(BaseConnector):
 
+    OAUTH_FLOW = 1
+    USERNAME_PASSWORD = 2
+
     def __init__(self):
 
         # Call the BaseConnectors init first
@@ -192,6 +195,7 @@ class SalesforceConnector(BaseConnector):
         self._base_url = None
         self._oauth_token = None
         self._version_uri = None
+        self._auth_flow = self.OAUTH_FLOW
 
     def _process_empty_reponse(self, response, action_result):
 
@@ -342,6 +346,36 @@ class SalesforceConnector(BaseConnector):
         self._base_url = resp['instance_url']
         return phantom.APP_SUCCESS
 
+    def _retrieve_oauth_token_username_password(self, action_result):
+        config = self.get_config()
+        client_id = config['client_id']
+        client_secret = config['client_secret']
+
+        body = {
+            'grant_type': 'password',
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'username': self._username,
+            'password': self._password,
+
+        }
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+
+        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, params=body, headers=headers, ignore_base_url=True, method="post")
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        self._oauth_token = resp['access_token']
+        self._base_url = resp['instance_url']
+        return phantom.APP_SUCCESS
+
+    def _retrieve_oauth_token_helper(self, action_result):
+        if self._auth_flow == self.OAUTH_FLOW:
+            return self._retrieve_oauth_token(action_result)
+        return self._retrieve_oauth_token_username_password(action_result)
+
     def _make_rest_call_helper(self, endpoint, action_result, headers=None, *args, **kwargs):
         # Add Authorization header before making rest call
         if headers is None:
@@ -349,7 +383,7 @@ class SalesforceConnector(BaseConnector):
 
         if not self._oauth_token:
             self.save_progress("Retrieving API URL and OAuth Token...")
-            ret_val = self._retrieve_oauth_token(action_result)
+            ret_val = self._retrieve_oauth_token_helper(action_result)
             if phantom.is_fail(ret_val):
                 return RetVal(ret_val)
 
@@ -421,12 +455,10 @@ class SalesforceConnector(BaseConnector):
 
         return (phantom.APP_SUCCESS, url_to_app_rest)
 
-    def _handle_test_connectivity(self, param):
+    def _oauth_flow_test_connect(self, action_result):
         config = self.get_config()
         client_id = config['client_id']
         client_secret = config['client_secret']
-
-        action_result = self.add_action_result(ActionResult(dict(param)))
 
         ret_val, app_rest_url = self._get_url_to_app_rest(action_result)
         if phantom.is_fail(ret_val):
@@ -476,6 +508,15 @@ class SalesforceConnector(BaseConnector):
         self._state['refresh_token'] = refresh_token
 
         self.save_progress("Successfully Retrieved Refresh Token")
+        return phantom.APP_SUCCESS
+
+    def _handle_test_connectivity(self, param):
+        action_result = self.add_action_result(ActionResult(dict(param)))
+        if self._auth_flow == self.OAUTH_FLOW:
+            ret_val = self._oauth_flow_test_connect(action_result)
+            if phantom.is_fail(ret_val):
+                return ret_val
+
         self.save_progress("Obtaining API Version")
 
         ret_val, response = self._make_rest_call_helper('/services/data/', action_result)
@@ -823,11 +864,22 @@ class SalesforceConnector(BaseConnector):
         # Load the state in initialize, use it to store data
         # that needs to be accessed across actions
         self._state = self.load_state()
+        config = self.get_config()
+        self._username = config.get('username')
+        self._password = config.get('password')
+        if self._username and self._password:
+            self._auth_flow = self.USERNAME_PASSWORD
+        elif (self._username and not self._password) or (self._password and not self._username):
+            return self.set_status(
+                phantom.APP_ERROR,
+                "Password and Username must be specified together"
+            )
+
         if self.get_action_identifier() != "test_connectivity":
             try:
                 self._version_uri = self._state['latest_version']
             except KeyError:
-                self.set_status(
+                return self.set_status(
                     phantom.APP_ERROR,
                     "Unable to retrieve API version. Has test connectivty been ran?"
                 )
