@@ -401,7 +401,7 @@
                 "sobject": {
                     "description": "Name of object",
                     "data_type": "string",
-                    "required": false,
+                    "required": true,
                     "default": "Case",
                     "primary": false,
                     "contains": [
@@ -549,7 +549,7 @@
                 "sobject": {
                     "description": "Name of object",
                     "data_type": "string",
-                    "required": false,
+                    "required": true,
                     "default": "Case",
                     "primary": false,
                     "contains": [
@@ -1120,7 +1120,7 @@
                 "sobject": {
                     "description": "Name of object",
                     "data_type": "string",
-                    "required": false,
+                    "required": true,
                     "default": "Case",
                     "primary": false,
                     "contains": [
