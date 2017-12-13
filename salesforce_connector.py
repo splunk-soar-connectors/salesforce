@@ -338,7 +338,7 @@ class SalesforceConnector(BaseConnector):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, params=body, headers=headers, ignore_base_url=True)
+        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, data=body, headers=headers, ignore_base_url=True)
         if phantom.is_fail(ret_val):
             return ret_val
 
@@ -363,7 +363,7 @@ class SalesforceConnector(BaseConnector):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, params=body, headers=headers, ignore_base_url=True, method="post")
+        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
         if phantom.is_fail(ret_val):
             return ret_val
 
@@ -500,7 +500,7 @@ class SalesforceConnector(BaseConnector):
             time.sleep(5)
         else:
             _delete_app_state(asset_id)
-            self.save_progress("Unable to finish test connectivty due to timing out")
+            self.save_progress("Unable to finish test connectivity due to timing out")
             return action_result.set_status(phantom.APP_ERROR)
 
         _delete_app_state(asset_id)
@@ -867,13 +867,13 @@ class SalesforceConnector(BaseConnector):
         config = self.get_config()
         self._username = config.get('username')
         self._password = config.get('password')
-        if self._username and self._password:
+        if self._username:
+            if not self._password:
+                return self.set_status(
+                    phantom.APP_ERROR,
+                    "Password must be specified with a username"
+                )
             self._auth_flow = self.USERNAME_PASSWORD
-        elif (self._username and not self._password) or (self._password and not self._username):
-            return self.set_status(
-                phantom.APP_ERROR,
-                "Password and Username must be specified together"
-            )
 
         if self.get_action_identifier() != "test_connectivity":
             try:
