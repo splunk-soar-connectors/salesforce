@@ -320,7 +320,7 @@ class SalesforceConnector(BaseConnector):
         except KeyError:
             return action_result.set_status(
                 phantom.APP_ERROR,
-                "Error getting refresh token, has test connectivty been run?"
+                "Error getting refresh token, has test connectivity been run?"
             )
         except Exception as e:
             return action_result.set_status(
@@ -881,7 +881,7 @@ class SalesforceConnector(BaseConnector):
             except KeyError:
                 return self.set_status(
                     phantom.APP_ERROR,
-                    "Unable to retrieve API version. Has test connectivty been ran?"
+                    "Unable to retrieve API version. Has test connectivity been ran?"
                 )
         return phantom.APP_SUCCESS
 
