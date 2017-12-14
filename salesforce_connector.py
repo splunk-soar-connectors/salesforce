@@ -338,7 +338,7 @@ class SalesforceConnector(BaseConnector):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, data=body, headers=headers, ignore_base_url=True)
+        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
         if phantom.is_fail(ret_val):
             return ret_val
 
