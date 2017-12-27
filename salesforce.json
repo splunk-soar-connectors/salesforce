@@ -174,7 +174,7 @@
                     "data_path": "action_result.parameter.field_values",
                     "data_type": "string",
                     "example_values": [
-                        "{\"SITracker_Handoff_Notes__c\": \"Who put the fork in garbage disposal?\"}"
+                        "{\"SITracker_Handoff_Notes__c\": \"Be sure to review the handoff notes!\"}"
                     ]
                 },
                 {
@@ -302,14 +302,14 @@
                     "data_path": "action_result.parameter.description",
                     "data_type": "string",
                     "example_values": [
-                        "Liberty 285, Code 6, 105 North Avenue"
+                        "Phantom App Meeting"
                     ]
                 },
                 {
                     "data_path": "action_result.parameter.field_values",
                     "data_type": "string",
                     "example_values": [
-                        "{\"SITracker_Handoff_Notes__c\": \"Who put the fork in garbage disposal?\"}"
+                        "{\"SITracker_Handoff_Notes__c\": \"Be sure to review the handoff notes!\"}"
                     ]
                 },
                 {
@@ -330,7 +330,7 @@
                     "data_path": "action_result.parameter.subject",
                     "data_type": "string",
                     "example_values": [
-                        "Generic Police Chatter"
+                        "Generic Chatter"
                     ]
                 },
                 {
@@ -478,7 +478,7 @@
         {
             "action": "delete ticket",
             "identifier": "delete_ticket",
-            "description": "Delete a case",
+            "description": "Delete a Case",
             "type": "correct",
             "read_only": false,
             "parameters": {
@@ -643,7 +643,7 @@
         {
             "action": "update ticket",
             "identifier": "update_ticket",
-            "description": "Update a case",
+            "description": "Update a Case",
             "type": "generic",
             "read_only": false,
             "parameters": {
@@ -721,7 +721,7 @@
                     "data_path": "action_result.parameter.description",
                     "data_type": "string",
                     "example_values": [
-                        "Liberty 285, Code 6, 105 North Avenue"
+                        "Phantom App Meeting"
                     ]
                 },
                 {
@@ -766,7 +766,7 @@
                     "data_path": "action_result.parameter.subject",
                     "data_type": "string",
                     "example_values": [
-                        "Generic Police Chatter"
+                        "Generic Chatter"
                     ]
                 },
                 {
@@ -806,7 +806,7 @@
             "action": "list objects",
             "identifier": "list_objects",
             "description": "Get a list of objects",
-            "verbose": "In order to get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
+            "verbose": "In order to get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
             "type": "generic",
             "read_only": true,
             "parameters": {
@@ -915,8 +915,8 @@
         {
             "action": "list tickets",
             "identifier": "list_tickets",
-            "description": "Get a list of cases",
-            "verbose": "In order to get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a a list of valid names in the summary.",
+            "description": "Get a list of Cases",
+            "verbose": "In order to get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.",
             "type": "generic",
             "read_only": true,
             "parameters": {
@@ -1114,7 +1114,7 @@
             "action": "get object",
             "identifier": "get_object",
             "description": "Get info about a Salesforce object",
-            "verbose": "If you have custom fields added to an object, then it's possible that they wont show up, and you will need to manually type the datapath in the playbook editor.",
+            "verbose": "If you have custom fields added to an object, then it's possible that they won't show up, and you will need to manually type the datapath in the playbook editor.",
             "type": "generic",
             "read_only": true,
             "parameters": {
@@ -1212,8 +1212,8 @@
         {
             "action": "get ticket",
             "identifier": "get_ticket",
-            "description": "Get info about a case",
-            "verbose": "If you have custom fields added to a case, then it's possible that they wont show up, and you will need to manually type the datapath in the playbook editor.",
+            "description": "Get info about a Case",
+            "verbose": "If you have custom fields added to a Case, then it's possible that they won't show up, and you will need to manually type the datapath in the playbook editor.",
             "type": "generic",
             "read_only": true,
             "parameters": {
