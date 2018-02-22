@@ -732,10 +732,10 @@ class SalesforceConnector(BaseConnector):
         record['columns'] = columns_dict
         return record
 
-    def _get_listview_results_records(self, action_result, endpoint):
+    def _get_listview_results_records(self, action_result, endpoint, params):
         done = False
         while not done:
-            ret_val, response = self._make_rest_call_helper(endpoint, action_result)
+            ret_val, response = self._make_rest_call_helper(endpoint, action_result, params=params)
             if phantom.is_fail(ret_val):
                 return ret_val
             done = response['done']
@@ -773,9 +773,14 @@ class SalesforceConnector(BaseConnector):
                 "Created a list of valid view names"
             )
 
+        params = {
+            'limit': param.get('limit', 25),
+            'offset': param.get('offset', 0)
+        }
+
         # Retrieve the list of objects
         endpoint = results_url
-        ret_val = self._get_listview_results_records(action_result, endpoint)
+        ret_val = self._get_listview_results_records(action_result, endpoint, params)
         if phantom.is_fail(ret_val):
             return ret_val
 
