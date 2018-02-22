@@ -830,6 +830,18 @@
                         "salesforce listview name"
                     ],
                     "order": 1
+                },
+                "limit": {
+                    "description": "Paging limit",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 2
+                },
+                "offset": {
+                    "description": "Paging offset",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 3
                 }
             },
             "output": [
@@ -839,6 +851,14 @@
                     "example_values": [
                         "success"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.limit",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.offset",
+                    "data_type": "numeric"
                 },
                 {
                     "data_path": "action_result.parameter.sobject",
@@ -929,6 +949,22 @@
                         "salesforce listview name"
                     ],
                     "order": 0
+                },
+                "ph": {
+                    "data_type": "ph",
+                    "order": 1
+                },
+                "limit": {
+                    "description": "Paging limit",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 2
+                },
+                "offset": {
+                    "description": "Paging offset",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 3
                 }
             },
             "output": [
@@ -938,6 +974,14 @@
                     "example_values": [
                         "success"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.limit",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.offset",
+                    "data_type": "numeric"
                 },
                 {
                     "data_path": "action_result.parameter.view_name",
