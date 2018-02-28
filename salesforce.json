@@ -9,8 +9,8 @@
     "product_name": "Salesforce",
     "product_version_regex": ".*",
     "publisher": "Phantom",
-    "license": "Copyright (c) Phantom Cyber Corporation, 2017",
-    "app_version": "1.0.7",
+    "license": "Copyright (c) Phantom Cyber Corporation, 2017-2018",
+    "app_version": "1.0.15",
     "utctime_updated": "2017-12-26T21:35:45.000000Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.pyc",
@@ -41,6 +41,42 @@
             "data_type": "password",
             "required": false,
             "order": 3
+        },
+        "is_test_environment": {
+            "description": "Use a Salesforce test environment",
+            "data_type": "boolean",
+            "required": false,
+            "order": 4
+        },
+        "ph": {
+            "data_type": "ph",
+            "order": 5
+        },
+        "poll_sobject": {
+            "description": "Poll for this Salesforce Object",
+            "data_type": "string",
+            "required": false,
+            "default": "Case",
+            "order": 6
+        },
+        "poll_view_name": {
+            "description": "Poll this List View",
+            "data_type": "string",
+            "required": false,
+            "order": 7
+        },
+        "first_ingestion_max": {
+            "description": "Get this many results on first ingestion",
+            "data_type": "numeric",
+            "required": false,
+            "default": 10,
+            "order": 8
+        },
+        "cef_name_map": {
+            "description": "Mapping of Salesforce to CEF fields",
+            "data_type": "file",
+            "required": false,
+            "order": 9
         }
     },
     "actions": [
@@ -1692,6 +1728,39 @@
             "render": {
                 "type": "table"
             },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "on poll",
+            "identifier": "on_poll",
+            "description": "Poll for new Objects on Salesforce",
+            "type": "ingestion",
+            "read_only": true,
+            "parameters": {
+                "start_time": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                },
+                "end_time": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                },
+                "container_id": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                },
+                "container_count": {
+                    "data_type": "numeric",
+                    "description": "Maximum number of objects to ingest",
+                    "required": true,
+                    "default": 10
+                },
+                "artifact_count": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                }
+            },
+            "output": [],
             "versions": "EQ(*)"
         }
     ]

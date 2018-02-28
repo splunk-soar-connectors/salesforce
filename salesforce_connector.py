@@ -1,7 +1,7 @@
 # --
 # File: salesforce_connector.py
 #
-# Copyright (c) Phantom Cyber Corporation, 2017
+# Copyright (c) Phantom Cyber Corporation, 2017-2018
 #
 # This unpublished material is proprietary to Phantom Cyber.
 # All rights reserved. The methods and
@@ -112,17 +112,21 @@ def _handle_oauth_start(request, path_parts):
     if code:
         state = _load_app_state(asset_id)
         creds = state['creds']
+        url_get_token = state['url_get_token']
         creds_dict = json.loads(encryption_helper.decrypt(creds, asset_id))  # pylint: disable=E1101
         params = creds_dict
         params.pop('response_type', None)
         params['grant_type'] = 'authorization_code'
         params['code'] = code
         try:
-            r = requests.post(URL_GET_TOKEN, params=params)  # noqa
+            r = requests.post(url_get_token, params=params)  # noqa
             resp_json = r.json()
         except Exception as e:
             return _return_error(
-                "Error retrieving OAuth Token: {}".format(str(e)),
+                "Error retrieving OAuth Token: {}. URL: {}".format(
+                    str(e),
+                    get_token_url
+                ),
                 state, asset_id, 401
             )
         refresh_token = resp_json.get('refresh_token')
@@ -338,7 +342,12 @@ class SalesforceConnector(BaseConnector):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
+        if config.get('is_test_environment'):
+            url_get_token = URL_GET_TOKEN_TEST
+        else:
+            url_get_token = URL_GET_TOKEN
+
+        ret_val, resp = self._make_rest_call(url_get_token, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
         if phantom.is_fail(ret_val):
             return ret_val
 
@@ -363,7 +372,12 @@ class SalesforceConnector(BaseConnector):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        ret_val, resp = self._make_rest_call(URL_GET_TOKEN, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
+        if config.get('is_test_environment'):
+            url_get_token = URL_GET_TOKEN_TEST
+        else:
+            url_get_token = URL_GET_TOKEN
+
+        ret_val, resp = self._make_rest_call(url_get_token, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
         if phantom.is_fail(ret_val):
             return ret_val
 
@@ -474,7 +488,14 @@ class SalesforceConnector(BaseConnector):
             'client_secret': client_secret
         }
 
-        prep = requests.Request('post', URL_GET_CODE, params=params).prepare()
+        if config.get('is_test_environment'):
+            url_get_code = URL_GET_CODE_TEST
+            url_get_token = URL_GET_TOKEN_TEST
+        else:
+            url_get_code = URL_GET_CODE
+            url_get_token = URL_GET_TOKEN
+
+        prep = requests.Request('post', url_get_code, params=params).prepare()
 
         creds = encryption_helper.encrypt(json.dumps(params), asset_id)  # pylint: disable=E1101
         url = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
@@ -482,6 +503,7 @@ class SalesforceConnector(BaseConnector):
         state = {}
         state['creds'] = creds
         state['url'] = url
+        state['url_get_token'] = url_get_token
         _save_app_state(state, asset_id)
 
         self.save_progress("To Continue, open this link in a new tab in your browser")
@@ -817,6 +839,201 @@ class SalesforceConnector(BaseConnector):
     def _handle_get_ticket(self, param):
         return self._get_object(param)
 
+    def _object_response_to_container(self, response, sobject):
+        container = {}
+        artifact = {}
+        cef = {}
+        cef_types = {}
+
+        container['artifacts'] = [artifact]
+        artifact['cef'] = cef
+        artifact['cef_types'] = cef_types
+
+        skip_field_names = {'attributes'}
+
+        container_name = None
+
+        for k, v in response.iteritems():
+            if k in skip_field_names:
+                continue
+            name = self._cef_name_map.get(k, k)
+            cef[name] = v
+            if k.endswith('Id') and v is not None:
+                cef_types[name] = [ 'salesforce object id' ]
+
+            if name == 'Subject':
+                container_name = v
+
+        if container_name is None:
+            number = response.get('CaseNumber') or response.get('Id', '')
+            container_name = "Salesforce {} Object # {}".format(sobject, number)
+
+        container['name'] = container_name
+        artifact['name'] = sobject
+
+        return container
+
+    def _batch_response_to_containers(self, response, sobject):
+        containers = []
+
+        self.debug_print('BATCH REQUEST HAS ERRORS: {}'.format(response['hasErrors']))
+
+        results = response['results']
+        for result in results:
+            if result['statusCode'] != 200:
+                self.debug_print('Got bad status code for response: {}'.format(result))
+                continue
+
+            # response here matches a single call to get object endpoint
+            response = result['result']
+            containers.append(self._object_response_to_container(response, sobject))
+
+        return containers
+
+    def _create_containers_from_records(self, action_result, records, sobject):
+        num_records = len(records)
+        cur_index = 0
+        # Number of requests per batch (API only supports 25)
+        num_batch = 25
+        containers = []
+
+        endpoint = API_ENDPOINT_BATCH_REQUEST.format(
+            version=self._version_uri
+        )
+
+        # Since we need to individually retrieve each object, we can reduce the total number
+        #  of API calls we need to make by using batch requests (up to 25x less!)
+        while cur_index < num_records:
+            batch_records = records[cur_index:cur_index + num_batch]
+            batch_request = []
+            for record in batch_records:
+                record = self._mogrify_record(record)
+                batch_request.append({
+                    'method': 'GET',
+                    'url': API_ENDPOINT_OBJECT_ID.format(
+                        version=self._version_uri,
+                        sobject=sobject,
+                        id=record['columns']['Id']['value']
+                    )
+                })
+
+            data = {
+                'batchRequests': batch_request
+            }
+
+            ret_val, response = self._make_rest_call_helper(
+                endpoint,
+                action_result,
+                json=data,
+                method='post'
+            )
+            if phantom.is_fail(ret_val):
+                return RetVal(
+                    action_result.set_status(
+                        phantom.APP_ERROR,
+                        "Error retrieving objects: {}".format(action_result.get_message())
+                    )
+                )
+
+            containers.extend(self._batch_response_to_containers(response, sobject))
+
+            cur_index += num_batch
+
+        return RetVal(phantom.APP_SUCCESS, containers)
+
+    def _poll_for_all_objects(self, action_result, endpoint, offset):
+        MAX_OBJECTS_PER_POLL = 500
+
+        done = False
+
+        records = []
+
+        while not done:
+            params = {
+                'limit': MAX_OBJECTS_PER_POLL,
+                'offset': offset
+            }
+            ret_val, response = self._make_rest_call_helper(endpoint, action_result, params=params)
+            if phantom.is_fail(ret_val):
+                return RetVal(None, None)
+
+            num_returned = response['size']
+            offset += num_returned
+            if num_returned < MAX_OBJECTS_PER_POLL:
+                done = True
+
+            records.extend(response['records'])
+
+        return RetVal(offset, records)
+
+    def _handle_on_poll(self, param):
+        config = self.get_config()
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        sobject = config.get('poll_sobject', 'Case')
+        view_name = config.get('poll_view_name')
+        cef_name_map = config.get('cef_name_map')
+        if cef_name_map:
+            try:
+                self._cef_name_map = json.loads(cef_name_map)
+            except Exception as e:
+                return action_result.set_status(phantom.APP_ERROR, "Error parsing cef_name_map", e)
+        else:
+            self._cef_name_map = {}
+
+        max_containers = None
+
+        if view_name is None:
+            return action_result.set_status(phantom.APP_ERROR, "Error: Must specify poll_view_name")
+
+        cur_offset = self._state.get('cur_offset')
+        if cur_offset is None:
+            # First time this app has done (none POLL NOW) ingestion
+            cur_offset = 0
+            max_containers = config.get('first_ingestion_max', 10)
+
+        if self.is_poll_now():
+            max_containers = param.get('container_count', 10)
+
+        self.save_progress("Retrieving List View URI")
+        endpoint = API_ENDPOINT_GET_LISTVIEWS.format(
+            version=self._version_uri,
+            sobject=sobject
+        )
+
+        ret_val, results_url, views = self._get_listview_results_url(action_result, endpoint, view_name)
+        if phantom.is_fail(ret_val):
+            return ret_val
+        elif not results_url:
+            return action_result.set_status(phantom.APP_ERROR, "No listview with that specified name was found")
+
+        self.save_progress("Retrieved List View URI")
+        self.save_progress("Getting new {} objects...".format(sobject))
+
+        new_offset, records = self._poll_for_all_objects(action_result, results_url, cur_offset)
+        if new_offset is None:
+            return action_result.get_status()
+
+        # Get most recent containers
+        if max_containers:
+            records = records[0 - int(max_containers):]
+
+        ret_val, containers = self._create_containers_from_records(action_result, records, sobject)
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        self.save_progress("Saving containers")
+
+        for container in containers:
+            ret_val, msg, container_id = self.save_container(container)
+            if phantom.is_fail(ret_val):
+                self.debug_print("Error saving container: {}".format(msg))
+
+        if not self.is_poll_now():
+            self._state['cur_offset'] = new_offset
+
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully ingested containers")
+
     def handle_action(self, param):
 
         ret_val = phantom.APP_SUCCESS
@@ -861,6 +1078,9 @@ class SalesforceConnector(BaseConnector):
 
         elif action_id == 'list_tickets':
             ret_val = self._handle_list_tickets(param)
+
+        elif action_id == 'on_poll':
+            ret_val = self._handle_on_poll(param)
 
         return ret_val
 
