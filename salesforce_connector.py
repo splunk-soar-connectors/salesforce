@@ -522,7 +522,7 @@ class SalesforceConnector(BaseConnector):
             time.sleep(5)
         else:
             _delete_app_state(asset_id)
-            self.save_progress("Unable to finish test connectivity due to timing out")
+            self.save_progress("Unable to finish test connectivity due to time out")
             return action_result.set_status(phantom.APP_ERROR)
 
         _delete_app_state(asset_id)

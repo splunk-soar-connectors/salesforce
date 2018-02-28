@@ -14,29 +14,29 @@ of Phantom Cyber.
 
 <p>
 In order to run any actions on this app, you must first authorize the use of this app by running test connectivity.
-To pass test connectivity, you need to configure an app on Salesforce. But first, in the asset configure, take note of the
-URL which is generated.
+To pass test connectivity, you need to configure an app on Salesforce. First, copy the indicated URL in the screenshot below.
 <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
     <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
 </a><br>
 Then, when you are creating a new connected app on Salesforce, select "Enable OAuth Settings", and be sure to fill it out like the picture below.
-It is important get the set the correct scopes, as well as the callback URL.
+Paste the previous URL into the Callback URL section and append "/start_oauth" to the end.
 <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
     <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
 </a>
-Note that the callback URL is the same as just the URL from earlier, with "start_oauth" appended at the end.<br><br>
+It is important to set the correct scopes as well.<br><br>
 Now when you run test connectivity, a link will appear in the modal. Copy this and open it in a new tab.
 <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
     <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
 </a>
-Here, you will be directed to login to Salesforce, then authorize the use the app. After that, you can close the tab when instructed to,
+Here, you will be directed to login to Salesforce, then authorize the app usage. After that, you can close the tab when instructed to,
 and test connectivity should successfully finish.<br>
 </p>
 <p>
-If you optionally specify username and password in the configuration, connecting will work differently;
-the main difference being that you will not need to manually login to Salesforce during test connectivity
-to authorize the app. The Password field should be composed of your password with your account's security token appended at the end
-(this is not the same as the <b>client_secret</b>).  If you wish to connect over a proxy, you should use this method.
+If you optionally specify username and password in the configuration, test connectivity will work differently;
+the main difference being that you will not need to manually login to Salesforce to authorize the app. 
+<b>The password field should be composed of your password with your account's security token appended at the end, 
+for example: MyPasswordMyToken</b> (this is not the same as the <b>client_secret</b>). 
+If you wish to connect over a proxy, you should use this method.
 </p>
 <br>
 <p>
