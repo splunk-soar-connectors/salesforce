@@ -30,6 +30,7 @@ from bs4 import BeautifulSoup
 from django.http import HttpResponse
 # from django.utils.dateparse import parse_datetime
 # from datetime import datetime, timedelta
+import hashlib
 
 
 DT_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
@@ -851,6 +852,18 @@ class SalesforceConnector(BaseConnector):
 
         skip_field_names = {'attributes'}
 
+        severity_mapping = {
+            'severity 1 (high impact)': 'high',
+            'severity 2 (medium impact': 'medium',
+            'severity 3 (low impact)': 'low',
+            'severity 4 (false positive)': 'low'
+        }
+
+        sensitivity_mapping = {
+            'sensitive': 'red',
+            'not sensitive': 'white'
+        }
+
         container_name = None
 
         for k, v in response.iteritems():
@@ -870,6 +883,16 @@ class SalesforceConnector(BaseConnector):
 
         container['name'] = container_name
         artifact['name'] = sobject
+
+        container['source_data_identifier'] = hashlib.sha256('{}{}'.format(sobject, response['Id'])).hexdigest()
+
+        severity = response.get('Incident_Severity__c')
+        if severity:
+            container['severity'] = severity_mapping.get(severity.lower(), 'medium')
+
+        sensitivity = response.get('Incident_Sensitivity__c')
+        if sensitivity:
+            container['sensitivity'] = sensitivity_mapping.get(sensitivity.lower(), 'amber')
 
         return container
 
