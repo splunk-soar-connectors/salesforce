@@ -1,7 +1,7 @@
 <!--
 File: readme.html
 
-Copyright (c) Phantom Cyber Corporation, 2017
+Copyright (c) Phantom Cyber Corporation, 2017-2018
 
 This unpublished material is proprietary to Phantom Cyber.
 All rights reserved. The methods and
@@ -38,3 +38,26 @@ the main difference being that you will not need to manually login to Salesforce
 for example: MyPasswordMyToken</b> (this is not the same as the <b>client_secret</b>). 
 If you wish to connect over a proxy, you should use this method.
 </p>
+<br>
+<p>
+It is possible that you will want to configure an asset to work with a Salesforce test environment. This is the case if login URL for
+that Salesforce instance is <a href="https://test.salesforce.com">https://test.salesforce.com</a> as opposed to
+<a href="https://login.salesforce.com">https://login.salesforce.com</a>. In this case, you should check the appropriate box in the
+asset config.
+</p>
+
+<h3>Ingestion</h3>
+<p>
+In order to ingest you must use a List View as a source.
+</p>
+<p>
+The created artifact's CEF fields will be the same names as the fields in the Object in Salesforce. You may want to map these to standard
+CEF fields. This can be done by providing a JSON which describes the mapping. For example, if the Salesforce object has the field
+<b>ip_address__c</b>, and you want this to be <b>sourceAddress</b>, the following file would be appropriate.
+<pre class="shell">
+<code>
+{
+    "ip_address__c": "sourceAddress"
+}
+</code>
+</pre>
