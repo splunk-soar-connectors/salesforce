@@ -840,6 +840,26 @@ class SalesforceConnector(BaseConnector):
     def _handle_get_ticket(self, param):
         return self._get_object(param)
 
+    def _handle_post_chatter(self, param):
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        parent_case_id = param['id']
+        body = param['body']
+        title = param.get('title')
+
+        new_feed_item = {
+            'ParentId': parent_case_id,
+            'Title': title,
+            'Body': body,
+            'Type': 'TextPost'
+        }
+
+        ret_val = self._create_object(action_result, {'sobject': 'FeedItem'}, new_feed_item)
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully posted to chatter")
+
     def _object_response_to_container(self, response, sobject):
         container = {}
         artifact = {}
@@ -1101,6 +1121,9 @@ class SalesforceConnector(BaseConnector):
 
         elif action_id == 'list_tickets':
             ret_val = self._handle_list_tickets(param)
+
+        elif action_id == "post_chatter":
+            ret_val = self._handle_post_chatter(param)
 
         elif action_id == 'on_poll':
             ret_val = self._handle_on_poll(param)

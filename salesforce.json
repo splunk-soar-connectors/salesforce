@@ -1731,6 +1731,124 @@
             "versions": "EQ(*)"
         },
         {
+            "action": "post chatter",
+            "identifier": "post_chatter",
+            "description": "Post on the chatter feed for a specified case",
+            "type": "generic",
+            "read_only": false,
+            "parameters": {
+                "id": {
+                    "description": "Object ID of the Case",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "order": 0
+                },
+                "title": {
+                    "description": "Title of the post",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 1
+                },
+                "body": {
+                    "description": "Body of the post",
+                    "data_type": "string",
+                    "required": true,
+                    "order": 2
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.body",
+                    "data_type": "string",
+                    "example_values": [
+                        "A thing is happening"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.id",
+                    "data_type": "string",
+                    "example_values": [
+                        "5001I000003mHF2QAM"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.title",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.success",
+                    "data_type": "boolean",
+                    "example_values": [
+                        true,
+                        false
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.obj_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "column_name": "ID",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully posted to chatter"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "table"
+            },
+            "versions": "EQ(*)"
+        },
+        {
             "action": "on poll",
             "identifier": "on_poll",
             "description": "Poll for new Objects on Salesforce",
