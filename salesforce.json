@@ -1852,7 +1852,7 @@
             "action": "on poll",
             "identifier": "on_poll",
             "description": "Poll for new Objects on Salesforce",
-            "type": "ingestion",
+            "type": "ingest",
             "read_only": true,
             "parameters": {
                 "start_time": {
