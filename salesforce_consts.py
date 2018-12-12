@@ -12,8 +12,8 @@
 #
 # --
 
-PHANTOM_SYS_INFO_URL = "https://127.0.0.1/rest/system_info"
-PHANTOM_ASSET_INFO_URL = "https://127.0.0.1/rest/asset/{asset_id}"
+PHANTOM_SYS_INFO_URL = "{url}rest/system_info"
+PHANTOM_ASSET_INFO_URL = "{url}rest/asset/{asset_id}"
 
 
 URL_GET_CODE = 'https://login.salesforce.com/services/oauth2/authorize'

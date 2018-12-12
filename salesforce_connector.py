@@ -412,7 +412,7 @@ class SalesforceConnector(BaseConnector):
 
         asset_id = self.get_asset_id()
 
-        rest_endpoint = PHANTOM_ASSET_INFO_URL.format(asset_id=asset_id)
+        rest_endpoint = PHANTOM_ASSET_INFO_URL.format(url=self._get_phantom_base_url(), asset_id=asset_id)
 
         ret_val, resp_json = self._make_rest_call(rest_endpoint, action_result, ignore_base_url=True, verify=False)
 
@@ -426,9 +426,9 @@ class SalesforceConnector(BaseConnector):
 
         return (phantom.APP_SUCCESS, asset_name)
 
-    def _get_phantom_base_url(self, action_result):
+    def _get_phantom_base_url_from_settings(self, action_result):
 
-        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL, action_result, ignore_base_url=True, verify=False)
+        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL.format(url=self._get_phantom_base_url()), action_result, ignore_base_url=True, verify=False)
 
         if (phantom.is_fail(ret_val)):
             return (ret_val, None)
@@ -447,7 +447,7 @@ class SalesforceConnector(BaseConnector):
             action_result = ActionResult()
 
         # get the phantom ip to redirect to
-        ret_val, phantom_base_url = self._get_phantom_base_url(action_result)
+        ret_val, phantom_base_url = self._get_phantom_base_url_from_settings(action_result)
 
         if (phantom.is_fail(ret_val)):
             return (action_result.get_status(), None)
