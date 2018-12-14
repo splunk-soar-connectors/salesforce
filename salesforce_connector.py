@@ -1,15 +1,10 @@
 # --
 # File: salesforce_connector.py
 #
-# Copyright (c) Phantom Cyber Corporation, 2017-2018
+# Copyright (c) 2017-2018 Splunk Inc.
 #
-# This unpublished material is proprietary to Phantom Cyber.
-# All rights reserved. The methods and
-# techniques described herein are considered trade secrets
-# and/or confidential. Reproduction or distribution, in whole
-# or in part, is forbidden except by express written permission
-# of Phantom Cyber.
-#
+# SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
+# without a valid written license from Splunk Inc. is PROHIBITED.
 # --
 
 # Phantom App imports
@@ -126,7 +121,7 @@ def _handle_oauth_start(request, path_parts):
             return _return_error(
                 "Error retrieving OAuth Token: {}. URL: {}".format(
                     str(e),
-                    get_token_url
+                    url_get_token
                 ),
                 state, asset_id, 401
             )
@@ -412,7 +407,7 @@ class SalesforceConnector(BaseConnector):
 
         asset_id = self.get_asset_id()
 
-        rest_endpoint = PHANTOM_ASSET_INFO_URL.format(asset_id=asset_id)
+        rest_endpoint = PHANTOM_ASSET_INFO_URL.format(url=self.get_phantom_base_url(), asset_id=asset_id)
 
         ret_val, resp_json = self._make_rest_call(rest_endpoint, action_result, ignore_base_url=True, verify=False)
 
@@ -428,7 +423,7 @@ class SalesforceConnector(BaseConnector):
 
     def _get_phantom_base_url(self, action_result):
 
-        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL, action_result, ignore_base_url=True, verify=False)
+        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL.format(url=self.get_phantom_base_url()), action_result, ignore_base_url=True, verify=False)
 
         if (phantom.is_fail(ret_val)):
             return (ret_val, None)

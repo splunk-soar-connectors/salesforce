@@ -9,12 +9,12 @@
     "product_name": "Salesforce",
     "product_version_regex": ".*",
     "publisher": "Phantom",
-    "license": "Copyright (c) Phantom Cyber Corporation, 2017-2018",
+    "license": "Copyright (c) 2017-2018 Splunk Inc.",
     "app_version": "1.0.15",
     "utctime_updated": "2018-12-07T01:38:47.000000Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.pyc",
-    "min_phantom_version": "3.0.251",
+    "min_phantom_version": "4.0.1068",
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
     "configuration": {
@@ -1852,7 +1852,7 @@
             "action": "on poll",
             "identifier": "on_poll",
             "description": "Poll for new Objects on Salesforce",
-            "type": "ingestion",
+            "type": "ingest",
             "read_only": true,
             "parameters": {
                 "start_time": {
