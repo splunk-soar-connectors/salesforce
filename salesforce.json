@@ -129,14 +129,18 @@
                     "data_type": "string",
                     "example_values": [
                         "query"
-                    ]
+                    ],
+                    "column_name": "Endpoint",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.query",
                     "data_type": "string",
                     "example_values": [
                         "SELECT+name+from+Account"
-                    ]
+                    ],
+                    "column_name": "Query",
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.data.*.records.*",
@@ -151,7 +155,9 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully Retrieved Query Results"
-                    ]
+                    ],
+                    "column_name": "Message",
+                    "column_order": 2
                 },
                 {
                     "data_path": "summary.total_objects",
