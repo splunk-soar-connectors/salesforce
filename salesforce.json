@@ -9,12 +9,12 @@
     "product_name": "Salesforce",
     "product_version_regex": ".*",
     "publisher": "Phantom",
-    "license": "Copyright (c) Phantom Cyber Corporation, 2017",
-    "app_version": "1.0.10",
-    "utctime_updated": "2017-12-27T22:23:00.000000Z",
+    "license": "Copyright (c) 2017-2019 Splunk Inc.",
+    "app_version": "1.0.18",
+    "utctime_updated": "2019-01-11T00:59:58.000000Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.pyc",
-    "min_phantom_version": "3.0.251",
+    "min_phantom_version": "4.0.1068",
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
     "configuration": {
@@ -41,6 +41,42 @@
             "data_type": "password",
             "required": false,
             "order": 3
+        },
+        "is_test_environment": {
+            "description": "Use a Salesforce test environment",
+            "data_type": "boolean",
+            "required": false,
+            "order": 4
+        },
+        "ph": {
+            "data_type": "ph",
+            "order": 5
+        },
+        "poll_sobject": {
+            "description": "Poll for this Salesforce Object",
+            "data_type": "string",
+            "required": false,
+            "default": "Case",
+            "order": 6
+        },
+        "poll_view_name": {
+            "description": "Poll this List View",
+            "data_type": "string",
+            "required": false,
+            "order": 7
+        },
+        "first_ingestion_max": {
+            "description": "Get this many results on first ingestion",
+            "data_type": "numeric",
+            "required": false,
+            "default": 10,
+            "order": 8
+        },
+        "cef_name_map": {
+            "description": "Mapping of Salesforce to CEF fields",
+            "data_type": "file",
+            "required": false,
+            "order": 9
         }
     },
     "actions": [
@@ -93,14 +129,18 @@
                     "data_type": "string",
                     "example_values": [
                         "query"
-                    ]
+                    ],
+                    "column_name": "Endpoint",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.query",
                     "data_type": "string",
                     "example_values": [
                         "SELECT+name+from+Account"
-                    ]
+                    ],
+                    "column_name": "Query",
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.data.*.records.*",
@@ -115,7 +155,9 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully Retrieved Query Results"
-                    ]
+                    ],
+                    "column_name": "Message",
+                    "column_order": 2
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -447,6 +489,14 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
@@ -510,6 +560,14 @@
                     "example_values": [
                         "5001I000002StPCQA0"
                     ]
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.message",
@@ -606,6 +664,10 @@
                     "contains": [
                         "salesforce object name"
                     ]
+                },
+                {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.summary",
@@ -770,6 +832,10 @@
                     ]
                 },
                 {
+                    "data_path": "action_result.data",
+                    "data_type": "string"
+                },
+                {
                     "data_path": "action_result.summary",
                     "data_type": "string"
                 },
@@ -830,6 +896,18 @@
                         "salesforce listview name"
                     ],
                     "order": 1
+                },
+                "limit": {
+                    "description": "Paging limit",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 2
+                },
+                "offset": {
+                    "description": "Paging offset",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 3
                 }
             },
             "output": [
@@ -839,6 +917,14 @@
                     "example_values": [
                         "success"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.limit",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.offset",
+                    "data_type": "numeric"
                 },
                 {
                     "data_path": "action_result.parameter.sobject",
@@ -929,6 +1015,22 @@
                         "salesforce listview name"
                     ],
                     "order": 0
+                },
+                "ph": {
+                    "data_type": "ph",
+                    "order": 1
+                },
+                "limit": {
+                    "description": "Paging limit",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 2
+                },
+                "offset": {
+                    "description": "Paging offset",
+                    "data_type": "numeric",
+                    "required": false,
+                    "order": 3
                 }
             },
             "output": [
@@ -938,6 +1040,14 @@
                     "example_values": [
                         "success"
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.limit",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.offset",
+                    "data_type": "numeric"
                 },
                 {
                     "data_path": "action_result.parameter.view_name",
@@ -1648,6 +1758,157 @@
             "render": {
                 "type": "table"
             },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "post chatter",
+            "identifier": "post_chatter",
+            "description": "Post on the chatter feed for a specified case",
+            "type": "generic",
+            "read_only": false,
+            "parameters": {
+                "id": {
+                    "description": "Object ID of the Case",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "order": 0
+                },
+                "title": {
+                    "description": "Title of the post",
+                    "data_type": "string",
+                    "required": false,
+                    "order": 1
+                },
+                "body": {
+                    "description": "Body of the post",
+                    "data_type": "string",
+                    "required": true,
+                    "order": 2
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.body",
+                    "data_type": "string",
+                    "example_values": [
+                        "A thing is happening"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.id",
+                    "data_type": "string",
+                    "example_values": [
+                        "5001I000003mHF2QAM"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.title",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.success",
+                    "data_type": "boolean",
+                    "example_values": [
+                        true,
+                        false
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.obj_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ],
+                    "column_name": "ID",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Successfully posted to chatter"
+                    ],
+                    "column_name": "Message",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "table"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "on poll",
+            "identifier": "on_poll",
+            "description": "Poll for new Objects on Salesforce",
+            "type": "ingest",
+            "read_only": true,
+            "parameters": {
+                "start_time": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                },
+                "end_time": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                },
+                "container_id": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                },
+                "container_count": {
+                    "data_type": "numeric",
+                    "description": "Maximum number of objects to ingest",
+                    "required": true,
+                    "default": 10
+                },
+                "artifact_count": {
+                    "data_type": "numeric",
+                    "description": "Parameter Ignored in this app"
+                }
+            },
+            "output": [],
             "versions": "EQ(*)"
         }
     ]
