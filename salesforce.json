@@ -95,6 +95,7 @@
             "action": "run query",
             "identifier": "run_query",
             "description": "Run a query using the SalesforceObject Query Language",
+            "verbose": "To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>",
             "type": "investigate",
             "read_only": true,
             "parameters": {
