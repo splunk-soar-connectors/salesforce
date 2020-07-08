@@ -14,9 +14,12 @@
     "utctime_updated": "2019-11-12T23:28:18.000000Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.pyc",
-    "min_phantom_version": "4.6.19142",
+    "min_phantom_version": "4.8.24304",
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
+    "latest_tested_versions": [
+        "v1 API 2020-07-08"
+    ],
     "configuration": {
         "client_id": {
             "description": "Client ID",
