@@ -1,5 +1,5 @@
 # File: salesforce_connector.py
-# Copyright (c) 2017-2019 Splunk Inc.
+# Copyright (c) 2017-2020 Splunk Inc.
 #
 # SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
 # without a valid written license from Splunk Inc. is PROHIBITED.
@@ -45,54 +45,83 @@ def _delete_app_state(asset_id, app_connector=None):
     return phantom.APP_SUCCESS
 
 
-def _save_app_state(state, asset_id, app_connector=None):
-    """ Saves the state into the same file """
-
-    # get the directory of the file
-    dirpath = os.path.split(__file__)[0]
-    state_file = "{0}/{1}_state.json".format(dirpath, asset_id)
-
-    if (app_connector):
-        app_connector.debug_print("Saving state: ", state)
-
-    try:
-        with open(state_file, 'w+') as f:
-            f.write(json.dumps(state))
-    except Exception as e:
-        print "Unable to save state file: {0}".format(str(e))
-        pass
-
-    return phantom.APP_SUCCESS
-
-
 def _load_app_state(asset_id, app_connector=None):
-    """ Loads the data that was added to """
+    """ This function is used to load the current state file.
 
-    # get the directory of the file
-    dirpath = os.path.split(__file__)[0]
-    state_file = "{0}/{1}_state.json".format(dirpath, asset_id)
+    :param asset_id: asset_id
+    :param app_connector: Object of app_connector class
+    :return: state: Current state file as a dictionary
+    """
+
+    asset_id = str(asset_id)
+    if not asset_id or not asset_id.isalnum():
+        if app_connector:
+            app_connector.debug_print('In _load_app_state: Invalid asset_id')
+        return {}
+
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    state_file = '{0}/{1}_state.json'.format(app_dir, asset_id)
+    real_state_file_path = os.path.realpath(state_file)
+    if not os.path.dirname(real_state_file_path) == app_dir:
+        if app_connector:
+            app_connector.debug_print('In _load_app_state: Invalid asset_id')
+        return {}
 
     state = {}
-
     try:
-        with open(state_file, 'r') as f:
-            in_json = f.read()
-            state = json.loads(in_json)
+        with open(real_state_file_path, 'r') as state_file_obj:
+            state_file_data = state_file_obj.read()
+            state = json.loads(state_file_data)
     except Exception as e:
-        if (app_connector):
-            app_connector.debug_print("In _load_app_state: Exception: {0}".format(str(e)))
-        pass
+        if app_connector:
+            app_connector.debug_print('In _load_app_state: Exception: {0}'.format(str(e)))
 
-    if (app_connector):
-        app_connector.debug_print("Loaded state: ", state)
+    if app_connector:
+        app_connector.debug_print('Loaded state: ', state)
 
     return state
+
+
+def _save_app_state(state, asset_id, app_connector):
+    """ This function is used to save current state in file.
+
+    :param state: Dictionary which contains data to write in state file
+    :param asset_id: asset_id
+    :param app_connector: Object of app_connector class
+    :return: status: phantom.APP_SUCCESS
+    """
+
+    asset_id = str(asset_id)
+    if not asset_id or not asset_id.isalnum():
+        if app_connector:
+            app_connector.debug_print('In _save_app_state: Invalid asset_id')
+        return {}
+
+    app_dir = os.path.split(__file__)[0]
+    state_file = '{0}/{1}_state.json'.format(app_dir, asset_id)
+
+    real_state_file_path = os.path.realpath(state_file)
+    if not os.path.dirname(real_state_file_path) == app_dir:
+        if app_connector:
+            app_connector.debug_print('In _save_app_state: Invalid asset_id')
+        return {}
+
+    if app_connector:
+        app_connector.debug_print('Saving state: ', state)
+
+    try:
+        with open(real_state_file_path, 'w+') as state_file_obj:
+            state_file_obj.write(json.dumps(state))
+    except Exception as e:
+        print 'Unable to save state file: {0}'.format(str(e))
+
+    return phantom.APP_SUCCESS
 
 
 def _return_error(msg, state, asset_id, status):
     state['error'] = True
     _save_app_state(state, asset_id)
-    return HttpResponse(msg, status=status)
+    return HttpResponse(msg, status=status, content_type="text/plain")
 
 
 def _handle_oauth_start(request, path_parts):
@@ -100,7 +129,7 @@ def _handle_oauth_start(request, path_parts):
     # After that, it will retrieve the "code" which is sent, and then use that to retrieve the refresh_token
     asset_id = request.GET.get('state')
     if (not asset_id):
-        return HttpResponse("ERROR: Asset ID not found in URL")
+        return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
     code = request.GET.get('code')
     if code:
@@ -141,9 +170,12 @@ def _handle_oauth_start(request, path_parts):
 def _handle_redirect(request, path_parts):
     asset_id = request.GET.get('asset_id')
     if (not asset_id):
-        return HttpResponse("ERROR: Asset ID not found in URL")
+        return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
     state = _load_app_state(asset_id)
+    if not state:
+        return HttpResponse('ERROR: Invalid asset_id', content_type="text/plain", status=400)
+
     enc_url = state['url']
     dec_url = encryption_helper.decrypt(enc_url, asset_id)  # pylint: disable=E1101
 
@@ -154,7 +186,7 @@ def _handle_redirect(request, path_parts):
 
 def handle_request(request, path_parts):
     if len(path_parts) < 2:
-        return {'error': True, 'message': 'Invalid REST endpoint request'}
+        return HttpResponse("Invalid REST endpoint request", content_type="text/plain", status=404)
 
     call_type = path_parts[1]
 
@@ -164,7 +196,7 @@ def handle_request(request, path_parts):
     if call_type == 'start_oauth':
         return _handle_oauth_start(request, path_parts)
 
-    return {'error': 'Invalid endpoint'}
+    return HttpResponse("Invalid endpoint", content_type="text/plain", status=404)
 
 
 def _get_dir_name_from_app_name(app_name):

@@ -8,15 +8,18 @@
     "logo_dark": "logo_salesforce_dark.svg",
     "product_name": "Salesforce",
     "product_version_regex": ".*",
-    "publisher": "Phantom",
-    "license": "Copyright (c) 2017-2019 Splunk Inc.",
+    "publisher": "Splunk",
+    "license": "Copyright (c) 2017-2020 Splunk Inc.",
     "app_version": "1.0.19",
     "utctime_updated": "2019-11-12T23:28:18.000000Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.pyc",
-    "min_phantom_version": "4.0.1068",
+    "min_phantom_version": "4.8.24304",
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
+    "latest_tested_versions": [
+        "v1 API 2020-07-08"
+    ],
     "configuration": {
         "client_id": {
             "description": "Client ID",
