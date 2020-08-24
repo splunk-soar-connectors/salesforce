@@ -19,11 +19,12 @@ import time
 import json
 import requests
 import encryption_helper
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, UnicodeDammit
 from django.http import HttpResponse
 # from django.utils.dateparse import parse_datetime
 # from datetime import datetime, timedelta
 import hashlib
+import sys
 
 
 DT_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
@@ -82,7 +83,7 @@ def _load_app_state(asset_id, app_connector=None):
     return state
 
 
-def _save_app_state(state, asset_id, app_connector):
+def _save_app_state(state, asset_id, app_connector=None):
     """ This function is used to save current state in file.
 
     :param state: Dictionary which contains data to write in state file
@@ -113,7 +114,7 @@ def _save_app_state(state, asset_id, app_connector):
         with open(real_state_file_path, 'w+') as state_file_obj:
             state_file_obj.write(json.dumps(state))
     except Exception as e:
-        print 'Unable to save state file: {0}'.format(str(e))
+        print('Unable to save state file: {0}'.format(str(e)))
 
     return phantom.APP_SUCCESS
 
@@ -227,6 +228,79 @@ class SalesforceConnector(BaseConnector):
         self._version_uri = None
         self._auth_flow = self.OAUTH_FLOW
 
+    def _handle_py_ver_compat_for_input_str(self, input_str):
+        """
+        This method returns the encoded|original string based on the Python version.
+        :param input_str: Input string to be processed
+        :return: input_str (Processed input string based on following logic 'input_str - Python 3; encoded input_str - Python 2')
+        """
+        try:
+            if input_str and self._python_version < 3:
+                input_str = UnicodeDammit(input_str).unicode_markup.encode('utf-8')
+        except:
+            self.debug_print("Error occurred while handling python 2to3 compatibility for the input string")
+
+        return input_str
+
+    def _get_error_message_from_exception(self, e):
+        """ This function is used to get appropriate error message from the exception.
+        :param e: Exception object
+        :return: error message
+        """
+        error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+        error_code = "Error code unavailable"
+        try:
+            if e.args:
+                if len(e.args) > 1:
+                    error_code = e.args[0]
+                    error_msg = e.args[1]
+                elif len(e.args) == 1:
+                    error_code = "Error code unavailable"
+                    error_msg = e.args[0]
+            else:
+                error_code = "Error code unavailable"
+                error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+        except:
+            error_code = "Error code unavailable"
+            error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+
+        try:
+            error_msg = self._handle_py_ver_compat_for_input_str(error_msg)
+        except TypeError:
+            error_msg = "Error occurred while connecting to the Salesforce server. Please check the asset configuration and|or the action parameters."
+        except:
+            error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+
+        return "Error Code: {0}. Error Message: {1}".format(error_code, error_msg)
+
+    def _validate_integers(self, action_result, parameter, key, allow_zero=False):
+        """Validate the provided input parameter value is a non-zero positive integer and returns the integer value of the parameter itself.
+
+        Parameters:
+            :param action_result: object of ActionResult class
+            :param parameter: input parameter
+            :param key: string value of parameter name
+            :param allow_zero: indicator for given parameter that whether zero value is allowed or not
+        Returns:
+            :return: integer value of the parameter
+        """
+        try:
+            if not float(parameter).is_integer():
+                return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
+
+            parameter = int(parameter)
+
+            if parameter <= 0:
+                if allow_zero:
+                    if parameter < 0:
+                        return action_result.set_status(phantom.APP_ERROR, "Please provide a valid non-negative integer value in the '{}' parameter".format(key)), None
+                else:
+                    return action_result.set_status(phantom.APP_ERROR, SALESFORCE_INVALID_INTEGER.format(parameter=key)), None
+        except:
+            return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
+
+        return phantom.APP_SUCCESS, parameter
+
     def _process_empty_reponse(self, response, action_result):
 
         if self.get_action_identifier() in ('update_ticket', 'update_object', 'delete_object', 'delete_ticket'):
@@ -264,15 +338,17 @@ class SalesforceConnector(BaseConnector):
         try:
             resp_json = r.json()
         except Exception as e:
-            return RetVal(action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. Error: {0}".format(str(e))), None)
+            error_message = self._get_error_message_from_exception(e)
+            return RetVal(action_result.set_status(phantom.APP_ERROR, "Unable to parse JSON response. Error: {0}".format(error_message)), None)
 
         # Please specify the status codes here
         if 200 <= r.status_code < 399:
             return RetVal(phantom.APP_SUCCESS, resp_json)
 
         # You should process the error returned in the json
+        error_message = self._handle_py_ver_compat_for_input_str(r.text.replace('{', '{{').replace('}', '}}'))
         message = "Error from server. Status Code: {0} Data from server: {1}".format(
-                r.status_code, r.text.replace('{', '{{').replace('}', '}}'))
+                r.status_code, error_message)
 
         return RetVal(action_result.set_status(phantom.APP_ERROR, message), None)
 
@@ -337,13 +413,14 @@ class SalesforceConnector(BaseConnector):
                 **kwargs
             )
         except Exception as e:
-            return RetVal(action_result.set_status( phantom.APP_ERROR, "Error Connecting to server. Details: {0}".format(str(e))), resp_json)
+            error_message = self._get_error_message_from_exception(e)
+            return RetVal(action_result.set_status(phantom.APP_ERROR, "Error Connecting to server. Details: {0}".format(error_message)), resp_json)
 
         return self._process_response(r, action_result)
 
     def _retrieve_oauth_token(self, action_result):
         config = self.get_config()
-        client_id = config['client_id']
+        client_id = self._handle_py_ver_compat_for_input_str(config['client_id'])
         client_secret = config['client_secret']
         try:
             refresh_token = encryption_helper.decrypt(self._state['refresh_token'], self.get_asset_id())  # pylint: disable=E1101
@@ -353,9 +430,10 @@ class SalesforceConnector(BaseConnector):
                 "Error getting refresh token, has test connectivity been run?"
             )
         except Exception as e:
+            error_message = self._get_error_message_from_exception(e)
             return action_result.set_status(
                 phantom.APP_ERROR,
-                "Error decrypting refresh token", e
+                "Error decrypting refresh token", error_message
             )
 
         body = {
@@ -383,7 +461,7 @@ class SalesforceConnector(BaseConnector):
 
     def _retrieve_oauth_token_username_password(self, action_result):
         config = self.get_config()
-        client_id = config['client_id']
+        client_id = self._handle_py_ver_compat_for_input_str(config['client_id'])
         client_secret = config['client_secret']
 
         body = {
@@ -497,7 +575,7 @@ class SalesforceConnector(BaseConnector):
 
     def _oauth_flow_test_connect(self, action_result):
         config = self.get_config()
-        client_id = config['client_id']
+        client_id = self._handle_py_ver_compat_for_input_str(config['client_id'])
         client_secret = config['client_secret']
 
         ret_val, app_rest_url = self._get_url_to_app_rest(action_result)
@@ -530,7 +608,7 @@ class SalesforceConnector(BaseConnector):
         state['creds'] = creds
         state['url'] = url
         state['url_get_token'] = url_get_token
-        _save_app_state(state, asset_id)
+        _save_app_state(state, asset_id, self)
 
         self.save_progress("To Continue, open this link in a new tab in your browser")
         self.save_progress(app_rest_url + '/redirect?asset_id={}'.format(asset_id))
@@ -602,8 +680,8 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_run_query(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        query = param['query']
-        query_type = param.get('endpoint', 'query')
+        query = self._handle_py_ver_compat_for_input_str(param['query'])
+        query_type = self._handle_py_ver_compat_for_input_str(param.get('endpoint', 'query'))
 
         endpoint = API_ENDPOINT_RUN_QUERY.format(
             version=self._version_uri,
@@ -621,7 +699,7 @@ class SalesforceConnector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully Retrieved Query Results")
 
     def _create_object(self, action_result, param, field_values):
-        sobject = param.get('sobject', 'Case')
+        sobject = self._handle_py_ver_compat_for_input_str(param.get('sobject', 'Case'))
 
         endpoint = API_ENDPOINT_OBJECT.format(
             version=self._version_uri,
@@ -640,14 +718,15 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_create_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        other = param['field_values']
+        other = self._handle_py_ver_compat_for_input_str(param['field_values'])
         try:
             other_dict = json.loads(other)
         except Exception as e:
+            error_message = self._get_error_message_from_exception(e)
             return action_result.set_status(
                 phantom.APP_ERROR,
                 "Error reading 'field_values'",
-                e
+                error_message
             )
 
         return self._create_object(action_result, param, other_dict)
@@ -655,20 +734,21 @@ class SalesforceConnector(BaseConnector):
     def _handle_create_ticket(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
-        other = param.get('field_values')
+        other = self._handle_py_ver_compat_for_input_str(param.get('field_values'))
         if other:
             try:
                 other_dict = json.loads(other)
             except Exception as e:
+                error_message = self._get_error_message_from_exception(e)
                 return action_result.set_status(
                     phantom.APP_ERROR,
                     "Error reading 'field_values'",
-                    e
+                    error_message
                 )
         else:
             other_dict = {}
 
-        for k, v in param.iteritems():
+        for k, v in list(param.items()):
             if k in CASE_FIELD_MAP:
                 other_dict[CASE_FIELD_MAP[k]] = v
 
@@ -676,8 +756,8 @@ class SalesforceConnector(BaseConnector):
 
     def _delete_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        sobject = param.get('sobject', 'Case')
-        obj_id = param['id']
+        sobject = self._handle_py_ver_compat_for_input_str(param.get('sobject', 'Case'))
+        obj_id = self._handle_py_ver_compat_for_input_str(param['id'])
 
         endpoint = API_ENDPOINT_OBJECT_ID.format(
             version=self._version_uri,
@@ -698,8 +778,8 @@ class SalesforceConnector(BaseConnector):
         return self._delete_object(param)
 
     def _update_object(self, action_result, param, field_values):
-        sobject = param.get('sobject', 'Case')
-        obj_id = param['id']
+        sobject = self._handle_py_ver_compat_for_input_str(param.get('sobject', 'Case'))
+        obj_id = self._handle_py_ver_compat_for_input_str(param['id'])
 
         endpoint = API_ENDPOINT_OBJECT_ID.format(
             version=self._version_uri,
@@ -719,14 +799,15 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_update_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        other = param['field_values']
+        other = self._handle_py_ver_compat_for_input_str(param.get('field_values'))
         try:
             other_dict = json.loads(other)
         except Exception as e:
+            error_message = self._get_error_message_from_exception(e)
             return action_result.set_status(
                 phantom.APP_ERROR,
-                "Error reading 'field_values'",
-                e
+                "Error reading 'field_cvalues'",
+                error_message
             )
 
         return self._update_object(action_result, param, other_dict)
@@ -734,20 +815,21 @@ class SalesforceConnector(BaseConnector):
     def _handle_update_ticket(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
-        other = param.get('field_values')
+        other = self._handle_py_ver_compat_for_input_str(param.get('field_values'))
         if other:
             try:
                 other_dict = json.loads(other)
             except Exception as e:
+                error_message = self._get_error_message_from_exception(e)
                 return action_result.set_status(
                     phantom.APP_ERROR,
                     "Error reading 'field_values'",
-                    e
+                    error_message
                 )
         else:
             other_dict = {}
 
-        for k, v in param.iteritems():
+        for k, v in list(param.items()):
             if k in CASE_FIELD_MAP:
                 other_dict[CASE_FIELD_MAP[k]] = v
 
@@ -798,8 +880,8 @@ class SalesforceConnector(BaseConnector):
 
     def _list_objects(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        sobject = param.get('sobject', 'Case')
-        view_name = param.get('view_name')
+        sobject = self._handle_py_ver_compat_for_input_str(param.get('sobject', 'Case'))
+        view_name = self._handle_py_ver_compat_for_input_str(param.get('view_name'))
 
         endpoint = API_ENDPOINT_GET_LISTVIEWS.format(
             version=self._version_uri,
@@ -821,9 +903,19 @@ class SalesforceConnector(BaseConnector):
                 "Created a list of valid view names"
             )
 
+        # validate limit parameter
+        ret_val, limit = self._validate_integers(action_result, param.get('limit', 25), "limit")
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        # validate offset parameter
+        ret_val, offset = self._validate_integers(action_result, param.get('offset', 0), "offset", allow_zero=True)
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
         params = {
-            'limit': param.get('limit', 25),
-            'offset': param.get('offset', 0)
+            'limit': limit,
+            'offset': offset
         }
 
         # Retrieve the list of objects
@@ -842,8 +934,8 @@ class SalesforceConnector(BaseConnector):
 
     def _get_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
-        sobject = param.get('sobject', 'Case')
-        obj_id = param['id']
+        sobject = self._handle_py_ver_compat_for_input_str(param.get('sobject', 'Case'))
+        obj_id = self._handle_py_ver_compat_for_input_str(param['id'])
 
         endpoint = API_ENDPOINT_OBJECT_ID.format(
             version=self._version_uri,
@@ -868,9 +960,9 @@ class SalesforceConnector(BaseConnector):
     def _handle_post_chatter(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
 
-        parent_case_id = param['id']
-        body = param['body']
-        title = param.get('title')
+        parent_case_id = self._handle_py_ver_compat_for_input_str(param['id'])
+        body = self._handle_py_ver_compat_for_input_str(param['body'])
+        title = self._handle_py_ver_compat_for_input_str(param.get('title'))
 
         new_feed_item = {
             'ParentId': parent_case_id,
@@ -911,7 +1003,7 @@ class SalesforceConnector(BaseConnector):
 
         container_name = None
 
-        for k, v in response.iteritems():
+        for k, v in list(response.items()):
             if k in skip_field_names:
                 continue
             name = self._cef_name_map.get(k, k)
@@ -1038,14 +1130,15 @@ class SalesforceConnector(BaseConnector):
         config = self.get_config()
         action_result = self.add_action_result(ActionResult(dict(param)))
 
-        sobject = config.get('poll_sobject', 'Case')
-        view_name = config.get('poll_view_name')
-        cef_name_map = config.get('cef_name_map')
+        sobject = self._handle_py_ver_compat_for_input_str(config.get('poll_sobject', 'Case'))
+        view_name = self._handle_py_ver_compat_for_input_str(config.get('poll_view_name'))
+        cef_name_map = self._handle_py_ver_compat_for_input_str(config.get('cef_name_map'))
         if cef_name_map:
             try:
                 self._cef_name_map = json.loads(cef_name_map)
             except Exception as e:
-                return action_result.set_status(phantom.APP_ERROR, "Error parsing cef_name_map", e)
+                error_message = self._get_error_message_from_exception(e)
+                return action_result.set_status(phantom.APP_ERROR, "Error parsing cef_name_map {}".format(error_message))
         else:
             self._cef_name_map = {}
 
@@ -1058,7 +1151,7 @@ class SalesforceConnector(BaseConnector):
         if cur_offset is None:
             # First time this app has done (none POLL NOW) ingestion
             cur_offset = 0
-            max_containers = config.get('first_ingestion_max', 10)
+            max_containers = self._validate_integers(action_result, config.get('first_ingestion_max', 10), "first_ingestion_max")
 
         if self.is_poll_now():
             max_containers = param.get('container_count', 10)
@@ -1161,7 +1254,14 @@ class SalesforceConnector(BaseConnector):
         # that needs to be accessed across actions
         self._state = self.load_state()
         config = self.get_config()
-        self._username = config.get('username')
+
+        # Fetching the Python major version
+        try:
+            self._python_version = int(sys.version_info[0])
+        except:
+            return self.set_status(phantom.APP_ERROR, "Error occurred while getting the Phantom server's Python major version.")
+
+        self._username = self._handle_py_ver_compat_for_input_str(config.get('username'))
         self._password = config.get('password')
         if self._username:
             if not self._password:
@@ -1190,7 +1290,6 @@ class SalesforceConnector(BaseConnector):
 
 if __name__ == '__main__':
 
-    import sys
     import pudb
     import argparse
 
@@ -1237,7 +1336,7 @@ if __name__ == '__main__':
             exit(1)
 
     if (len(sys.argv) < 2):
-        print "No test json specified as input"
+        print("No test json specified as input")
         exit(0)
 
     with open(sys.argv[1]) as f:

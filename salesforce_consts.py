@@ -34,3 +34,4 @@ CASE_FIELD_MAP = {
     'closed': 'IsClosed',
     'escalated': 'IsEscalated'
 }
+SALESFORCE_INVALID_INTEGER = 'Please provide non-zero positive integer in "{parameter}"'
