@@ -87,7 +87,6 @@
             "action": "test connectivity",
             "identifier": "test_connectivity",
             "description": "Validate connection using the configured credentials",
-            "verbose": "",
             "type": "test",
             "read_only": true,
             "parameters": {},
@@ -230,6 +229,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -489,6 +491,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -667,6 +672,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -926,6 +934,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -1269,6 +1280,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {

@@ -302,7 +302,7 @@ class SalesforceConnector(BaseConnector):
 
         return phantom.APP_SUCCESS, parameter
 
-    def _process_empty_reponse(self, response, action_result):
+    def _process_empty_response(self, response, action_result):
         """Process empty response.
 
         Parameters:
@@ -341,8 +341,7 @@ class SalesforceConnector(BaseConnector):
         except:
             error_text = "Cannot parse error details"
 
-        message = "Status Code: {0}. Data from server:\n{1}\n".format(status_code,
-                error_text)
+        message = "Status Code: {0}. Data from server:\n{1}\n".format(status_code, error_text)
 
         message = self._handle_py_ver_compat_for_input_str(message.replace('{', '{{').replace('}', '}}'))
 
@@ -401,7 +400,7 @@ class SalesforceConnector(BaseConnector):
         if 'javascript' in r.headers.get('Content-Type', ''):
             return self._process_json_response(r, action_result)
 
-        # Process an HTML resonse, Do this no matter what the api talks.
+        # Process an HTML response, Do this no matter what the API talks.
         # There is a high chance of a PROXY in between phantom and the rest of
         # world, in case of errors, PROXY's return HTML, this function parses
         # the error and adds it to the action_result.
@@ -410,7 +409,7 @@ class SalesforceConnector(BaseConnector):
 
         # it's not content-type that is to be parsed, handle an empty response
         if not r.text:
-            return self._process_empty_reponse(r, action_result)
+            return self._process_empty_response(r, action_result)
 
         # everything else is actually an error at this point
         message = "Can't process response from server. Status Code: {0} Data from server: {1}".format(
@@ -446,7 +445,7 @@ class SalesforceConnector(BaseConnector):
             url = endpoint
         else:
             if self._base_url is None:
-                raise Exception("Base URL Is None")
+                return RetVal(action_result.set_status(phantom.APP_ERROR, "Base URL Is None"), resp_json)
             url = "{0}{1}".format(self._base_url, endpoint)
 
         try:
@@ -552,7 +551,7 @@ class SalesforceConnector(BaseConnector):
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_helper(self, action_result):
-        """ Function that helps to retrive oauth token for the app.
+        """ Function that helps to retrieve oauth token for the app.
 
         Parameters:
             :param action_result: object of ActionResult class
@@ -634,7 +633,7 @@ class SalesforceConnector(BaseConnector):
 
         if (not phantom_base_url):
             return (action_result.set_status(phantom.APP_ERROR,
-                "Phantom Base URL not found in System Settings. Please specify this value in System Settings"), None)
+                                             "Phantom Base URL not found in System Settings. Please specify this value in System Settings"), None)
 
         return (phantom.APP_SUCCESS, phantom_base_url)
 
@@ -1146,7 +1145,7 @@ class SalesforceConnector(BaseConnector):
             name = self._cef_name_map.get(k, k)
             cef[name] = v
             if k.endswith('Id') and v is not None:
-                cef_types[name] = [ 'salesforce object id' ]
+                cef_types[name] = ['salesforce object id']
 
             if name == 'Subject':
                 container_name = v
@@ -1319,7 +1318,7 @@ class SalesforceConnector(BaseConnector):
             if phantom.is_fail(ret_val):
                 return action_result.get_status()
 
-            # validate first_ingetion_max parameter
+            # validate first_ingestion_max parameter
             if not cur_offset:
                 ret_val, max_containers = self._validate_integers(action_result, config.get('first_ingestion_max', 10), "first_ingestion_max")
                 if phantom.is_fail(ret_val):
@@ -1455,7 +1454,7 @@ class SalesforceConnector(BaseConnector):
 
     def finalize(self):
 
-        # Save the state, this data is saved accross actions and app upgrades
+        # Save the state, this data is saved across actions and app upgrades
         self.save_state(self._state)
         return phantom.APP_SUCCESS
 
@@ -1505,7 +1504,7 @@ if __name__ == '__main__':
             r2 = requests.post(login_url, verify=False, json=data, headers=headers)
             session_id = r2.cookies['sessionid']
         except Exception as e:
-            print("Unable to get session id from the platfrom. Error: " + str(e))
+            print("Unable to get session id from the platform. Error: " + str(e))
             exit(1)
 
     if (len(sys.argv) < 2):
