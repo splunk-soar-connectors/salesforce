@@ -6,52 +6,92 @@
 -->
 
 
-<p>
-In order to run any actions on this app, you must first authorize the use of this app by running test connectivity.
-To pass test connectivity, you need to configure an app on Salesforce. First, copy the indicated URL in the screenshot below.
-<a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
-    <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
-</a><br>
-Then, when you are creating a new connected app on Salesforce, select "Enable OAuth Settings", and be sure to fill it out like the picture below.
-Paste the previous URL into the Callback URL section and append "/start_oauth" to the end.
-<a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
-    <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
-</a>
-It is important to set the correct scopes as well.<br><br>
-Now when you run test connectivity, a link will appear in the modal. Copy this and open it in a new tab.
-<a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
-    <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
-</a>
-Here, you will be directed to login to Salesforce, then authorize the app usage. After that, you can close the tab when instructed to,
-and test connectivity should successfully finish.<br>
-</p>
-<p>
-If you optionally specify username and password in the configuration, test connectivity will work differently;
-the main difference being that you will not need to manually login to Salesforce to authorize the app. 
-<b>The password field should be composed of your password with your account's security token appended at the end, 
-for example: MyPasswordMyToken</b> (this is not the same as the <b>client_secret</b>). 
-If you wish to connect over a proxy, you should use this method.
-</p>
-<br>
-<p>
-It is possible that you will want to configure an asset to work with a Salesforce test environment. This is the case if login URL for
-that Salesforce instance is <a href="https://test.salesforce.com">https://test.salesforce.com</a> as opposed to
-<a href="https://login.salesforce.com">https://login.salesforce.com</a>. In this case, you should check the appropriate box in the
-asset config.
-</p>
+<html>
+    <head></head>
+    <body>
+        <h2>Authentication</h2>
 
-<h3>Ingestion</h3>
-<p>
-In order to ingest, you must use a List View as a source.
-</p>
-<p>
-The created artifact's CEF fields will be the same names as the fields in the Object in Salesforce. You may want to map these to standard
-CEF fields. This can be done by providing a JSON which describes the mapping. For example, if the Salesforce object has the field
-<b>ip_address__c</b>, and you want this to be <b>sourceAddress</b>, the following file would be appropriate.
-<pre class="shell">
-<code>
-{
-    "ip_address__c": "sourceAddress"
-}
-</code>
-</pre>
+        <p>To pass test connectivity, you need to configure an app on Salesforce. To do so, navigate to <a href="https://www.salesforce.com/" target="_blank">https://www.salesforce.com/</a> in a browser and navigate to the login page. Log in with a Salesforce account.</p>
+        <ol>
+            <li>In the drop-down list of the account (in the upper-right corner), select <b>Setup</b></li>
+            <li>Go to <b>Apps</b>, then <b>App Manager</b> and click on <b>New Connected App</b></li>
+            <li>On the New Connected App page, fill the following required fields under Basic Information:</li>
+                <ul>
+                    <li>Connected App Name. For example, Salesforce Phantom App</li>
+                    <li>API name. For example, Salesforce Phantom App</li>
+                    <li>Contact Email. For example, xyz@xyz.com</li>
+                </ul>
+            <li>Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in the below picture or else follow these steps
+            <ul>
+                <li>Under the <b>Callback URL</b>, we will be updating the entry of https://phantom.local to reflect the actual redirect URI.  We will get this while we create Phantom App's asset in the below section titled "Configure the Salesforce Phantom app's Asset"</li>
+                <li>Under <b>Selected OAuth Scopes field</b> add this two scopes from <b>Available OAuth Scopes</b>
+                    <ul>
+                        <li>Access and manage your data(api)</li>
+                        <li>Perform requests on your behalf at any time(refresh_token,ofline_access)</li>
+                    </ul></li>
+                <li>Select <b>Require Secret for Web Server Flow</b> checkbox</li>
+            <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
+                    <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
+                </a>
+            </ul>
+            </li>
+            <li>Click on <b>Save</b></li>
+        </ol>
+        <h2>Configure the Salesforce Phantom app's Asset</h2>
+        When creating an asset for the <b>Salesforce</b> app, place the <b>Consumer ID</b> of the app created during the previous step in the <b>Client ID</b> field and place the <b>Consumer Secret</b> generated during the app creation process in the <b>Client Secret</b> field. Then, click <b>SAVE</b>.
+        <br><br>
+        After saving, a new field will appear in the <b>Asset Settings</b> tab. Take the URL found in the <b>POST incoming for Salesforce to this location</b> field. To this URL, add <b>/start_oauth</b>. After doing so the URL should look something like:
+        <br>
+        <p>
+            https://&lt;phantom_host&gt;/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/&lt;asset_name&gt;/start_oauth
+        </p>
+        <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
+            <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
+        </a>
+        <br><br>
+        <p>Click <b>Edit</b> on the app created in a previous step and place it in the <b>Callback URL</b> field.</p>
+        Once again, click on Save.
+        <h2>Method to Run Test Connectivity with Oauth</h2>
+        <p>After setting up the asset, click the <b>TEST CONNECTIVITY</b> button. A window should pop up and display a URL as shown in the below picture. Navigate to this URL in a separate browser tab. This new tab will redirect to a Salesforce login page. Log in to a Salesforce account. Finally, close that tab when instructed to do. The test connectivity window should show a success.<b> The app should now be ready to use.</b></p>
+        <br>
+        <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
+            <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
+        </a>
+        <br><br>
+        <h2>Method to Run Test Connectivity with Username and Password</h2>
+        <p>If you optionally specify username and password in the asset configuration, test connectivity will work differently;
+            the main difference being that when you launch the test connectivity no need to manually login to the Salesforce to authorize the app.</p>
+        <p><b>Note:</b> The password field should be composed of your password with your account's security token appended at the end.
+            Example: MyPasswordMyToken (this is not the same as the <b>client_secret</b>)</p>
+        <h2>Test Environment</h2>
+        <p>
+            You may want to configure an asset to work with a Salesforce test environment. This is the case if the login URL for
+            that Salesforce instance is <a href="https://test.salesforce.com">https://test.salesforce.com</a> as opposed to
+            <a href="https://login.salesforce.com">https://login.salesforce.com</a>. In this case, you should check the appropriate box in the
+            asset configuration.
+        </p>
+        <h2>Ingestion</h2>
+            <p>
+            To ingest, you must use a ListView as a source.
+            </p>
+            <p>
+            The created artifact's CEF fields will be the same names as the fields in the Object in Salesforce. You may want to map these to standard
+            CEF fields. This can be done by providing a JSON that describes the mapping. For example, if the Salesforce object has the field
+            <b>ip_address__c</b>, and you want this to be <b>sourceAddress</b>, the following file would be appropriate.
+            <pre class="shell">
+            <code>
+            {
+                "ip_address__c": "sourceAddress"
+            }
+            </code>
+        </pre>
+        <h3>'Include view data in artifact' Configuration Parameter</h3>
+        <ul>
+            <li>This configuration parameter can be used to prevent the creation of duplicate artifacts.</li>
+            <li>If disabled, the on poll will ignore value of "LastViewedDate" and "LastReferencedDate" while artifact creation.</li>
+            <li>If enabled, the on poll will include value of "LastViewedDate" and "LastReferencedDate" while artifact creation.</li>
+            <li>Case is an example of an object in which both the values (LastViewedDate and LastReferencedDate) are present.</li>
+        </ul>
+    </body>
+</html>
+
