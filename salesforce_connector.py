@@ -1291,7 +1291,7 @@ class SalesforceConnector(BaseConnector):
         sobject = self._handle_py_ver_compat_for_input_str(config.get('poll_sobject', 'Case'))
         view_name = self._handle_py_ver_compat_for_input_str(config.get('poll_view_name'))
         cef_name_map = self._handle_py_ver_compat_for_input_str(config.get('cef_name_map'))
-        self._last_viewed_date = config.get("list_view_data", False)
+        self._last_viewed_date = config.get("last_view_date", False)
         if cef_name_map:
             try:
                 self._cef_name_map = json.loads(cef_name_map)

@@ -75,8 +75,8 @@
             "data_type": "file",
             "order": 9
         },
-        "list_view_data": {
-            "description": "Include view data in artifact",
+        "last_view_date": {
+            "description": "Include view date in artifact",
             "data_type": "boolean",
             "default": true,
             "order": 10
@@ -686,6 +686,16 @@
                     "data_type": "string"
                 },
                 {
+                    "data_path": "action_result.summary.obj_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
+                },
+                {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
@@ -845,6 +855,16 @@
                 {
                     "data_path": "action_result.summary",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.summary.obj_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
