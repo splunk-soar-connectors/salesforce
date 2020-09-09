@@ -21,15 +21,15 @@
                     <li>API name. For example, Salesforce Phantom App</li>
                     <li>Contact Email. For example, xyz@xyz.com</li>
                 </ul>
-            <li>Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in the below picture or else follow these steps
+            <li>Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in the below image or else follow these steps
             <ul>
                 <li>Under the <b>Callback URL</b>, we will be updating the entry of https://phantom.local to reflect the actual redirect URI.  We will get this while we create Phantom App's asset in the below section titled "Configure the Salesforce Phantom app's Asset"</li>
-                <li>Under <b>Selected OAuth Scopes field</b> add this two scopes from <b>Available OAuth Scopes</b>
+                <li>Under <b>Selected OAuth Scopes field</b> add the following two scopes from <b>Available OAuth Scopes</b>
                     <ul>
                         <li>Access and manage your data(api)</li>
                         <li>Perform requests on your behalf at any time(refresh_token,ofline_access)</li>
                     </ul></li>
-                <li>Select <b>Require Secret for Web Server Flow</b> checkbox</li>
+                <li>Select the <b>Require Secret for Web Server Flow</b> checkbox</li>
             <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
                     <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/app_config.png">
                 </a>
@@ -52,7 +52,7 @@
         <p>Click <b>Edit</b> on the app created in a previous step and place it in the <b>Callback URL</b> field.</p>
         Once again, click on Save.
         <h2>Method to Run Test Connectivity with Oauth</h2>
-        <p>After setting up the asset, click the <b>TEST CONNECTIVITY</b> button. A window should pop up and display a URL as shown in the below picture. Navigate to this URL in a separate browser tab. This new tab will redirect to a Salesforce login page. Log in to a Salesforce account. Finally, close that tab when instructed to do. The test connectivity window should show a success.<b> The app should now be ready to use.</b></p>
+        <p>After setting up the asset, click the <b>TEST CONNECTIVITY</b> button. A window should pop up and display a URL as shown in the below image. Navigate to this URL in a separate browser tab. This new tab will redirect to a Salesforce login page. Log in to a Salesforce account. Finally, close that tab when instructed to do. The test connectivity window should show a success.<b> The app should now be ready to use.</b></p>
         <br>
         <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
             <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/modal.png">
@@ -60,7 +60,7 @@
         <br><br>
         <h2>Method to Run Test Connectivity with Username and Password</h2>
         <p>If you optionally specify username and password in the asset configuration, test connectivity will work differently;
-            the main difference being that when you launch the test connectivity no need to manually login to the Salesforce to authorize the app.</p>
+            the main difference being that when you launch the test connectivity, there is no need to log into the Salesforce instance to authorize the app.</p>
         <p><b>Note:</b> The password field should be composed of your password with your account's security token appended at the end.
             Example: MyPasswordMyToken (this is not the same as the <b>client_secret</b>)</p>
         <h2>Test Environment</h2>
@@ -96,7 +96,7 @@
         <ul>
             <li>Currently, the <b>List Objects</b>, the <b>List Tickets</b>, and the <b>On Poll</b> actions can fetch a maximum of 4000 records.</li>
             <li>The maximum offset value supported by the Salesforce API is 2000, as mentioned in this <a href="https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_offset.htm" target="_blank"><b>documentation</b>.</a></li>
-            <li>If this issue gets resolved with the Salesforce API, then the mentioned actions will be able to fetch all the records.</li>
+            <li>If this issue gets resolved with the Salesforce API, then the mentioned actions will be able to fetch all of the records.</li>
         </ul>
     </body>
 </html>

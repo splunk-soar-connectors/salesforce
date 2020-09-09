@@ -348,7 +348,7 @@
                     "data_path": "action_result.parameter.description",
                     "data_type": "string",
                     "example_values": [
-                        "This is test description"
+                        "This is a test description"
                     ]
                 },
                 {
@@ -800,7 +800,7 @@
                     "data_path": "action_result.parameter.description",
                     "data_type": "string",
                     "example_values": [
-                        "This is test description"
+                        "This is a test description"
                     ]
                 },
                 {

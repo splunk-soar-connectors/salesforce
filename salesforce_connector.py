@@ -1359,7 +1359,7 @@ class SalesforceConnector(BaseConnector):
                 artifact['container_id'] = container_id
             ret_val, status_string, artifact_ids = self.save_artifacts(container_artifact)
             if phantom.is_fail(ret_val):
-                self.save_progress("Error saving Artifacts: {}".format(status_string))
+                self.save_progress("Error saving artifacts: {}".format(status_string))
 
         if not self.is_poll_now():
             self._state['cur_offset'] = new_offset
