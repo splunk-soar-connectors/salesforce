@@ -881,7 +881,7 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully deleted {}".format(sobject))
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully deleted the {}".format(sobject))
 
     def _handle_delete_object(self, param):
         return self._delete_object(param)
@@ -907,7 +907,7 @@ class SalesforceConnector(BaseConnector):
         summary = action_result.update_summary({})
         summary['obj_id'] = obj_id
 
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully updated {}".format(sobject))
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully updated the {}".format(sobject))
 
     def _handle_update_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
@@ -946,7 +946,7 @@ class SalesforceConnector(BaseConnector):
                 other_dict[CASE_FIELD_MAP[k]] = v
 
         if not other_dict:
-            return action_result.set_status(phantom.APP_ERROR, "Please provide at least one optional parameter for updating the ticket")
+            return action_result.set_status(phantom.APP_ERROR, "Please provide at least one optional parameter for updating the Case")
 
         return self._update_object(action_result, param, other_dict)
 
@@ -1029,13 +1029,13 @@ class SalesforceConnector(BaseConnector):
         elif not results_url and view_name:
             # They searched for an invalid view
             action_result.update_summary({'view_names': views})
-            return action_result.set_status(phantom.APP_ERROR, "No listview with that specified name was found")
+            return action_result.set_status(phantom.APP_ERROR, "Specified list view name was not found")
         elif not results_url and not view_name:
             # Just return a list of valid views
             action_result.update_summary({'view_names': views})
             return action_result.set_status(
                 phantom.APP_SUCCESS,
-                "Created a list of valid view names"
+                "Listed the valid view names"
             )
 
         # validate limit parameter
@@ -1058,7 +1058,7 @@ class SalesforceConnector(BaseConnector):
             message = "Because of the limitation of the offset value in the API, returning the maximum possible records."
             message += "Response from the API: {}".format(action_result.get_message())
         else:
-            message = "Successfully created a list of {} objects".format(sobject)
+            message = "Successfully fetched a list of {} objects".format(sobject)
 
         return action_result.set_status(phantom.APP_SUCCESS, message)
 

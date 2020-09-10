@@ -508,7 +508,7 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully deleted Contact"
+                        "Successfully deleted the Contact"
                     ]
                 },
                 {
@@ -582,7 +582,7 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully deleted Case"
+                        "Successfully deleted the Case"
                     ]
                 },
                 {
@@ -699,7 +699,7 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully updated Contact"
+                        "Successfully updated the Contact"
                     ]
                 },
                 {
@@ -870,7 +870,7 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully updated Case"
+                        "Successfully updated the Case"
                     ]
                 },
                 {
@@ -1000,8 +1000,8 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Created a list of valid view names",
-                        "Successfully created a list of Contact objects"
+                        "Listed the valid view names",
+                        "Successfully fetched a list of Contact objects"
                     ]
                 },
                 {
@@ -1220,8 +1220,8 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Created a list of valid view names",
-                        "Successfully created a list of Case objects"
+                        "Listed the valid view names",
+                        "Successfully fetched a list of Case objects"
                     ]
                 },
                 {
