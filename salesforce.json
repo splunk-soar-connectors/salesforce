@@ -96,7 +96,7 @@
         {
             "action": "run query",
             "identifier": "run_query",
-            "description": "Run a query using the SalesforceObject Query Language",
+            "description": "Run a query using the Salesforce Object Query Language (SOQL)",
             "verbose": "To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>",
             "type": "investigate",
             "read_only": true,
@@ -152,7 +152,10 @@
                 },
                 {
                     "data_path": "action_result.summary.num_objects",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        20
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
@@ -363,6 +366,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0061I000000PRsCABC"
                     ]
                 },
                 {
@@ -682,10 +688,6 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.summary",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "action_result.summary.obj_id",
                     "data_type": "string",
                     "example_values": [
@@ -853,10 +855,6 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.summary",
-                    "data_type": "string"
-                },
-                {
                     "data_path": "action_result.summary.obj_id",
                     "data_type": "string",
                     "example_values": [
@@ -943,11 +941,17 @@
                 },
                 {
                     "data_path": "action_result.parameter.limit",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        20
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.offset",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        5
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.sobject",
@@ -980,7 +984,10 @@
                         "salesforce object id"
                     ],
                     "column_name": "Object ID",
-                    "column_order": 0
+                    "column_order": 0,
+                    "example_values": [
+                        "0033t000035qrSYAAY"
+                    ]
                 },
                 {
                     "data_path": "action_result.summary.num_objects",
@@ -1067,11 +1074,17 @@
                 },
                 {
                     "data_path": "action_result.parameter.limit",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        20
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.offset",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        5
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.view_name",
@@ -1095,6 +1108,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0033t000035qrSWABZ"
                     ]
                 },
                 {
@@ -1102,11 +1118,17 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0033t000035qrSWABZ"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.columns.Contact_Name.value",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Abcd"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.columns.CreatedDate.value",
@@ -1314,6 +1336,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "5001I000002SfMMQA0"
                     ]
                 },
                 {
@@ -1390,6 +1415,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0013t00001ZyVVTAB4"
                     ]
                 },
                 {
@@ -1412,7 +1440,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.ClosedDate",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "2019-06-25T18:59:51.000+0000"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Closed_Time_Days__c",
@@ -1420,26 +1451,41 @@
                 },
                 {
                     "data_path": "action_result.data.*.ContactEmail",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "test@example.com"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactFax",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "(1) 234 567"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactId",
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0033t000035qrSWABZ"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactMobile",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "(1) 222 333"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactPhone",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "(1) 33 444"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.CreatedById",
@@ -1494,7 +1540,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.EngineeringReqNumber__c",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "765810"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Executive_Summary__c",
@@ -1634,11 +1683,17 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0061I000000PRsCABC"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.PotentialLiability__c",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "No"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Priority",
@@ -1649,11 +1704,17 @@
                 },
                 {
                     "data_path": "action_result.data.*.Product__c",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "GC5555"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Reason",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Test Complexity"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.RecordTypeId",
@@ -1742,7 +1803,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.Type",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Electrical"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.attributes.type",
