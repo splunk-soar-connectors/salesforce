@@ -268,7 +268,7 @@ class SalesforceConnector(BaseConnector):
         try:
             error_msg = self._handle_py_ver_compat_for_input_str(error_msg)
         except TypeError:
-            error_msg = SALESFORCE_UNICODE_DAMMIT_TYPE_ERROR_MESSAGE
+            error_msg = SALESFORCE_UNICODE_DAMMIT_TYPE_ERROR_MSG
         except:
             error_msg = SALESFORCE_UNKNOWN_ERR_MSG
 
