@@ -248,29 +248,29 @@ class SalesforceConnector(BaseConnector):
         :param e: Exception object
         :return: error message
         """
-        error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
-        error_code = "Error code unavailable"
+        error_msg = SALESFORCE_UNKNOWN_ERR_MSG
+        error_code = SALESFORCE_ERR_CODE_UNAVAILABLE
         try:
             if e.args:
                 if len(e.args) > 1:
                     error_code = e.args[0]
                     error_msg = e.args[1]
                 elif len(e.args) == 1:
-                    error_code = "Error code unavailable"
+                    error_code = SALESFORCE_ERR_CODE_UNAVAILABLE
                     error_msg = e.args[0]
             else:
-                error_code = "Error code unavailable"
-                error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+                error_code = SALESFORCE_ERR_CODE_UNAVAILABLE
+                error_msg = SALESFORCE_UNKNOWN_ERR_MSG
         except:
-            error_code = "Error code unavailable"
-            error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+            error_code = SALESFORCE_ERR_CODE_UNAVAILABLE
+            error_msg = SALESFORCE_UNKNOWN_ERR_MSG
 
         try:
             error_msg = self._handle_py_ver_compat_for_input_str(error_msg)
         except TypeError:
-            error_msg = "Error occurred while connecting to the Salesforce server. Please check the asset configuration and|or the action parameters."
+            error_msg = SALESFORCE_UNICODE_DAMMIT_TYPE_ERROR_MESSAGE
         except:
-            error_msg = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+            error_msg = SALESFORCE_UNKNOWN_ERR_MSG
 
         return "Error Code: {0}. Error Message: {1}".format(error_code, error_msg)
 
@@ -285,20 +285,19 @@ class SalesforceConnector(BaseConnector):
         Returns:
             :return: integer value of the parameter
         """
-        try:
-            if not float(parameter).is_integer():
+        if parameter is not None:
+            try:
+                if not float(parameter).is_integer():
+                    return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
+
+                parameter = int(parameter)
+            except:
                 return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
 
-            parameter = int(parameter)
-
-            if parameter <= 0:
-                if allow_zero:
-                    if parameter < 0:
-                        return action_result.set_status(phantom.APP_ERROR, "Please provide a valid non-negative integer value in the '{}' parameter".format(key)), None
-                else:
-                    return action_result.set_status(phantom.APP_ERROR, SALESFORCE_INVALID_INTEGER.format(parameter=key)), None
-        except:
-            return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
+            if parameter < 0:
+                return action_result.set_status(phantom.APP_ERROR, "Please provide a valid non-negative integer value in the '{}' parameter".format(key)), None
+            if not allow_zero and parameter == 0:
+                return action_result.set_status(phantom.APP_ERROR, SALESFORCE_INVALID_INTEGER.format(parameter=key)), None
 
         return phantom.APP_SUCCESS, parameter
 

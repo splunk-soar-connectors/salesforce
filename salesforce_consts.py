@@ -35,3 +35,6 @@ CASE_FIELD_MAP = {
     'escalated': 'IsEscalated'
 }
 SALESFORCE_INVALID_INTEGER = 'Please provide non-zero positive integer in "{parameter}"'
+SALESFORCE_UNKNOWN_ERR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+SALESFORCE_ERR_CODE_UNAVAILABLE = "Error code unavailable"
+SALESFORCE_UNICODE_DAMMIT_TYPE_ERROR_MESSAGE = "Error occurred while connecting to the Salesforce server. Please check the asset configuration and|or the action parameters."
