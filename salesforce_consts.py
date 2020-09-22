@@ -1,5 +1,5 @@
 # File: salesforce_consts.py
-# Copyright (c) 2017-2019 Splunk Inc.
+# Copyright (c) 2017-2020 Splunk Inc.
 #
 # SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
 # without a valid written license from Splunk Inc. is PROHIBITED.
@@ -34,3 +34,7 @@ CASE_FIELD_MAP = {
     'closed': 'IsClosed',
     'escalated': 'IsEscalated'
 }
+SALESFORCE_INVALID_INTEGER = 'Please provide non-zero positive integer in "{parameter}"'
+SALESFORCE_UNKNOWN_ERR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
+SALESFORCE_ERR_CODE_UNAVAILABLE = "Error code unavailable"
+SALESFORCE_UNICODE_DAMMIT_TYPE_ERR_MSG = "Error occurred while connecting to the Salesforce server. Please check the asset configuration and|or the action parameters."

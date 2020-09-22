@@ -8,15 +8,19 @@
     "logo_dark": "logo_salesforce_dark.svg",
     "product_name": "Salesforce",
     "product_version_regex": ".*",
-    "publisher": "Phantom",
-    "license": "Copyright (c) 2017-2019 Splunk Inc.",
-    "app_version": "1.0.18",
-    "utctime_updated": "2019-01-11T00:59:58.000000Z",
+    "publisher": "Splunk",
+    "license": "Copyright (c) 2017-2020 Splunk Inc.",
+    "app_version": "2.0.5",
+    "utctime_updated": "2020-09-18T21:51:16.000000Z",
     "package_name": "phantom_salesforce",
-    "main_module": "salesforce_connector.pyc",
-    "min_phantom_version": "4.0.1068",
+    "main_module": "salesforce_connector.py",
+    "min_phantom_version": "4.8.24304",
+    "python_version": "3",
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
+    "latest_tested_versions": [
+        "v1 API 2020-09-01"
+    ],
     "configuration": {
         "client_id": {
             "description": "Client ID",
@@ -33,19 +37,16 @@
         "username": {
             "description": "Username",
             "data_type": "string",
-            "required": false,
             "order": 2
         },
         "password": {
             "description": "Password",
             "data_type": "password",
-            "required": false,
             "order": 3
         },
         "is_test_environment": {
             "description": "Use a Salesforce test environment",
             "data_type": "boolean",
-            "required": false,
             "order": 4
         },
         "ph": {
@@ -55,28 +56,30 @@
         "poll_sobject": {
             "description": "Poll for this Salesforce Object",
             "data_type": "string",
-            "required": false,
             "default": "Case",
             "order": 6
         },
         "poll_view_name": {
             "description": "Poll this List View",
             "data_type": "string",
-            "required": false,
             "order": 7
         },
         "first_ingestion_max": {
             "description": "Get this many results on first ingestion",
             "data_type": "numeric",
-            "required": false,
             "default": 10,
             "order": 8
         },
         "cef_name_map": {
             "description": "Mapping of Salesforce to CEF fields",
             "data_type": "file",
-            "required": false,
             "order": 9
+        },
+        "last_view_date": {
+            "description": "Include view date in artifact",
+            "data_type": "boolean",
+            "default": true,
+            "order": 10
         }
     },
     "actions": [
@@ -84,7 +87,6 @@
             "action": "test connectivity",
             "identifier": "test_connectivity",
             "description": "Validate connection using the configured credentials",
-            "verbose": "",
             "type": "test",
             "read_only": true,
             "parameters": {},
@@ -94,7 +96,8 @@
         {
             "action": "run query",
             "identifier": "run_query",
-            "description": "Run a query using the SalesforceObject Query Language",
+            "description": "Run a query using the Salesforce Object Query Language (SOQL)",
+            "verbose": "To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>",
             "type": "investigate",
             "read_only": true,
             "parameters": {
@@ -121,7 +124,8 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
+                        "success",
+                        "failed"
                     ]
                 },
                 {
@@ -148,16 +152,17 @@
                 },
                 {
                     "data_path": "action_result.summary.num_objects",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        20
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
                         "Successfully Retrieved Query Results"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 2
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -184,7 +189,7 @@
             "identifier": "create_object",
             "description": "Create a new Salesforce object",
             "type": "generic",
-            "read_only": true,
+            "read_only": false,
             "parameters": {
                 "sobject": {
                     "description": "Name of object",
@@ -209,8 +214,11 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.field_values",
@@ -224,6 +232,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -261,9 +272,7 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully created a new Object"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -290,12 +299,11 @@
             "identifier": "create_ticket",
             "description": "Create a new Case",
             "type": "generic",
-            "read_only": true,
+            "read_only": false,
             "parameters": {
                 "parent_case_id": {
                     "description": "Object ID of Parent Case",
                     "data_type": "string",
-                    "required": false,
                     "primary": true,
                     "contains": [
                         "salesforce object id"
@@ -305,13 +313,11 @@
                 "subject": {
                     "description": "Subject",
                     "data_type": "string",
-                    "required": false,
                     "order": 1
                 },
                 "priority": {
                     "description": "Priority",
                     "data_type": "string",
-                    "required": false,
                     "value_list": [
                         "High",
                         "Medium",
@@ -322,13 +328,11 @@
                 "description": {
                     "description": "Description",
                     "data_type": "string",
-                    "required": false,
                     "order": 3
                 },
                 "field_values": {
                     "description": "JSON Object of Key-Value pairs to update",
                     "data_type": "string",
-                    "required": false,
                     "order": 4
                 }
             },
@@ -337,14 +341,17 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.description",
                     "data_type": "string",
                     "example_values": [
-                        "Phantom App Meeting"
+                        "This is a test description"
                     ]
                 },
                 {
@@ -359,6 +366,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0061I000000PRsCABC"
                     ]
                 },
                 {
@@ -410,9 +420,7 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully created a new Case"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -438,7 +446,7 @@
             "action": "delete object",
             "identifier": "delete_object",
             "description": "Delete an object",
-            "type": "correct",
+            "type": "generic",
             "read_only": false,
             "parameters": {
                 "sobject": {
@@ -446,7 +454,7 @@
                     "data_type": "string",
                     "required": true,
                     "default": "Case",
-                    "primary": false,
+                    "primary": true,
                     "contains": [
                         "salesforce object name"
                     ],
@@ -468,8 +476,11 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.id",
@@ -486,6 +497,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -500,10 +514,8 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully deleted Contact"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                        "Successfully deleted the Contact"
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -529,7 +541,7 @@
             "action": "delete ticket",
             "identifier": "delete_ticket",
             "description": "Delete a Case",
-            "type": "correct",
+            "type": "generic",
             "read_only": false,
             "parameters": {
                 "id": {
@@ -548,8 +560,11 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.id",
@@ -573,10 +588,8 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully deleted Case"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                        "Successfully deleted the Case"
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -610,7 +623,7 @@
                     "data_type": "string",
                     "required": true,
                     "default": "Case",
-                    "primary": false,
+                    "primary": true,
                     "contains": [
                         "salesforce object name"
                     ],
@@ -629,7 +642,6 @@
                 "field_values": {
                     "description": "JSON Object of Key-Value pairs to update",
                     "data_type": "string",
-                    "required": false,
                     "order": 2
                 }
             },
@@ -638,8 +650,11 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.field_values",
@@ -663,6 +678,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -670,17 +688,21 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.summary",
-                    "data_type": "string"
+                    "data_path": "action_result.summary.obj_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully updated Contact"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                        "Successfully updated the Contact"
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -722,7 +744,6 @@
                 "parent_case_id": {
                     "description": "Object ID of Parent Case",
                     "data_type": "string",
-                    "required": false,
                     "primary": true,
                     "contains": [
                         "salesforce object id"
@@ -732,13 +753,11 @@
                 "subject": {
                     "description": "Subject",
                     "data_type": "string",
-                    "required": false,
                     "order": 2
                 },
                 "priority": {
                     "description": "Priority",
                     "data_type": "string",
-                    "required": false,
                     "value_list": [
                         "High",
                         "Medium",
@@ -749,13 +768,11 @@
                 "description": {
                     "description": "Description",
                     "data_type": "string",
-                    "required": false,
                     "order": 4
                 },
                 "status": {
                     "description": "Status",
                     "data_type": "string",
-                    "required": false,
                     "value_list": [
                         "New",
                         "Working",
@@ -767,7 +784,6 @@
                 "field_values": {
                     "description": "JSON Object of Key-Value pairs to update",
                     "data_type": "string",
-                    "required": false,
                     "order": 6
                 }
             },
@@ -776,14 +792,17 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.description",
                     "data_type": "string",
                     "example_values": [
-                        "Phantom App Meeting"
+                        "This is a test description"
                     ]
                 },
                 {
@@ -836,17 +855,21 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.summary",
-                    "data_type": "string"
+                    "data_path": "action_result.summary.obj_id",
+                    "data_type": "string",
+                    "example_values": [
+                        "0D51I00000Jw1tnSAB"
+                    ],
+                    "contains": [
+                        "salesforce object id"
+                    ]
                 },
                 {
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Successfully updated Case"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                        "Successfully updated the Case"
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -872,8 +895,8 @@
             "action": "list objects",
             "identifier": "list_objects",
             "description": "Get a list of objects",
-            "verbose": "In order to get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
-            "type": "generic",
+            "verbose": "To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
+            "type": "investigate",
             "read_only": true,
             "parameters": {
                 "sobject": {
@@ -890,7 +913,6 @@
                 "view_name": {
                     "description": "Unique name of a list view",
                     "data_type": "string",
-                    "required": false,
                     "primary": true,
                     "contains": [
                         "salesforce listview name"
@@ -900,13 +922,11 @@
                 "limit": {
                     "description": "Paging limit",
                     "data_type": "numeric",
-                    "required": false,
                     "order": 2
                 },
                 "offset": {
                     "description": "Paging offset",
                     "data_type": "numeric",
-                    "required": false,
                     "order": 3
                 }
             },
@@ -915,22 +935,32 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
+                        "success",
+                        "failed"
                     ]
                 },
                 {
                     "data_path": "action_result.parameter.limit",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        20
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.offset",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        5
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.sobject",
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -954,7 +984,10 @@
                         "salesforce object id"
                     ],
                     "column_name": "Object ID",
-                    "column_order": 0
+                    "column_order": 0,
+                    "example_values": [
+                        "0033t000035qrSYAAY"
+                    ]
                 },
                 {
                     "data_path": "action_result.summary.num_objects",
@@ -974,8 +1007,8 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Created a list of valid view names",
-                        "Successfully created a list of Contact objects"
+                        "Listed the valid view names",
+                        "Successfully fetched a list of Contact objects"
                     ]
                 },
                 {
@@ -1002,14 +1035,13 @@
             "action": "list tickets",
             "identifier": "list_tickets",
             "description": "Get a list of Cases",
-            "verbose": "In order to get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.",
-            "type": "generic",
+            "verbose": "To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.",
+            "type": "investigate",
             "read_only": true,
             "parameters": {
                 "view_name": {
                     "description": "Unique name of a list view",
                     "data_type": "string",
-                    "required": false,
                     "primary": true,
                     "contains": [
                         "salesforce listview name"
@@ -1023,13 +1055,11 @@
                 "limit": {
                     "description": "Paging limit",
                     "data_type": "numeric",
-                    "required": false,
                     "order": 2
                 },
                 "offset": {
                     "description": "Paging offset",
                     "data_type": "numeric",
-                    "required": false,
                     "order": 3
                 }
             },
@@ -1038,16 +1068,23 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
+                        "success",
+                        "failed"
                     ]
                 },
                 {
                     "data_path": "action_result.parameter.limit",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        20
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.offset",
-                    "data_type": "numeric"
+                    "data_type": "numeric",
+                    "example_values": [
+                        5
+                    ]
                 },
                 {
                     "data_path": "action_result.parameter.view_name",
@@ -1071,6 +1108,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0033t000035qrSWABZ"
                     ]
                 },
                 {
@@ -1078,11 +1118,17 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0033t000035qrSWABZ"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.columns.Contact_Name.value",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Abcd"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.columns.CreatedDate.value",
@@ -1134,7 +1180,7 @@
                     "data_path": "action_result.data.*.columns.Owner_NameOrAlias.value",
                     "data_type": "string",
                     "example_values": [
-                        "richard.s"
+                        "testuser"
                     ]
                 },
                 {
@@ -1196,8 +1242,8 @@
                     "data_path": "action_result.message",
                     "data_type": "string",
                     "example_values": [
-                        "Created a list of valid view names",
-                        "Successfully created a list of Case objects"
+                        "Listed the valid view names",
+                        "Successfully fetched a list of Case objects"
                     ]
                 },
                 {
@@ -1224,8 +1270,8 @@
             "action": "get object",
             "identifier": "get_object",
             "description": "Get info about a Salesforce object",
-            "verbose": "If you have custom fields added to an object, then it's possible that they won't show up in the playbook editor, and you will need to manually type the datapath in order to use it",
-            "type": "generic",
+            "verbose": "If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+            "type": "investigate",
             "read_only": true,
             "parameters": {
                 "sobject": {
@@ -1233,7 +1279,7 @@
                     "data_type": "string",
                     "required": true,
                     "default": "Case",
-                    "primary": false,
+                    "primary": true,
                     "contains": [
                         "salesforce object name"
                     ],
@@ -1255,8 +1301,11 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.id",
@@ -1273,6 +1322,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object name"
+                    ],
+                    "example_values": [
+                        "Case"
                     ]
                 },
                 {
@@ -1284,6 +1336,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "5001I000002SfMMQA0"
                     ]
                 },
                 {
@@ -1295,9 +1350,7 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully retrieved Contact"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -1323,8 +1376,8 @@
             "action": "get ticket",
             "identifier": "get_ticket",
             "description": "Get info about a Case",
-            "verbose": "If you have custom fields added to a Case, then it's possible that they won't show up in the playbook editor, and you will need to manually type the datapath in order to use it.",
-            "type": "generic",
+            "verbose": "If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+            "type": "investigate",
             "read_only": true,
             "parameters": {
                 "id": {
@@ -1343,7 +1396,8 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
+                        "success",
+                        "failed"
                     ]
                 },
                 {
@@ -1361,6 +1415,9 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0013t00001ZyVVTAB4"
                     ]
                 },
                 {
@@ -1383,7 +1440,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.ClosedDate",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "2019-06-25T18:59:51.000+0000"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Closed_Time_Days__c",
@@ -1391,26 +1451,41 @@
                 },
                 {
                     "data_path": "action_result.data.*.ContactEmail",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "test@example.com"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactFax",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "(1) 234 567"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactId",
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0033t000035qrSWABZ"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactMobile",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "(1) 222 333"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.ContactPhone",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "(1) 33 444"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.CreatedById",
@@ -1465,7 +1540,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.EngineeringReqNumber__c",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "765810"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Executive_Summary__c",
@@ -1605,11 +1683,17 @@
                     "data_type": "string",
                     "contains": [
                         "salesforce object id"
+                    ],
+                    "example_values": [
+                        "0061I000000PRsCABC"
                     ]
                 },
                 {
                     "data_path": "action_result.data.*.PotentialLiability__c",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "No"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Priority",
@@ -1620,11 +1704,17 @@
                 },
                 {
                     "data_path": "action_result.data.*.Product__c",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "GC5555"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.Reason",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Test Complexity"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.RecordTypeId",
@@ -1713,7 +1803,10 @@
                 },
                 {
                     "data_path": "action_result.data.*.Type",
-                    "data_type": "string"
+                    "data_type": "string",
+                    "example_values": [
+                        "Electrical"
+                    ]
                 },
                 {
                     "data_path": "action_result.data.*.attributes.type",
@@ -1763,7 +1856,7 @@
         {
             "action": "post chatter",
             "identifier": "post_chatter",
-            "description": "Post on the chatter feed for a specified case",
+            "description": "Post on the Chatter feed for a specified case",
             "type": "generic",
             "read_only": false,
             "parameters": {
@@ -1780,7 +1873,6 @@
                 "title": {
                     "description": "Title of the post",
                     "data_type": "string",
-                    "required": false,
                     "order": 1
                 },
                 "body": {
@@ -1795,8 +1887,11 @@
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "example_values": [
-                        "success"
-                    ]
+                        "success",
+                        "failed"
+                    ],
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.parameter.body",
@@ -1854,9 +1949,7 @@
                     "data_type": "string",
                     "example_values": [
                         "Successfully posted to chatter"
-                    ],
-                    "column_name": "Message",
-                    "column_order": 0
+                    ]
                 },
                 {
                     "data_path": "summary.total_objects",
