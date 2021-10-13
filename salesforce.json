@@ -9,7 +9,7 @@
     "product_name": "Salesforce",
     "product_version_regex": ".*",
     "publisher": "Splunk",
-    "license": "Copyright (c) 2017-2020 Splunk Inc.",
+    "license": "Copyright (c) 2017-2021 Splunk Inc.",
     "app_version": "2.0.16",
     "utctime_updated": "2021-10-12T19:18:44.000000Z",
     "package_name": "phantom_salesforce",
@@ -97,7 +97,7 @@
             "action": "run query",
             "identifier": "run_query",
             "description": "Run a query using the Salesforce Object Query Language (SOQL)",
-            "verbose": "To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>",
+            "verbose": "To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
             "type": "investigate",
             "read_only": true,
             "parameters": {
@@ -1388,7 +1388,7 @@
                     "contains": [
                         "salesforce object id"
                     ],
-                    "order": 1
+                    "order": 0
                 }
             },
             "output": [
