@@ -14,7 +14,7 @@
     "utctime_updated": "2021-10-13T00:27:17.000000Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.py",
-    "min_phantom_version": "4.8.24304",
+    "min_phantom_version": "4.10.0.40961",
     "python_version": "3",
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
