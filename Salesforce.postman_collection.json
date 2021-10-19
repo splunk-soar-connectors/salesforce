@@ -1,0 +1,662 @@
+{
+	"info": {
+		"_postman_id": "d022a2f8-1b17-41ad-881a-81eae01a7c73",
+		"name": "Salesforce",
+		"description": "# Postman Collection of Endpoints for Salesforce App on Splunk SOAR.\n\n- ### Prerequisite\n\nThe below mentioned are the required fields to use this collection. So, make sure that all these fields are set before running the request.\n\n| **Variable Name** | **Description** |\n| ------ | ------ |\n| client_id  | Generated from the Salesforce instance (in environment variables) |\n| client_secret  | Generated from the Salesforce instance (in environment variables) |\n| grant_type | Pre-defined as a \"password\" (in environment variables) |\n| username  | Salesforce instance username (in environment variables) |\n| password | Salesforce instance password (in environment variables) |\n\n\n> **_NOTE:_**  The body parameters for the requests have not been mentioned in the above table. Please set them as per your requirements. Refer the documentation of individual requests.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Run query",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/query/?q={{query}}",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"query",
+						""
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "{{query}}"
+						}
+					]
+				},
+				"description": "The variable and its example value for the action is mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| query  | SELECT+name+from+Account |"
+			},
+			"response": []
+		},
+		{
+			"name": "List Objects",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const instance_url = pm.variables.get(\"instance_url\")",
+							"const listobject_viewname = pm.variables.get(\"listobject_viewname\")",
+							"if(listobject_viewname){",
+							"            const request = {",
+							"                url: `${instance_url}/services/data/v53.0/sobjects/Case/listviews/`,",
+							"                method: \"get\",",
+							"                header: {",
+							"                    'Authorization': `Bearer ${pm.environment.get('access_token')}`,",
+							"                },",
+							"            }",
+							"        pm.sendRequest(request, (err, response) => {",
+							"            if (err) throw new Error(JSON.stringify(err))",
+							"            response.json().listviews.forEach( (data) => {",
+							"                if(data.developerName == listobject_viewname){",
+							"                    pm.variables.set(\"listobject_viewname_id\", data.id)",
+							"                }",
+							"            })",
+							"        });",
+							"}else{",
+							"    throw new Error(\"Please set listobject_viewname variable from collections variables\")",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{listobject_sobject}}/listviews/{{listobject_viewname_id}}/results?limit&offset",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{listobject_sobject}}",
+						"listviews",
+						"{{listobject_viewname_id}}",
+						"results"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": null
+						},
+						{
+							"key": "offset",
+							"value": null
+						}
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| listobject_viewname  | MyCases |\n| listobject_sobject  | Case |\n| listobject_viewname_id  | 0033t000035qrSYAAY |"
+			},
+			"response": []
+		},
+		{
+			"name": "List ticket",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const instance_url = pm.variables.get(\"instance_url\")",
+							"const listticket_viewname = pm.variables.get(\"listticket_viewname\")",
+							"if(listticket_viewname){",
+							"            const request = {",
+							"                url: `${instance_url}/services/data/v53.0/sobjects/Case/listviews/`,",
+							"                method: \"get\",",
+							"                header: {",
+							"                    'Authorization': `Bearer ${pm.environment.get('access_token')}`,",
+							"                },",
+							"            }",
+							"        pm.sendRequest(request, (err, response) => {",
+							"            if (err) throw new Error(JSON.stringify(err))",
+							"            response.json().listviews.forEach( (data) => {",
+							"                if(data.developerName == listticket_viewname){",
+							"                    pm.variables.set(\"listticket_viewname_id\", data.id)",
+							"                }",
+							"            })",
+							"        });",
+							"}else{",
+							"    throw new Error(\"Please set listticket_viewname variable from collections variables\")",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{listticket_sobject}}/listviews/{{listticket_viewname_id}}/results",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{listticket_sobject}}",
+						"listviews",
+						"{{listticket_viewname_id}}",
+						"results"
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| listticket_viewname  | RecentlyViewedCases |\n| listticket_sobject  | Case |\n| listticket_viewname_id  | 0033t000035qrSWABZ |"
+			},
+			"response": []
+		},
+		{
+			"name": "Onpoll",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const instance_url = pm.variables.get(\"instance_url\")",
+							"const onpoll_viewname = pm.variables.get(\"onpoll_viewname\")",
+							"if(onpoll_viewname){",
+							"            const request = {",
+							"                url: `${instance_url}/services/data/v53.0/sobjects/Account/listviews/`,",
+							"                method: \"get\",",
+							"                header: {",
+							"                    'Authorization': `Bearer ${pm.environment.get('access_token')}`,",
+							"                },",
+							"            }",
+							"        pm.sendRequest(request, (err, response) => {",
+							"            if (err) throw new Error(JSON.stringify(err))",
+							"            response.json().listviews.forEach( (data) => {",
+							"                if(data.developerName == onpoll_viewname){",
+							"                    pm.variables.set(\"onpoll_viewname_id\", data.id)",
+							"                }",
+							"            })",
+							"        });",
+							"}else{",
+							"    throw new Error(\"Please set onpoll_viewname variable from collections variables\")",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{onpoll_sobject}}/listviews/{{onpoll_viewname_id}}/results",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{onpoll_sobject}}",
+						"listviews",
+						"{{onpoll_viewname_id}}",
+						"results"
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| onpoll_viewname  | MyAccount |\n| onpoll_sobject  | Case |\n| onpoll_viewname_id  | 0033t000dc035qrSWABZ |"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Object",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/data/v53.0/sobjects/{{getobject_sobject}}/{{getobject_id}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{getobject_sobject}}",
+						"{{getobject_id}}",
+						""
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| getobject_sobject  | Case |\n| getobject_id  | 5001I000002SfMMQA0 |"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Ticket",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{getticket_sobject}}/{{getticket_id}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{getticket_sobject}}",
+						"{{getticket_id}}",
+						""
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| getticket_sobject  | Case |\n| getticket_id  | 5001I000002SfMMQA0 |"
+			},
+			"response": []
+		},
+		{
+			"name": "Create object",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"Name\": \"{{name}}\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{createobject_sobject}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{createobject_sobject}}",
+						""
+					]
+				},
+				"description": "The variable and its example value for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| createobject_sobject  | Account |"
+			},
+			"response": []
+		},
+		{
+			"name": "Create ticket",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\": \"{{subject}}\", \"Description\": \"{{Description}}\", \"Priority\": \"{{Priority}}\", \"Subject\": \"{{Subject}}\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{createticket_sobject}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{createticket_sobject}}",
+						""
+					]
+				},
+				"description": "The variable and its example value for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| createticket_sobject  | Case |"
+			},
+			"response": []
+		},
+		{
+			"name": "Post Chatter",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"ParentId\": \"{{ParentId}}\", \"Title\": \"{{Title}}\", \"Body\": \"{{Body}}\", \"Type\":\" {{Type}}\"}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/FeedItem/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"FeedItem",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Object",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"Name\": \"{{name}}\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{updateobject_sobject}}/{{updateobject_id}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{updateobject_sobject}}",
+						"{{updateobject_id}}",
+						""
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| updateobject_sobject  | Case |\n| updateobject_id  | 0D51I00000Jw1tnSAB |"
+			},
+			"response": []
+		},
+		{
+			"name": "Update Ticket",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"Description\": \"{{Description}}\", \"Priority\": \"{{Priority}}\", \"Status\": \"{{Status}}\", \"Subject\": \"{{Subject}}\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{updateticket_sobject}}/{{updateticket_id}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{updateticket_sobject}}",
+						"{{updateticket_id}}",
+						""
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| updateticket_sobject  | Account |\n| updateticket_id  | 5001I000002SdASQA0 |"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Object",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{deleteobject_sobject}}/{{deleteobject_id}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{deleteobject_sobject}}",
+						"{{deleteobject_id}}",
+						""
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| deleteobject_sobject  | Account |\n| deleteobject_id  | 5001I000002StPCQA0 |"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Ticket",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{instance_url}}/services/data/v53.0/sobjects/{{deleteticket_sobject}}/{{deleteticket_id}}/",
+					"host": [
+						"{{instance_url}}"
+					],
+					"path": [
+						"services",
+						"data",
+						"v53.0",
+						"sobjects",
+						"{{deleteticket_sobject}}",
+						"{{deleteticket_id}}",
+						""
+					]
+				},
+				"description": "The variables and their example values for the action are mentioned below.\n\n| **Variable Name** | **Example Value** |\n| ------ | ------ |\n| deleteticket_sobject  | Case |\n| deleteticket_id  | 5001I000002StPCQA0 |"
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const grant_type = pm.environment.get(\"grant_type\")",
+					"const client_id = pm.environment.get(\"client_id\")",
+					"const client_secret = pm.environment.get(\"client_secret\")",
+					"const username = pm.environment.get(\"username\")",
+					"const password = pm.environment.get(\"password\")",
+					"",
+					"checkforvariables = (...args) =>{",
+					"   for (let i =0; i < args.length; i++){",
+					"       if (!(args[i])){",
+					"           throw new Error(\"Please set all environment variables as mentioned in documentation\")",
+					"       }",
+					"   }",
+					"   ",
+					"}",
+					"checkforvariables(grant_type,client_id,client_secret,username,password)",
+					"",
+					" const req = {",
+					"                url: `https://login.salesforce.com/services/oauth2/token`,",
+					"                method: \"post\",",
+					"                header: {",
+					"                    'Content-Type': 'application/x-www-form-urlencoded',",
+					"                },",
+					"                body: {",
+					"                    mode: 'urlencoded',",
+					"                    urlencoded : [",
+					"                        { key: 'grant_type', value: grant_type},",
+					"                        { key: 'client_id', value: client_id},",
+					"                        { key: 'client_secret', value: client_secret},",
+					"                        { key: 'username', value: username},",
+					"                        { key: 'password', value: password},",
+					"                    ]",
+					"                }  ",
+					"            }",
+					"        pm.sendRequest(req, (err, response) => {",
+					"            if (err) throw new Error(err)",
+					"            pm.environment.set(\"access_token\", response.json().access_token)",
+					"            pm.variables.set(\"instance_url\", response.json().instance_url)",
+					"});",
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "createobject_sobject",
+			"value": ""
+		},
+		{
+			"key": "createticket_sobject",
+			"value": ""
+		},
+		{
+			"key": "deleteobject_id",
+			"value": ""
+		},
+		{
+			"key": "deleteobject_sobject",
+			"value": ""
+		},
+		{
+			"key": "deleteticket_id",
+			"value": ""
+		},
+		{
+			"key": "deleteticket_sobject",
+			"value": ""
+		},
+		{
+			"key": "instance_url",
+			"value": ""
+		},
+		{
+			"key": "getobject_id",
+			"value": ""
+		},
+		{
+			"key": "getobject_sobject",
+			"value": ""
+		},
+		{
+			"key": "getticket_id",
+			"value": ""
+		},
+		{
+			"key": "getticket_sobject",
+			"value": ""
+		},
+		{
+			"key": "listobject_sobject",
+			"value": ""
+		},
+		{
+			"key": "listobject_viewname",
+			"value": ""
+		},
+		{
+			"key": "listobject_viewname_id",
+			"value": ""
+		},
+		{
+			"key": "listticket_sobject",
+			"value": ""
+		},
+		{
+			"key": "listticket_viewname",
+			"value": ""
+		},
+		{
+			"key": "listticket_viewname_id",
+			"value": ""
+		},
+		{
+			"key": "onpoll_sobject",
+			"value": ""
+		},
+		{
+			"key": "onpoll_viewname",
+			"value": ""
+		},
+		{
+			"key": "onpoll_viewname_id",
+			"value": ""
+		},
+		{
+			"key": "query",
+			"value": ""
+		},
+		{
+			"key": "updateobject_id",
+			"value": ""
+		},
+		{
+			"key": "updateobject_sobject",
+			"value": ""
+		},
+		{
+			"key": "updateticket_id",
+			"value": ""
+		},
+		{
+			"key": "updateticket_sobject",
+			"value": ""
+		}
+	]
+}
