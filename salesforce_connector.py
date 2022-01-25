@@ -15,26 +15,25 @@
 #
 #
 # Phantom App imports
-import phantom.app as phantom
-from phantom.base_connector import BaseConnector
-from phantom.action_result import ActionResult
-
-# Usage of the consts file is recommended
-from salesforce_consts import *
-
-# import re
-import os
-import time
-import json
-import requests
-import encryption_helper
-from bs4 import BeautifulSoup, UnicodeDammit
-from django.http import HttpResponse
 # from django.utils.dateparse import parse_datetime
 # from datetime import datetime, timedelta
 import hashlib
+import json
+# import re
+import os
 import sys
+import time
 
+import encryption_helper
+import phantom.app as phantom
+import requests
+from bs4 import BeautifulSoup, UnicodeDammit
+from django.http import HttpResponse
+from phantom.action_result import ActionResult
+from phantom.base_connector import BaseConnector
+
+# Usage of the consts file is recommended
+from salesforce_consts import *
 
 DT_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -1469,8 +1468,9 @@ class SalesforceConnector(BaseConnector):
 
 if __name__ == '__main__':
 
-    import pudb
     import argparse
+
+    import pudb
 
     pudb.set_trace()
 
