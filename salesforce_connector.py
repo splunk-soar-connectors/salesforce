@@ -15,26 +15,25 @@
 #
 #
 # Phantom App imports
-import phantom.app as phantom
-from phantom.base_connector import BaseConnector
-from phantom.action_result import ActionResult
-
-# Usage of the consts file is recommended
-from salesforce_consts import *
-
-# import re
-import os
-import time
-import json
-import requests
-import encryption_helper
-from bs4 import BeautifulSoup, UnicodeDammit
-from django.http import HttpResponse
 # from django.utils.dateparse import parse_datetime
 # from datetime import datetime, timedelta
 import hashlib
+import json
+# import re
+import os
 import sys
+import time
 
+import encryption_helper
+import phantom.app as phantom
+import requests
+from bs4 import BeautifulSoup, UnicodeDammit
+from django.http import HttpResponse
+from phantom.action_result import ActionResult
+from phantom.base_connector import BaseConnector
+
+# Usage of the consts file is recommended
+from salesforce_consts import *
 
 DT_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -152,7 +151,7 @@ def _handle_oauth_start(request, path_parts):
         params['grant_type'] = 'authorization_code'
         params['code'] = code
         try:
-            r = requests.post(url_get_token, params=params)  # noqa
+            r = requests.post(url_get_token, params=params, timeout=SALESFORCE_DEFAULT_TIMEOUT)  # noqa
             resp_json = r.json()
         except Exception as e:
             return _return_error(
@@ -297,14 +296,17 @@ class SalesforceConnector(BaseConnector):
         if parameter is not None:
             try:
                 if not float(parameter).is_integer():
-                    return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
+                    return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(
+                        key)), None
 
                 parameter = int(parameter)
             except:
-                return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(key)), None
+                return action_result.set_status(phantom.APP_ERROR, "Please provide a valid integer value in the '{}' parameter".format(
+                    key)), None
 
             if parameter < 0:
-                return action_result.set_status(phantom.APP_ERROR, "Please provide a valid non-negative integer value in the '{}' parameter".format(key)), None
+                return action_result.set_status(phantom.APP_ERROR,
+                    "Please provide a valid non-negative integer value in the '{}' parameter".format(key)), None
             if not allow_zero and parameter == 0:
                 return action_result.set_status(phantom.APP_ERROR, SALESFORCE_INVALID_INTEGER.format(parameter=key)), None
 
@@ -425,7 +427,8 @@ class SalesforceConnector(BaseConnector):
 
         return RetVal(action_result.set_status(phantom.APP_ERROR, message), None)
 
-    def _make_rest_call(self, endpoint, action_result, headers=None, params=None, data=None, json=None, method="get", ignore_base_url=False, **kwargs):
+    def _make_rest_call(self, endpoint, action_result, headers=None, params=None, data=None, json=None,
+            method="get", ignore_base_url=False, **kwargs):
         """Make the REST call to the app.
 
         Parameters:
@@ -467,7 +470,8 @@ class SalesforceConnector(BaseConnector):
             )
         except Exception as e:
             error_message = self._get_error_message_from_exception(e)
-            return RetVal(action_result.set_status(phantom.APP_ERROR, "Error Connecting to server. Details: {0}".format(error_message)), resp_json)
+            return RetVal(action_result.set_status(phantom.APP_ERROR, "Error Connecting to server. Details: {0}".format(
+                error_message)), resp_json)
 
         return self._process_response(r, action_result)
 
@@ -632,7 +636,8 @@ class SalesforceConnector(BaseConnector):
             :return: status phantom.APP_ERROR/phantom.APP_SUCCESS(along with appropriate message), base url of phantom
         """
 
-        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL.format(url=self.get_phantom_base_url()), action_result, ignore_base_url=True, verify=False)
+        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL.format(
+            url=self.get_phantom_base_url()), action_result, ignore_base_url=True, verify=False)
 
         if (phantom.is_fail(ret_val)):
             return (ret_val, None)
@@ -641,7 +646,7 @@ class SalesforceConnector(BaseConnector):
 
         if (not phantom_base_url):
             return (action_result.set_status(phantom.APP_ERROR,
-                                             "Phantom Base URL not found in System Settings. Please specify this value in System Settings"), None)
+                "Phantom Base URL not found in System Settings. Please specify this value in System Settings"), None)
 
         return (phantom.APP_SUCCESS, phantom_base_url)
 
@@ -1171,7 +1176,8 @@ class SalesforceConnector(BaseConnector):
                 artifact["cef"].pop("LastReferencedDate")
                 self.save_progress("Removed LastViewedDate and LastReferencedDate from the artifact.")
         except:
-            self.debug_print("LastViewedDate or LastReferencedDate may not be present in the artifact. Unable to remove LastViewedDate from the artifact")
+            self.debug_print("LastViewedDate or LastReferencedDate may not be present in the artifact. "
+                "Unable to remove LastViewedDate from the artifact")
             pass
 
         try:
@@ -1469,8 +1475,9 @@ class SalesforceConnector(BaseConnector):
 
 if __name__ == '__main__':
 
-    import pudb
     import argparse
+
+    import pudb
 
     pudb.set_trace()
 
@@ -1479,12 +1486,14 @@ if __name__ == '__main__':
     argparser.add_argument('input_test_json', help='Input Test JSON file')
     argparser.add_argument('-u', '--username', help='username', required=False)
     argparser.add_argument('-p', '--password', help='password', required=False)
+    argparser.add_argument('-v', '--verify', action='store_true', help='verify', required=False, default=False)
 
     args = argparser.parse_args()
     session_id = None
 
     username = args.username
     password = args.password
+    verify = args.verify
 
     if (username is not None and password is None):
 
@@ -1496,7 +1505,7 @@ if __name__ == '__main__':
         login_url = BaseConnector._get_phantom_base_url() + 'login'
         try:
             print("Accessing the Login page")
-            r = requests.get(login_url, verify=False)
+            r = requests.get(login_url, verify=verify, timeout=SALESFORCE_DEFAULT_TIMEOUT)
             csrftoken = r.cookies['csrftoken']
 
             data = dict()
@@ -1509,15 +1518,15 @@ if __name__ == '__main__':
             headers['Referer'] = login_url
 
             print("Logging into Platform to get the session id")
-            r2 = requests.post(login_url, verify=False, json=data, headers=headers)
+            r2 = requests.post(login_url, verify=verify, json=data, headers=headers, timeout=SALESFORCE_DEFAULT_TIMEOUT)
             session_id = r2.cookies['sessionid']
         except Exception as e:
             print("Unable to get session id from the platform. Error: " + str(e))
-            exit(1)
+            sys.exit(1)
 
     if (len(sys.argv) < 2):
         print("No test json specified as input")
-        exit(0)
+        sys.exit(0)
 
     with open(sys.argv[1]) as f:
         in_json = f.read()
@@ -1533,4 +1542,4 @@ if __name__ == '__main__':
         ret_val = connector._handle_action(json.dumps(in_json), None)
         print(json.dumps(json.loads(ret_val), indent=4))
 
-    exit(0)
+    sys.exit(0)
