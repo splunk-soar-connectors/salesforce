@@ -6,7 +6,7 @@ Connector Version: 2\.0\.20
 Product Vendor: Salesforce  
 Product Name: Salesforce  
 Product Version Supported (regex): "\.\*"  
-Minimum Product Version: 5\.1\.0  
+Minimum Product Version: 5\.2\.0  
 
 This app implements actions to manage objects on Salesforce
 
