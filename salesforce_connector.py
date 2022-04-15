@@ -151,7 +151,7 @@ def _handle_oauth_start(request, path_parts):
         params['grant_type'] = 'authorization_code'
         params['code'] = code
         try:
-            # nosemgrep: semgrep.rules.python.secrets.request-sensitive-data
+            # nosemgrep: semgrep.request-sensitive-data
             r = requests.post(url_get_token, params=params, timeout=SALESFORCE_DEFAULT_TIMEOUT)
             resp_json = r.json()
         except Exception as e:
