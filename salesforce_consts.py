@@ -31,6 +31,7 @@ API_ENDPOINT_OBJECT = '{version}/sobjects/{sobject}/'
 API_ENDPOINT_GET_LISTVIEWS = '{version}/sobjects/{sobject}/listviews/'
 API_ENDPOINT_GET_LISTVIEW_LOCATOR = '{version}/sobjects/{sobject}/listviews/{locator}/'
 API_ENDPOINT_BATCH_REQUEST = '{version}/composite/batch/'
+API_ENDPOINT_GET_LISTVIEWS_FROM_OBJECT = '{version}/ui-api/list-records/{sobject}/{view_name}'
 
 CASE_FIELD_MAP = {
     'parent_case_id': 'ParentId',

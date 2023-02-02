@@ -1232,13 +1232,12 @@ class SalesforceConnector(BaseConnector):
             batch_records = records[cur_index:cur_index + num_batch]
             batch_request = []
             for record in batch_records:
-                record = self._mogrify_record(record)
                 batch_request.append({
                     'method': 'GET',
                     'url': API_ENDPOINT_OBJECT_ID.format(
                         version=self._version_uri,
                         sobject=sobject,
-                        id=record['columns']['Id']['value']
+                        id=record['fields']['Id']['value']
                     )
                 })
 
@@ -1272,8 +1271,9 @@ class SalesforceConnector(BaseConnector):
         records = []
         while True:
             params = {
-                'limit': MAX_OBJECTS_PER_POLL,
-                'offset': offset
+                'sortBy' : 'LastModifiedDate',
+                'pageSize': MAX_OBJECTS_PER_POLL,
+                'pageToken': offset
             }
             ret_val, response = self._make_rest_call_helper(endpoint, action_result, params=params)
             if phantom.is_fail(ret_val):
@@ -1339,22 +1339,12 @@ class SalesforceConnector(BaseConnector):
                 if phantom.is_fail(ret_val):
                     return action_result.get_status()
 
-        self.save_progress("Retrieving List View URI")
-        endpoint = API_ENDPOINT_GET_LISTVIEWS.format(
-            version=self._version_uri,
-            sobject=sobject
-        )
+        self.save_progress("Getting view {} from {} object using {} version".format(view_name, sobject, self._version_uri))
 
-        ret_val, results_url, views = self._get_listview_results_url(action_result, endpoint, view_name)
-        if phantom.is_fail(ret_val):
-            return ret_val
-        elif not results_url:
-            return action_result.set_status(phantom.APP_ERROR, "No listview with that specified name was found")
+        list_view_from_obj_url = API_ENDPOINT_GET_LISTVIEWS_FROM_OBJECT.format(version=self._version_uri,
+            sobject=sobject, view_name=view_name)
 
-        self.save_progress("Retrieved List View URI")
-        self.save_progress("Getting new {} objects...".format(sobject))
-
-        new_offset, records = self._poll_for_all_objects(action_result, results_url, cur_offset, max_containers)
+        new_offset, records = self._poll_for_all_objects(action_result, list_view_from_obj_url, cur_offset, max_containers)
         if new_offset is None:
             return action_result.get_status()
 
