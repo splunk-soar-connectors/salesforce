@@ -25,13 +25,13 @@ and limitations under the License.
             <li>Go to <b>Apps</b>, then <b>App Manager</b> and click on <b>New Connected App</b></li>
             <li>On the New Connected App page, fill the following required fields under Basic Information:</li>
                 <ul>
-                    <li>Connected App Name. For example, Salesforce Phantom App</li>
-                    <li>API name. For example, Salesforce Phantom App</li>
+                    <li>Connected App Name. For example, Salesforce Splunk SOAR App</li>
+                    <li>API name. For example, Salesforce Splunk SOAR App</li>
                     <li>Contact Email. For example, xyz@xyz.com</li>
                 </ul>
             <li>Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in the below image or else follow these steps
             <ul>
-                <li>Under the <b>Callback URL</b>, we will be updating the entry of https://phantom.local to reflect the actual redirect URI.  We will get this while we create Phantom App's asset in the below section titled "Configure the Salesforce Phantom app's Asset"</li>
+                <li>Under the <b>Callback URL</b>, we will be updating the entry of https://splunk_soar.local to reflect the actual redirect URI.  We will get this while we create Splunk SOAR App's asset in the below section titled "Configure the Salesforce Phantom app's Asset"</li>
                 <li>Under <b>Selected OAuth Scopes field</b> add the following two scopes from <b>Available OAuth Scopes</b>
                     <ul>
                         <li>Access and manage your data(api)</li>
@@ -45,13 +45,13 @@ and limitations under the License.
             </li>
             <li>Click on <b>Save</b></li>
         </ol>
-        <h2>Configure the Salesforce Phantom app's Asset</h2>
+        <h2>Configure the Salesforce Splunk SOAR app's Asset</h2>
         When creating an asset for the <b>Salesforce</b> app, place the <b>Consumer Key</b> of the app created during the previous step in the <b>Client ID</b> field and place the <b>Consumer Secret</b> generated during the app creation process in the <b>Client Secret</b> field. Then, click <b>SAVE</b>.
         <br><br>
         After saving, a new field will appear in the <b>Asset Settings</b> tab. Take the URL found in the <b>POST incoming for Salesforce to this location</b> field. To this URL, add <b>/start_oauth</b>. After doing so the URL should look something like:
         <br>
         <p>
-            https://&lt;phantom_host&gt;/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/&lt;asset_name&gt;/start_oauth
+            https://&lt;splunk_soar_host&gt;/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/&lt;asset_name&gt;/start_oauth
         </p>
         <a href="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
             <img src="/app_resource/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/img/asset_config.png">
