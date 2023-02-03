@@ -1271,7 +1271,7 @@ class SalesforceConnector(BaseConnector):
         records = []
         while True:
             params = {
-                'sortBy' : 'LastModifiedDate',
+                'sortBy' :'LastModifiedDate',
                 'pageSize': MAX_OBJECTS_PER_POLL,
                 'pageToken': offset
             }
@@ -1345,6 +1345,10 @@ class SalesforceConnector(BaseConnector):
             sobject=sobject, view_name=view_name)
 
         new_offset, records = self._poll_for_all_objects(action_result, list_view_from_obj_url, cur_offset, max_containers)
+
+        if "The requested resource does not exist" in action_result.get_message():
+            return action_result.set_status(phantom.APP_ERROR, "No listview with that specified name was found")
+
         if new_offset is None:
             return action_result.get_status()
 
