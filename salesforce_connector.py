@@ -1,6 +1,6 @@
 # File: salesforce_connector.py
 #
-# Copyright (c) 2017-2022 Splunk Inc.
+# Copyright (c) 2017-2023 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import time
 import encryption_helper
 import phantom.app as phantom
 import requests
-from bs4 import BeautifulSoup, UnicodeDammit
+from bs4 import BeautifulSoup
 from django.http import HttpResponse
 from phantom.action_result import ActionResult
 from phantom.base_connector import BaseConnector
@@ -243,6 +243,8 @@ class SalesforceConnector(BaseConnector):
         :param e: Exception object
         :return: error message
         """
+
+        self.error_print("Exception: ", e)
 
         error_code = None
         error_msg = SALESFORCE_ERR_CODE_UNAVAILABLE
@@ -789,6 +791,7 @@ class SalesforceConnector(BaseConnector):
     def _handle_run_query(self, param):
 
         action_result = self.add_action_result(ActionResult(dict(param)))
+        self.debug_print("run query called")
         query = param['query']
         query_type = param.get('endpoint', 'query')
 
@@ -808,6 +811,7 @@ class SalesforceConnector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully Retrieved Query Results")
 
     def _create_object(self, action_result, param, field_values):
+        self.debug_print("create object called")
         sobject = param.get('sobject', 'Case')
 
         endpoint = API_ENDPOINT_OBJECT.format(
@@ -842,6 +846,7 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_create_ticket(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
+        self.debug_print("create ticket called")
 
         other = param.get('field_values')
         if other:
@@ -865,6 +870,7 @@ class SalesforceConnector(BaseConnector):
 
     def _delete_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
+        self.debug_print("delete object called")
         sobject = param.get('sobject', 'Case')
         obj_id = param['id']
 
@@ -884,9 +890,11 @@ class SalesforceConnector(BaseConnector):
         return self._delete_object(param)
 
     def _handle_delete_ticket(self, param):
+        self.debug_print("delete ticket called")
         return self._delete_object(param)
 
     def _update_object(self, action_result, param, field_values):
+        self.debug_print("update object called")
         sobject = param.get('sobject', 'Case')
         obj_id = param['id']
 
@@ -922,6 +930,7 @@ class SalesforceConnector(BaseConnector):
         return self._update_object(action_result, param, other_dict)
 
     def _handle_update_ticket(self, param):
+        self.debug_print("update ticket called")
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         other = param.get('field_values')
@@ -1085,13 +1094,16 @@ class SalesforceConnector(BaseConnector):
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully retrieved {}".format(sobject))
 
     def _handle_get_object(self, param):
+        self.debug_print("update object called")
         return self._get_object(param)
 
     def _handle_get_ticket(self, param):
+        self.debug_print("get ticket called")
         return self._get_object(param)
 
     def _handle_post_chatter(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
+        self.debug_print("post chatter called")
 
         parent_case_id = param['id']
         body = param['body']
@@ -1254,7 +1266,7 @@ class SalesforceConnector(BaseConnector):
         records = []
         while True:
             params = {
-                'sortBy' :'LastModifiedDate',
+                'sortBy': 'LastModifiedDate',
                 'pageSize': MAX_OBJECTS_PER_POLL,
                 'pageToken': offset
             }
