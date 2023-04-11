@@ -1309,7 +1309,12 @@ class SalesforceConnector(BaseConnector):
                 error_message = self._get_error_message_from_exception(e)
                 return action_result.set_status(phantom.APP_ERROR, "Error parsing cef_name_map {}".format(error_message))
 
+            # Validate JSON file
             for k, v in self._cef_name_map.items():
+                if not isinstance(v, str):
+                    msg = "{} key's value is not string in JSON file which contains mapping of Salesforce to CEF fields".format(k)
+                    return action_result.set_status(phantom.APP_ERROR, msg)
+
                 if v.strip() == "" or k.strip() == "":
                     msg = "Please add non-empty key or value in JSON file which contains mapping of Salesforce to CEF fields"
                     return action_result.set_status(phantom.APP_ERROR, msg)
