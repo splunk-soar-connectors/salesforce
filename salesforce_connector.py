@@ -442,7 +442,7 @@ class SalesforceConnector(BaseConnector):
             url = endpoint
         else:
             if self._base_url is None:
-                return RetVal(action_result.set_status(phantom.APP_ERROR, "Base URL Is None"), resp_json)
+                return RetVal(action_result.set_status(phantom.APP_ERROR, "Base URL is None"), resp_json)
             url = "{0}{1}".format(self._base_url, endpoint)
 
         try:
@@ -808,7 +808,7 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
-        return action_result.set_status(phantom.APP_SUCCESS, "Successfully Retrieved Query Results")
+        return action_result.set_status(phantom.APP_SUCCESS, "Successfully retrieved query results")
 
     def _create_object(self, action_result, param, field_values):
         self.debug_print("create object called")
