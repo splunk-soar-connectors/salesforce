@@ -32,7 +32,7 @@ from phantom.action_result import ActionResult
 from phantom.base_connector import BaseConnector
 
 # Usage of the consts file is recommended
-from salesforce_consts import *
+import salesforce_consts as sf_consts
 
 DT_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
@@ -151,7 +151,7 @@ def _handle_oauth_start(request, path_parts):
         params['code'] = code
         try:
             # nosemgrep: semgrep.request-sensitive-data
-            r = requests.post(url_get_token, params=params, timeout=SALESFORCE_DEFAULT_TIMEOUT)
+            r = requests.post(url_get_token, params=params, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
             resp_json = r.json()
         except Exception as e:
             return _return_error(
@@ -247,7 +247,7 @@ class SalesforceConnector(BaseConnector):
         self.error_print("Exception: ", e)
 
         error_code = None
-        error_msg = SALESFORCE_ERR_CODE_UNAVAILABLE
+        error_msg = sf_consts.SALESFORCE_ERR_CODE_UNAVAILABLE
 
         try:
             if hasattr(e, "args"):
@@ -292,7 +292,7 @@ class SalesforceConnector(BaseConnector):
                 return action_result.set_status(phantom.APP_ERROR,
                     "Please provide a valid non-negative integer value in the '{}' parameter".format(key)), None
             if not allow_zero and parameter == 0:
-                return action_result.set_status(phantom.APP_ERROR, SALESFORCE_INVALID_INTEGER.format(parameter=key)), None
+                return action_result.set_status(phantom.APP_ERROR, sf_consts.SALESFORCE_INVALID_INTEGER.format(parameter=key)), None
 
         return phantom.APP_SUCCESS, parameter
 
@@ -498,9 +498,9 @@ class SalesforceConnector(BaseConnector):
         }
 
         if config.get('is_test_environment'):
-            url_get_token = URL_GET_TOKEN_TEST
+            url_get_token = sf_consts.URL_GET_TOKEN_TEST
         else:
-            url_get_token = URL_GET_TOKEN
+            url_get_token = sf_consts.URL_GET_TOKEN
 
         ret_val, resp = self._make_rest_call(url_get_token, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
         if phantom.is_fail(ret_val):
@@ -536,9 +536,9 @@ class SalesforceConnector(BaseConnector):
         }
 
         if config.get('is_test_environment'):
-            url_get_token = URL_GET_TOKEN_TEST
+            url_get_token = sf_consts.URL_GET_TOKEN_TEST
         else:
-            url_get_token = URL_GET_TOKEN
+            url_get_token = sf_consts.URL_GET_TOKEN
 
         ret_val, resp = self._make_rest_call(url_get_token, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
         if phantom.is_fail(ret_val):
@@ -599,7 +599,7 @@ class SalesforceConnector(BaseConnector):
 
         asset_id = self.get_asset_id()
 
-        rest_endpoint = PHANTOM_ASSET_INFO_URL.format(url=self.get_phantom_base_url(), asset_id=asset_id)
+        rest_endpoint = sf_consts.PHANTOM_ASSET_INFO_URL.format(url=self.get_phantom_base_url(), asset_id=asset_id)
 
         ret_val, resp_json = self._make_rest_call(rest_endpoint, action_result, ignore_base_url=True, verify=False)
 
@@ -622,7 +622,7 @@ class SalesforceConnector(BaseConnector):
             :return: status phantom.APP_ERROR/phantom.APP_SUCCESS(along with appropriate message), base url of phantom
         """
 
-        ret_val, resp_json = self._make_rest_call(PHANTOM_SYS_INFO_URL.format(
+        ret_val, resp_json = self._make_rest_call(sf_consts.PHANTOM_SYS_INFO_URL.format(
             url=self.get_phantom_base_url()), action_result, ignore_base_url=True, verify=False)
 
         if (phantom.is_fail(ret_val)):
@@ -701,11 +701,11 @@ class SalesforceConnector(BaseConnector):
         }
 
         if config.get('is_test_environment'):
-            url_get_code = URL_GET_CODE_TEST
-            url_get_token = URL_GET_TOKEN_TEST
+            url_get_code = sf_consts.URL_GET_CODE_TEST
+            url_get_token = sf_consts.URL_GET_TOKEN_TEST
         else:
-            url_get_code = URL_GET_CODE
-            url_get_token = URL_GET_TOKEN
+            url_get_code = sf_consts.URL_GET_CODE
+            url_get_token = sf_consts.URL_GET_TOKEN
 
         prep = requests.Request('post', url_get_code, params=params).prepare()
 
@@ -795,7 +795,7 @@ class SalesforceConnector(BaseConnector):
         query = param['query']
         query_type = param.get('endpoint', 'query')
 
-        endpoint = API_ENDPOINT_RUN_QUERY.format(
+        endpoint = sf_consts.API_ENDPOINT_RUN_QUERY.format(
             version=self._version_uri,
             query_type=query_type
         )
@@ -814,7 +814,7 @@ class SalesforceConnector(BaseConnector):
         self.debug_print("create object called")
         sobject = param.get('sobject', 'Case')
 
-        endpoint = API_ENDPOINT_OBJECT.format(
+        endpoint = sf_consts.API_ENDPOINT_OBJECT.format(
             version=self._version_uri,
             sobject=sobject
         )
@@ -863,8 +863,8 @@ class SalesforceConnector(BaseConnector):
             other_dict = {}
 
         for k, v in list(param.items()):
-            if k in CASE_FIELD_MAP:
-                other_dict[CASE_FIELD_MAP[k]] = v
+            if k in sf_consts.CASE_FIELD_MAP:
+                other_dict[sf_consts.CASE_FIELD_MAP[k]] = v
 
         return self._create_object(action_result, param, other_dict)
 
@@ -874,7 +874,7 @@ class SalesforceConnector(BaseConnector):
         sobject = param.get('sobject', 'Case')
         obj_id = param['id']
 
-        endpoint = API_ENDPOINT_OBJECT_ID.format(
+        endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(
             version=self._version_uri,
             sobject=sobject,
             id=obj_id
@@ -898,7 +898,7 @@ class SalesforceConnector(BaseConnector):
         sobject = param.get('sobject', 'Case')
         obj_id = param['id']
 
-        endpoint = API_ENDPOINT_OBJECT_ID.format(
+        endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(
             version=self._version_uri,
             sobject=sobject,
             id=obj_id
@@ -948,8 +948,8 @@ class SalesforceConnector(BaseConnector):
             other_dict = {}
 
         for k, v in list(param.items()):
-            if k in CASE_FIELD_MAP:
-                other_dict[CASE_FIELD_MAP[k]] = v
+            if k in sf_consts.CASE_FIELD_MAP:
+                other_dict[sf_consts.CASE_FIELD_MAP[k]] = v
 
         if not other_dict:
             return action_result.set_status(phantom.APP_ERROR, "Please provide at least one optional parameter for updating the Case")
@@ -1024,7 +1024,7 @@ class SalesforceConnector(BaseConnector):
         sobject = param.get('sobject', 'Case')
         view_name = param.get('view_name')
 
-        endpoint = API_ENDPOINT_GET_LISTVIEWS.format(
+        endpoint = sf_consts.API_ENDPOINT_GET_LISTVIEWS.format(
             version=self._version_uri,
             sobject=sobject
         )
@@ -1079,7 +1079,7 @@ class SalesforceConnector(BaseConnector):
         sobject = param.get('sobject', 'Case')
         obj_id = param['id']
 
-        endpoint = API_ENDPOINT_OBJECT_ID.format(
+        endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(
             version=self._version_uri,
             sobject=sobject,
             id=obj_id
@@ -1217,7 +1217,7 @@ class SalesforceConnector(BaseConnector):
         num_batch = 25
         containers = []
 
-        endpoint = API_ENDPOINT_BATCH_REQUEST.format(
+        endpoint = sf_consts.API_ENDPOINT_BATCH_REQUEST.format(
             version=self._version_uri
         )
 
@@ -1229,7 +1229,7 @@ class SalesforceConnector(BaseConnector):
             for record in batch_records:
                 batch_request.append({
                     'method': 'GET',
-                    'url': API_ENDPOINT_OBJECT_ID.format(
+                    'url': sf_consts.API_ENDPOINT_OBJECT_ID.format(
                         version=self._version_uri,
                         sobject=sobject,
                         id=record['fields']['Id']['value']
@@ -1346,7 +1346,7 @@ class SalesforceConnector(BaseConnector):
 
         self.save_progress("Getting view {} from {} object using {} version".format(view_name, sobject, self._version_uri))
 
-        list_view_from_obj_url = API_ENDPOINT_GET_LISTVIEWS_FROM_OBJECT.format(version=self._version_uri,
+        list_view_from_obj_url = sf_consts.API_ENDPOINT_GET_LISTVIEWS_FROM_OBJECT.format(version=self._version_uri,
             sobject=sobject, view_name=view_name)
 
         new_offset, records = self._poll_for_all_objects(action_result, list_view_from_obj_url, cur_offset, max_containers)
@@ -1499,7 +1499,7 @@ if __name__ == '__main__':
         login_url = BaseConnector._get_phantom_base_url() + 'login'
         try:
             print("Accessing the Login page")
-            r = requests.get(login_url, verify=verify, timeout=SALESFORCE_DEFAULT_TIMEOUT)
+            r = requests.get(login_url, verify=verify, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
             csrftoken = r.cookies['csrftoken']
 
             data = dict()
@@ -1512,7 +1512,7 @@ if __name__ == '__main__':
             headers['Referer'] = login_url
 
             print("Logging into Platform to get the session id")
-            r2 = requests.post(login_url, verify=verify, json=data, headers=headers, timeout=SALESFORCE_DEFAULT_TIMEOUT)
+            r2 = requests.post(login_url, verify=verify, json=data, headers=headers, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
             session_id = r2.cookies['sessionid']
         except Exception as e:
             print("Unable to get session id from the platform. Error: " + str(e))
