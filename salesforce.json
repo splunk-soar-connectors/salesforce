@@ -72,7 +72,7 @@
             "order": 8
         },
         "cef_name_map": {
-            "description": "Mapping of Salesforce to CEF fields",
+            "description": "Mapping of Salesforce to CEF fields (JSON file)",
             "data_type": "file",
             "order": 9
         },
