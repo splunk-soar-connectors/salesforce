@@ -1,6 +1,6 @@
 # File: salesforce_consts.py
 #
-# Copyright (c) 2017-2022 Splunk Inc.
+# Copyright (c) 2017-2023 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ API_ENDPOINT_OBJECT = '{version}/sobjects/{sobject}/'
 API_ENDPOINT_GET_LISTVIEWS = '{version}/sobjects/{sobject}/listviews/'
 API_ENDPOINT_GET_LISTVIEW_LOCATOR = '{version}/sobjects/{sobject}/listviews/{locator}/'
 API_ENDPOINT_BATCH_REQUEST = '{version}/composite/batch/'
+API_ENDPOINT_GET_LISTVIEWS_FROM_OBJECT = '{version}/ui-api/list-records/{sobject}/{view_name}'
 
 CASE_FIELD_MAP = {
     'parent_case_id': 'ParentId',
@@ -44,6 +45,4 @@ CASE_FIELD_MAP = {
 SALESFORCE_INVALID_INTEGER = 'Please provide non-zero positive integer in "{parameter}"'
 SALESFORCE_UNKNOWN_ERR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
 SALESFORCE_ERR_CODE_UNAVAILABLE = "Error code unavailable"
-SALESFORCE_UNICODE_DAMMIT_TYPE_ERR_MSG = ("Error occurred while connecting to the Salesforce server. "
-"Please check the asset configuration and|or the action parameters.")
 SALESFORCE_DEFAULT_TIMEOUT = 30
