@@ -2,16 +2,16 @@
 # Salesforce
 
 Publisher: Splunk  
-Connector Version: 2\.0\.20  
+Connector Version: 2.1.0  
 Product Vendor: Salesforce  
 Product Name: Salesforce  
-Product Version Supported (regex): "\.\*"  
-Minimum Product Version: 5\.2\.0  
+Product Version Supported (regex): ".\*"  
+Minimum Product Version: 5.5.0  
 
 This app implements actions to manage objects on Salesforce
 
 [comment]: # " File: README.md"
-[comment]: # "  Copyright (c) 2017-2022 Splunk Inc."
+[comment]: # "  Copyright (c) 2017-2023 Splunk Inc."
 [comment]: # ""
 [comment]: # "Licensed under the Apache License, Version 2.0 (the 'License');"
 [comment]: # "you may not use this file except in compliance with the License."
@@ -33,14 +33,14 @@ account.
 1.  In the drop-down list of the account (in the upper-right corner), select **Setup**
 2.  Go to **Apps** , then **App Manager** and click on **New Connected App**
 3.  On the New Connected App page, fill the following required fields under Basic Information:
-    -   Connected App Name. For example, Salesforce Phantom App
-    -   API name. For example, Salesforce Phantom App
+    -   Connected App Name. For example, Salesforce Splunk SOAR App
+    -   API name. For example, Salesforce Splunk SOAR App
     -   Contact Email. For example, xyz@xyz.com
 4.  Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in
     the below image or else follow these steps
-    -   Under the **Callback URL** , we will be updating the entry of https://phantom.local to
-        reflect the actual redirect URI. We will get this while we create Phantom App's asset in the
-        below section titled "Configure the Salesforce Phantom app's Asset"
+    -   Under the **Callback URL** , we will be updating the entry of https://splunk_soar.local to
+        reflect the actual redirect URI. We will get this while we create Splunk SOAR App's asset in
+        the below section titled "Configure the Salesforce Phantom app's Asset"
 
     -   Under **Selected OAuth Scopes field** add the following two scopes from **Available OAuth
         Scopes**
@@ -53,7 +53,7 @@ account.
         [![](img/app_config.png)](img/app_config.png)
 5.  Click on **Save**
 
-## Configure the Salesforce Phantom app's Asset
+## Configure the Salesforce Splunk SOAR app's Asset
 
 When creating an asset for the **Salesforce** app, place the **Consumer Key** of the app created
 during the previous step in the **Client ID** field and place the **Consumer Secret** generated
@@ -63,7 +63,7 @@ After saving, a new field will appear in the **Asset Settings** tab. Take the UR
 **POST incoming for Salesforce to this location** field. To this URL, add **/start_oauth** . After
 doing so the URL should look something like:  
 
-https://\<phantom_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/\<asset_name>/start_oauth
+https://\<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/\<asset_name>/start_oauth
 
 [![](img/asset_config.png)](img/asset_config.png)  
   
@@ -136,9 +136,9 @@ configuration.
 -   Case is an example of an object in which both the values (LastViewedDate and LastReferencedDate)
     are present.
 
-### Scheduled \| Interval polling
+### Scheduled | Interval polling
 
--   During scheduled \| interval polling, the app will start from the first object and will ingest
+-   During scheduled | interval polling, the app will start from the first object and will ingest
     up to the number of objects specified in the 'Get this many results on first ingestion'(Default
     value 10) parameter. Then it remembers the last object's offset Id and stores it in the state
     file against the key 'cur_offset'. The next scheduled ingestion will start from the offset Id in
@@ -152,12 +152,15 @@ configuration.
 ## Note
 
 -   Currently, the **List Objects** , the **List Tickets** , and the **On Poll** actions can fetch a
-    maximum of 4000 records.
--   The maximum offset value supported by the Salesforce API is 2000, as mentioned in this
-    [**documentation**
+    maximum of 4000 records. The maximum offset value supported by the Salesforce API is 2000, as
+    mentioned in this [**documentation**
     .](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_offset.htm)
--   If this issue gets resolved with the Salesforce API, then the mentioned actions will be able to
+    If this issue gets resolved with the Salesforce API, then the mentioned actions will be able to
     fetch all of the records.
+-   The List of available standard objects can be found
+    [here](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_list.htm)
+    .
+-   While using custom object's name as input parameter use "API Name" attribute of that object.
 
 
 ### Configuration Variables
@@ -165,20 +168,20 @@ The below configuration variables are required for this Connector to operate.  T
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
-**client\_id** |  required  | string | Client ID
-**client\_secret** |  required  | password | Client Secret
+**client_id** |  required  | string | Client ID
+**client_secret** |  required  | password | Client Secret
 **username** |  optional  | string | Username
 **password** |  optional  | password | Password
-**is\_test\_environment** |  optional  | boolean | Use a Salesforce test environment
-**poll\_sobject** |  optional  | string | Poll for this Salesforce Object
-**poll\_view\_name** |  optional  | string | Poll this List View
-**first\_ingestion\_max** |  optional  | numeric | Get this many results on first ingestion
-**cef\_name\_map** |  optional  | file | Mapping of Salesforce to CEF fields
-**last\_view\_date** |  optional  | boolean | Include view date in artifact
+**is_test_environment** |  optional  | boolean | Use a Salesforce test environment
+**poll_sobject** |  optional  | string | Poll for this Salesforce Object
+**poll_view_name** |  optional  | string | Poll this List View
+**first_ingestion_max** |  optional  | numeric | Get this many results on first ingestion
+**cef_name_map** |  optional  | file | Mapping of Salesforce to CEF fields (JSON file)
+**last_view_date** |  optional  | boolean | Include view date in artifact
 
 ### Supported Actions  
 [test connectivity](#action-test-connectivity) - Validate connection using the configured credentials  
-[run query](#action-run-query) - Run a query using the Salesforce Object Query Language \(SOQL\)  
+[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL)  
 [create object](#action-create-object) - Create a new Salesforce object  
 [create ticket](#action-create-ticket) - Create a new Case  
 [delete object](#action-delete-object) - Delete an object  
@@ -205,12 +208,12 @@ No parameters are required for this action
 No Output  
 
 ## action: 'run query'
-Run a query using the Salesforce Object Query Language \(SOQL\)
+Run a query using the Salesforce Object Query Language (SOQL)
 
 Type: **investigate**  
 Read only: **True**
 
-To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>\.
+To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.
 
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
@@ -219,16 +222,16 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **endpoint** |  required  | Which Query endpoint to use | string | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.endpoint | string | 
-action\_result\.parameter\.query | string | 
-action\_result\.data\.\*\.records\.\* | string | 
-action\_result\.summary\.num\_objects | numeric | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.endpoint | string |  |   query 
+action_result.parameter.query | string |  |   SELECT+name+from+Account 
+action_result.data.\*.records.\* | string |  |  
+action_result.summary.num_objects | numeric |  |   20 
+action_result.message | string |  |   Successfully retrieved query results 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'create object'
 Create a new Salesforce object
@@ -240,20 +243,20 @@ Read only: **False**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **sobject** |  required  | Name of object | string |  `salesforce object name` 
-**field\_values** |  required  | JSON Object of Key\-Value pairs to update | string | 
+**field_values** |  required  | JSON Object of Key-Value pairs to update | string | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.field\_values | string | 
-action\_result\.parameter\.sobject | string |  `salesforce object name` 
-action\_result\.data\.\*\.id | string |  `salesforce object id` 
-action\_result\.data\.\*\.success | boolean | 
-action\_result\.summary\.obj\_id | string |  `salesforce object id` 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.field_values | string |  |   {"SITracker_Handoff_Notes__c": "Be sure to review the handoff notes!"} 
+action_result.parameter.sobject | string |  `salesforce object name`  |   Case 
+action_result.data.\*.id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.data.\*.success | boolean |  |   True  False 
+action_result.summary.obj_id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.message | string |  |   Successfully created a new Object 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'create ticket'
 Create a new Case
@@ -264,27 +267,27 @@ Read only: **False**
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**parent\_case\_id** |  optional  | Object ID of Parent Case | string |  `salesforce object id` 
+**parent_case_id** |  optional  | Object ID of Parent Case | string |  `salesforce object id` 
 **subject** |  optional  | Subject | string | 
 **priority** |  optional  | Priority | string | 
 **description** |  optional  | Description | string | 
-**field\_values** |  optional  | JSON Object of Key\-Value pairs to update | string | 
+**field_values** |  optional  | JSON Object of Key-Value pairs to update | string | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.description | string | 
-action\_result\.parameter\.field\_values | string | 
-action\_result\.parameter\.parent\_case\_id | string |  `salesforce object id` 
-action\_result\.parameter\.priority | string | 
-action\_result\.parameter\.subject | string | 
-action\_result\.data\.\*\.id | string |  `salesforce object id` 
-action\_result\.data\.\*\.success | boolean | 
-action\_result\.summary\.obj\_id | string |  `salesforce object id` 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.description | string |  |   This is a test description 
+action_result.parameter.field_values | string |  |   {"SITracker_Handoff_Notes__c": "Be sure to review the handoff notes!"} 
+action_result.parameter.parent_case_id | string |  `salesforce object id`  |   0061I000000PRsCABC 
+action_result.parameter.priority | string |  |   High 
+action_result.parameter.subject | string |  |   Generic Chatter 
+action_result.data.\*.id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.data.\*.success | boolean |  |   True  False 
+action_result.summary.obj_id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.message | string |  |   Successfully created a new Case 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'delete object'
 Delete an object
@@ -299,16 +302,16 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **id** |  required  | Salesforce Object ID | string |  `salesforce object id` 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.parameter\.sobject | string |  `salesforce object name` 
-action\_result\.data | string | 
-action\_result\.summary | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000002StPCQA0 
+action_result.parameter.sobject | string |  `salesforce object name`  |   Case 
+action_result.data | string |  |  
+action_result.summary | string |  |  
+action_result.message | string |  |   Successfully deleted the Contact 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'delete ticket'
 Delete a Case
@@ -322,15 +325,15 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **id** |  required  | Object ID of the Case | string |  `salesforce object id` 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.data | string | 
-action\_result\.summary | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000002StPCQA0 
+action_result.data | string |  |  
+action_result.summary | string |  |  
+action_result.message | string |  |   Successfully deleted the Case 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'update object'
 Update an object
@@ -343,20 +346,20 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **sobject** |  required  | Name of object | string |  `salesforce object name` 
 **id** |  required  | Salesforce Object ID | string |  `salesforce object id` 
-**field\_values** |  optional  | JSON Object of Key\-Value pairs to update | string | 
+**field_values** |  optional  | JSON Object of Key-Value pairs to update | string | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.field\_values | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.parameter\.sobject | string |  `salesforce object name` 
-action\_result\.data | string | 
-action\_result\.summary\.obj\_id | string |  `salesforce object id` 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.field_values | string |  |   {"SITracker_Handoff_Notes__c": "Be sure to review the handoff notes"} 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000002SdASQA0 
+action_result.parameter.sobject | string |  `salesforce object name`  |   Case 
+action_result.data | string |  |  
+action_result.summary.obj_id | string |  `salesforce object id`  |   0D51I00000Jw1tnSAB 
+action_result.message | string |  |   Successfully updated the Contact 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'update ticket'
 Update a Case
@@ -368,29 +371,29 @@ Read only: **False**
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **id** |  required  | Object ID of the Case | string |  `salesforce object id` 
-**parent\_case\_id** |  optional  | Object ID of Parent Case | string |  `salesforce object id` 
+**parent_case_id** |  optional  | Object ID of Parent Case | string |  `salesforce object id` 
 **subject** |  optional  | Subject | string | 
 **priority** |  optional  | Priority | string | 
 **description** |  optional  | Description | string | 
 **status** |  optional  | Status | string | 
-**field\_values** |  optional  | JSON Object of Key\-Value pairs to update | string | 
+**field_values** |  optional  | JSON Object of Key-Value pairs to update | string | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.description | string | 
-action\_result\.parameter\.field\_values | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.parameter\.parent\_case\_id | string |  `salesforce object id` 
-action\_result\.parameter\.priority | string | 
-action\_result\.parameter\.status | string | 
-action\_result\.parameter\.subject | string | 
-action\_result\.data | string | 
-action\_result\.summary\.obj\_id | string |  `salesforce object id` 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.description | string |  |   This is a test description 
+action_result.parameter.field_values | string |  |   {"SITracker_Handoff_Notes__c": "Be sure to review the handoff notes"} 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000002SdASQA0 
+action_result.parameter.parent_case_id | string |  `salesforce object id`  |  
+action_result.parameter.priority | string |  |   High 
+action_result.parameter.status | string |  |   Closed 
+action_result.parameter.subject | string |  |   Generic Chatter 
+action_result.data | string |  |  
+action_result.summary.obj_id | string |  `salesforce object id`  |   0D51I00000Jw1tnSAB 
+action_result.message | string |  |   Successfully updated the Case 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'list objects'
 Get a list of objects
@@ -398,31 +401,31 @@ Get a list of objects
 Type: **investigate**  
 Read only: **True**
 
-To get a list of objects, you must specify the name of a list view\. By leaving the <b>view\_name</b> blank, this action will instead return a list of valid names in the summary\. Also, this action will only work if the specified object has a list view\. If it does not, you could use the <b>run query</b> action instead\.
+To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.
 
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **sobject** |  required  | Name of object | string |  `salesforce object name` 
-**view\_name** |  optional  | Unique name of a list view | string |  `salesforce listview name` 
+**view_name** |  optional  | Unique name of a list view | string |  `salesforce listview name` 
 **limit** |  optional  | Paging limit | numeric | 
 **offset** |  optional  | Paging offset | numeric | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.limit | numeric | 
-action\_result\.parameter\.offset | numeric | 
-action\_result\.parameter\.sobject | string |  `salesforce object name` 
-action\_result\.parameter\.view\_name | string |  `salesforce listview name` 
-action\_result\.data\.\* | string | 
-action\_result\.data\.\*\.columns\.Id\.value | string |  `salesforce object id` 
-action\_result\.summary\.num\_objects | numeric | 
-action\_result\.summary\.view\_names | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.limit | numeric |  |   20 
+action_result.parameter.offset | numeric |  |   5 
+action_result.parameter.sobject | string |  `salesforce object name`  |   Case 
+action_result.parameter.view_name | string |  `salesforce listview name`  |   RecentlyViewedCases 
+action_result.data.\* | string |  |  
+action_result.data.\*.columns.Id.value | string |  `salesforce object id`  |   0033t000035qrSYAAY 
+action_result.summary.num_objects | numeric |  |   3 
+action_result.summary.view_names | string |  |   MyCases 
+action_result.message | string |  |   Listed the valid view names  Successfully fetched a list of Contact objects 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'list tickets'
 Get a list of Cases
@@ -430,42 +433,42 @@ Get a list of Cases
 Type: **investigate**  
 Read only: **True**
 
-To get a list of objects, you must specify the name of a list view\. By leaving the <b>view\_name</b> blank, this action will instead return a list of valid names in the summary\.
+To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.
 
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**view\_name** |  optional  | Unique name of a list view | string |  `salesforce listview name` 
+**view_name** |  optional  | Unique name of a list view | string |  `salesforce listview name` 
 **limit** |  optional  | Paging limit | numeric | 
 **offset** |  optional  | Paging offset | numeric | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.limit | numeric | 
-action\_result\.parameter\.offset | numeric | 
-action\_result\.parameter\.view\_name | string |  `salesforce listview name` 
-action\_result\.data\.\*\.columns\.CaseNumber\.value | string | 
-action\_result\.data\.\*\.columns\.ContactId\.value | string |  `salesforce object id` 
-action\_result\.data\.\*\.columns\.Contact\_Id\.value | string |  `salesforce object id` 
-action\_result\.data\.\*\.columns\.Contact\_Name\.value | string | 
-action\_result\.data\.\*\.columns\.CreatedDate\.value | string | 
-action\_result\.data\.\*\.columns\.Id\.value | string |  `salesforce object id` 
-action\_result\.data\.\*\.columns\.LastModifiedDate\.value | string | 
-action\_result\.data\.\*\.columns\.OwnerId\.value | string |  `salesforce object id` 
-action\_result\.data\.\*\.columns\.Owner\_Id\.value | string |  `salesforce object id` 
-action\_result\.data\.\*\.columns\.Owner\_NameOrAlias\.value | string | 
-action\_result\.data\.\*\.columns\.Priority\.value | string | 
-action\_result\.data\.\*\.columns\.RecordTypeId\.value | string | 
-action\_result\.data\.\*\.columns\.Status\.value | string | 
-action\_result\.data\.\*\.columns\.Subject\.value | string | 
-action\_result\.data\.\*\.columns\.SystemModstamp\.value | string | 
-action\_result\.summary\.num\_objects | numeric | 
-action\_result\.summary\.view\_names | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.limit | numeric |  |   20 
+action_result.parameter.offset | numeric |  |   5 
+action_result.parameter.view_name | string |  `salesforce listview name`  |   RecentlyViewedCases 
+action_result.data.\*.columns.CaseNumber.value | string |  |   00001028 
+action_result.data.\*.columns.ContactId.value | string |  `salesforce object id`  |   0033t000035qrSWABZ 
+action_result.data.\*.columns.Contact_Id.value | string |  `salesforce object id`  |   0033t000035qrSWABZ 
+action_result.data.\*.columns.Contact_Name.value | string |  |   Abcd 
+action_result.data.\*.columns.CreatedDate.value | string |  |   Thu Nov 30 23:50:55 GMT 2017 
+action_result.data.\*.columns.Id.value | string |  `salesforce object id`  |   5001I000002Sd2hQAC 
+action_result.data.\*.columns.LastModifiedDate.value | string |  |   Fri Dec 01 00:17:47 GMT 2017 
+action_result.data.\*.columns.OwnerId.value | string |  `salesforce object id`  |   0051I000000PRsCQAW 
+action_result.data.\*.columns.Owner_Id.value | string |  `salesforce object id`  |   0051I000000PRsCQAW 
+action_result.data.\*.columns.Owner_NameOrAlias.value | string |  |   testuser 
+action_result.data.\*.columns.Priority.value | string |  |   Medium 
+action_result.data.\*.columns.RecordTypeId.value | string |  |   0121I000000F7aZQAS 
+action_result.data.\*.columns.Status.value | string |  |   In-Progress 
+action_result.data.\*.columns.Subject.value | string |  |   Panic 
+action_result.data.\*.columns.SystemModstamp.value | string |  |   Sat Dec 02 11:18:29 GMT 2017 
+action_result.summary.num_objects | numeric |  |   3 
+action_result.summary.view_names | string |  |   MyCases 
+action_result.message | string |  |   Listed the valid view names  Successfully fetched a list of Case objects 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'get object'
 Get info about a Salesforce object
@@ -473,7 +476,7 @@ Get info about a Salesforce object
 Type: **investigate**  
 Read only: **True**
 
-If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it\.
+If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.
 
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
@@ -482,17 +485,17 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **id** |  required  | Salesforce Object ID | string |  `salesforce object id` 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.parameter\.sobject | string |  `salesforce object name` 
-action\_result\.data\.\* | string | 
-action\_result\.data\.\*\.id | string |  `salesforce object id` 
-action\_result\.summary | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.parameter.sobject | string |  `salesforce object name`  |   Case 
+action_result.data.\* | string |  |  
+action_result.data.\*.id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.summary | string |  |  
+action_result.message | string |  |   Successfully retrieved Contact 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'get ticket'
 Get info about a Case
@@ -500,7 +503,7 @@ Get info about a Case
 Type: **investigate**  
 Read only: **True**
 
-If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it\.
+If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.
 
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
@@ -508,81 +511,81 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **id** |  required  | Object ID of the Case | string |  `salesforce object id` 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.data\.\*\.AccountId | string |  `salesforce object id` 
-action\_result\.data\.\*\.AssetId | string | 
-action\_result\.data\.\*\.CaseNumber | string | 
-action\_result\.data\.\*\.Case\_Open\_minutes\_\_c | numeric | 
-action\_result\.data\.\*\.ClosedDate | string | 
-action\_result\.data\.\*\.Closed\_Time\_Days\_\_c | string | 
-action\_result\.data\.\*\.ContactEmail | string | 
-action\_result\.data\.\*\.ContactFax | string | 
-action\_result\.data\.\*\.ContactId | string |  `salesforce object id` 
-action\_result\.data\.\*\.ContactMobile | string | 
-action\_result\.data\.\*\.ContactPhone | string | 
-action\_result\.data\.\*\.CreatedById | string |  `salesforce object id` 
-action\_result\.data\.\*\.CreatedDate | string | 
-action\_result\.data\.\*\.Customer\_Impacting\_\_c | string | 
-action\_result\.data\.\*\.Date\_Reviewed\_\_c | string | 
-action\_result\.data\.\*\.Days\_Open\_\_c | numeric | 
-action\_result\.data\.\*\.Description | string | 
-action\_result\.data\.\*\.Discovery\_Method\_\_c | string | 
-action\_result\.data\.\*\.Discovery\_Time\_Hours\_\_c | string | 
-action\_result\.data\.\*\.EngineeringReqNumber\_\_c | string | 
-action\_result\.data\.\*\.Executive\_Summary\_\_c | string | 
-action\_result\.data\.\*\.Id | string |  `salesforce object id` 
-action\_result\.data\.\*\.Impact\_Summary\_\_c | string | 
-action\_result\.data\.\*\.Impacted\_Environment\_\_c | string | 
-action\_result\.data\.\*\.Incident\_Category\_\_c | string | 
-action\_result\.data\.\*\.Incident\_Date\_\_c | string | 
-action\_result\.data\.\*\.Incident\_Root\_Cause\_\_c | string | 
-action\_result\.data\.\*\.Incident\_Sensitivity\_\_c | string | 
-action\_result\.data\.\*\.Incident\_Severity\_\_c | string | 
-action\_result\.data\.\*\.Incident\_Type\_\_c | string | 
-action\_result\.data\.\*\.Investigation\_Category\_\_c | string | 
-action\_result\.data\.\*\.Investigation\_Date\_\_c | string | 
-action\_result\.data\.\*\.Investigation\_Summary\_\_c | string | 
-action\_result\.data\.\*\.Investigation\_Type\_\_c | string | 
-action\_result\.data\.\*\.IsClosed | boolean | 
-action\_result\.data\.\*\.IsDeleted | boolean | 
-action\_result\.data\.\*\.IsEscalated | boolean | 
-action\_result\.data\.\*\.LastModifiedById | string |  `salesforce object id` 
-action\_result\.data\.\*\.LastModifiedDate | string | 
-action\_result\.data\.\*\.LastReferencedDate | string | 
-action\_result\.data\.\*\.LastViewedDate | string | 
-action\_result\.data\.\*\.Origin | string | 
-action\_result\.data\.\*\.OwnerId | string |  `salesforce object id` 
-action\_result\.data\.\*\.ParentId | string |  `salesforce object id` 
-action\_result\.data\.\*\.PotentialLiability\_\_c | string | 
-action\_result\.data\.\*\.Priority | string | 
-action\_result\.data\.\*\.Product\_\_c | string | 
-action\_result\.data\.\*\.Reason | string | 
-action\_result\.data\.\*\.RecordTypeId | string | 
-action\_result\.data\.\*\.Resolution\_Date\_\_c | string | 
-action\_result\.data\.\*\.Resolution\_Time\_Hours\_\_c | string | 
-action\_result\.data\.\*\.Response\_Time\_Hours\_\_c | string | 
-action\_result\.data\.\*\.Response\_Time\_Minutes\_\_c | numeric | 
-action\_result\.data\.\*\.SITrack\_Response\_Task\_\_c | string | 
-action\_result\.data\.\*\.SITracker\_Handoff\_Notes\_\_c | string | 
-action\_result\.data\.\*\.SITracker\_Include\_in\_Handoff\_\_c | boolean | 
-action\_result\.data\.\*\.SLAViolation\_\_c | string | 
-action\_result\.data\.\*\.Status | string | 
-action\_result\.data\.\*\.Subject | string | 
-action\_result\.data\.\*\.SuppliedCompany | string | 
-action\_result\.data\.\*\.SuppliedEmail | string | 
-action\_result\.data\.\*\.SuppliedName | string | 
-action\_result\.data\.\*\.SuppliedPhone | string | 
-action\_result\.data\.\*\.SystemModstamp | string | 
-action\_result\.data\.\*\.Type | string | 
-action\_result\.data\.\*\.attributes\.type | string | 
-action\_result\.data\.\*\.attributes\.url | string | 
-action\_result\.summary | string | 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.data.\*.AccountId | string |  `salesforce object id`  |   0013t00001ZyVVTAB4 
+action_result.data.\*.AssetId | string |  |  
+action_result.data.\*.CaseNumber | string |  |   00001030 
+action_result.data.\*.Case_Open_minutes__c | numeric |  |   4218 
+action_result.data.\*.ClosedDate | string |  |   2019-06-25T18:59:51.000+0000 
+action_result.data.\*.Closed_Time_Days__c | string |  |  
+action_result.data.\*.ContactEmail | string |  |   test@example.com 
+action_result.data.\*.ContactFax | string |  |   (1) 234 567 
+action_result.data.\*.ContactId | string |  `salesforce object id`  |   0033t000035qrSWABZ 
+action_result.data.\*.ContactMobile | string |  |   (1) 222 333 
+action_result.data.\*.ContactPhone | string |  |   (1) 33 444 
+action_result.data.\*.CreatedById | string |  `salesforce object id`  |   0051I000000PRsCQAW 
+action_result.data.\*.CreatedDate | string |  |   2017-12-01T21:32:33.000+0000 
+action_result.data.\*.Customer_Impacting__c | string |  |  
+action_result.data.\*.Date_Reviewed__c | string |  |  
+action_result.data.\*.Days_Open__c | numeric |  |   3 
+action_result.data.\*.Description | string |  |   Case Description 
+action_result.data.\*.Discovery_Method__c | string |  |  
+action_result.data.\*.Discovery_Time_Hours__c | string |  |  
+action_result.data.\*.EngineeringReqNumber__c | string |  |   765810 
+action_result.data.\*.Executive_Summary__c | string |  |  
+action_result.data.\*.Id | string |  `salesforce object id`  |   5001I000002SfMMQA0 
+action_result.data.\*.Impact_Summary__c | string |  |  
+action_result.data.\*.Impacted_Environment__c | string |  |  
+action_result.data.\*.Incident_Category__c | string |  |  
+action_result.data.\*.Incident_Date__c | string |  |  
+action_result.data.\*.Incident_Root_Cause__c | string |  |  
+action_result.data.\*.Incident_Sensitivity__c | string |  |  
+action_result.data.\*.Incident_Severity__c | string |  |  
+action_result.data.\*.Incident_Type__c | string |  |  
+action_result.data.\*.Investigation_Category__c | string |  |  
+action_result.data.\*.Investigation_Date__c | string |  |  
+action_result.data.\*.Investigation_Summary__c | string |  |  
+action_result.data.\*.Investigation_Type__c | string |  |  
+action_result.data.\*.IsClosed | boolean |  |   True  False 
+action_result.data.\*.IsDeleted | boolean |  |   True  False 
+action_result.data.\*.IsEscalated | boolean |  |   True  False 
+action_result.data.\*.LastModifiedById | string |  `salesforce object id`  |   0051I000000PRsCQAW 
+action_result.data.\*.LastModifiedDate | string |  |   2017-12-01T21:32:33.000+0000 
+action_result.data.\*.LastReferencedDate | string |  |   2017-12-01T21:33:05.000+0000 
+action_result.data.\*.LastViewedDate | string |  |   2017-12-01T21:33:05.000+0000 
+action_result.data.\*.Origin | string |  |  
+action_result.data.\*.OwnerId | string |  `salesforce object id`  |   0051I000000PRsCQAW 
+action_result.data.\*.ParentId | string |  `salesforce object id`  |   0061I000000PRsCABC 
+action_result.data.\*.PotentialLiability__c | string |  |   No 
+action_result.data.\*.Priority | string |  |   High 
+action_result.data.\*.Product__c | string |  |   GC5555 
+action_result.data.\*.Reason | string |  |   Test Complexity 
+action_result.data.\*.RecordTypeId | string |  |   0121I000000F7aZQAS 
+action_result.data.\*.Resolution_Date__c | string |  |  
+action_result.data.\*.Resolution_Time_Hours__c | string |  |  
+action_result.data.\*.Response_Time_Hours__c | string |  |  
+action_result.data.\*.Response_Time_Minutes__c | numeric |  |   4218 
+action_result.data.\*.SITrack_Response_Task__c | string |  |  
+action_result.data.\*.SITracker_Handoff_Notes__c | string |  |  
+action_result.data.\*.SITracker_Include_in_Handoff__c | boolean |  |   True  False 
+action_result.data.\*.SLAViolation__c | string |  |  
+action_result.data.\*.Status | string |  |   New 
+action_result.data.\*.Subject | string |  |   Case Subject 
+action_result.data.\*.SuppliedCompany | string |  |  
+action_result.data.\*.SuppliedEmail | string |  |  
+action_result.data.\*.SuppliedName | string |  |  
+action_result.data.\*.SuppliedPhone | string |  |  
+action_result.data.\*.SystemModstamp | string |  |   2017-12-02T11:18:29.000+0000 
+action_result.data.\*.Type | string |  |   Electrical 
+action_result.data.\*.attributes.type | string |  |   Case 
+action_result.data.\*.attributes.url | string |  |   /services/data/v41.0/sobjects/Case/5001I000002SfMMQA0 
+action_result.summary | string |  |  
+action_result.message | string |  |   Successfully retrieved Case 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'post chatter'
 Post on the Chatter feed for a specified case
@@ -598,18 +601,18 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **body** |  required  | Body of the post | string | 
 
 #### Action Output
-DATA PATH | TYPE | CONTAINS
---------- | ---- | --------
-action\_result\.status | string | 
-action\_result\.parameter\.body | string | 
-action\_result\.parameter\.id | string |  `salesforce object id` 
-action\_result\.parameter\.title | string | 
-action\_result\.data\.\*\.id | string |  `salesforce object id` 
-action\_result\.data\.\*\.success | boolean | 
-action\_result\.summary\.obj\_id | string |  `salesforce object id` 
-action\_result\.message | string | 
-summary\.total\_objects | numeric | 
-summary\.total\_objects\_successful | numeric |   
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string |  |   success  failed 
+action_result.parameter.body | string |  |   A thing is happening 
+action_result.parameter.id | string |  `salesforce object id`  |   5001I000003mHF2QAM 
+action_result.parameter.title | string |  |  
+action_result.data.\*.id | string |  `salesforce object id`  |   0D51I00000Jw1tnSAB 
+action_result.data.\*.success | boolean |  |   True  False 
+action_result.summary.obj_id | string |  `salesforce object id`  |   0D51I00000Jw1tnSAB 
+action_result.message | string |  |   Successfully posted to chatter 
+summary.total_objects | numeric |  |   1 
+summary.total_objects_successful | numeric |  |   1   
 
 ## action: 'on poll'
 Poll for new Objects on Salesforce
@@ -620,11 +623,11 @@ Read only: **True**
 #### Action Parameters
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**start\_time** |  optional  | Parameter Ignored in this app | numeric | 
-**end\_time** |  optional  | Parameter Ignored in this app | numeric | 
-**container\_id** |  optional  | Parameter Ignored in this app | numeric | 
-**container\_count** |  required  | Maximum number of objects to ingest | numeric | 
-**artifact\_count** |  optional  | Parameter Ignored in this app | numeric | 
+**start_time** |  optional  | Parameter Ignored in this app | numeric | 
+**end_time** |  optional  | Parameter Ignored in this app | numeric | 
+**container_id** |  optional  | Parameter Ignored in this app | numeric | 
+**container_count** |  required  | Maximum number of objects to ingest | numeric | 
+**artifact_count** |  optional  | Parameter Ignored in this app | numeric | 
 
 #### Action Output
 No Output
