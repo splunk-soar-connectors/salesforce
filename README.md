@@ -2,7 +2,7 @@
 # Salesforce
 
 Publisher: Splunk  
-Connector Version: 2.1.0  
+Connector Version: 2.1.1  
 Product Vendor: Salesforce  
 Product Name: Salesforce  
 Product Version Supported (regex): ".\*"  
