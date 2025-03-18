@@ -9,7 +9,7 @@
     "product_name": "Salesforce",
     "product_version_regex": ".*",
     "publisher": "Splunk",
-    "license": "Copyright (c) 2017-2023 Splunk Inc.",
+    "license": "Copyright (c) 2017-2025 Splunk Inc.",
     "app_version": "2.1.1",
     "utctime_updated": "2022-01-07T22:07:36.000000Z",
     "package_name": "phantom_salesforce",
@@ -1260,6 +1260,10 @@
                     "example_values": [
                         1
                     ]
+                },
+                {
+                    "data_path": "action_result.parameter.ph",
+                    "data_type": "ph"
                 }
             ],
             "render": {
