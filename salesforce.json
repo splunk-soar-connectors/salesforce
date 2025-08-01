@@ -15,10 +15,7 @@
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.py",
     "min_phantom_version": "5.5.0",
-    "python_version": [
-        "3.9",
-        "3.13"
-    ],
+    "python_version": "3.9, 3.13",
     "fips_compliant": true,
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
