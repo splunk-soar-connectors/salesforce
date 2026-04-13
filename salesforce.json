@@ -16,8 +16,12 @@
     "main_module": "salesforce_connector.py",
     "min_phantom_version": "6.3.0",
     "python_version": "3.9, 3.13",
-    "pip39_dependencies": {},
-    "pip313_dependencies": {},
+    "pip39_dependencies": {
+        "wheel": []
+    },
+    "pip313_dependencies": {
+        "wheel": []
+    },
     "fips_compliant": true,
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
