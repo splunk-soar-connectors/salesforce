@@ -16,11 +16,13 @@
 #
 # Splunk SOAR App imports
 
+import base64
 import hashlib
 import json
 
 # import re
 import os
+import secrets
 import sys
 import time
 
@@ -135,8 +137,9 @@ def _return_error(msg, state, asset_id, status):
 
 
 def _handle_oauth_start(request, path_parts):
-    # This is where we should land AFTER the redirect callback when the user authenticates on Salesforce
-    # After that, it will retrieve the "code" which is sent, and then use that to retrieve the refresh_token
+    # This is where we land AFTER the redirect callback when the user authenticates on Salesforce.
+    # The authorization code is exchanged for tokens using a POST body (not URL params) per OAuth spec.
+    # client_secret and code_verifier (PKCE) are read from state and sent only at the token endpoint.
     asset_id = request.GET.get("state")
     if not asset_id:
         return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
@@ -144,16 +147,31 @@ def _handle_oauth_start(request, path_parts):
     code = request.GET.get("code")
     if code:
         state = _load_app_state(asset_id)
-        creds = state["creds"]
         url_get_token = state["url_get_token"]
-        creds_dict = json.loads(encryption_helper.decrypt(creds, asset_id))  # pylint: disable=E1101
-        params = creds_dict
-        params.pop("response_type", None)
-        params["grant_type"] = "authorization_code"
-        params["code"] = code
+
+        # Decrypt the authorization params (contains client_id and redirect_uri; no client_secret)
+        creds_dict = json.loads(encryption_helper.decrypt(state["creds"], asset_id))  # pylint: disable=E1101
+        creds_dict.pop("response_type", None)
+        creds_dict.pop("code_challenge", None)
+        creds_dict.pop("code_challenge_method", None)
+
+        # Build the token exchange body; client_secret lives only here, never in the browser URL
+        token_body = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": creds_dict["client_id"],
+            "redirect_uri": creds_dict["redirect_uri"],
+            "client_secret": encryption_helper.decrypt(state["client_secret"], asset_id),  # pylint: disable=E1101
+        }
+
+        # PKCE: include code_verifier if it was generated during the authorization request
+        if state.get("code_verifier"):
+            token_body["code_verifier"] = encryption_helper.decrypt(state["code_verifier"], asset_id)  # pylint: disable=E1101
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
             # nosemgrep: semgrep.request-sensitive-data
-            r = requests.post(url_get_token, params=params, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
+            r = requests.post(url_get_token, data=token_body, headers=headers, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
             resp_json = r.json()
         except Exception as e:
             return _return_error(f"Error retrieving OAuth Token: {e!s}. URL: {url_get_token}", state, asset_id, 401)
@@ -479,6 +497,13 @@ class SalesforceConnector(BaseConnector):
 
         self._oauth_token = resp["access_token"]
         self._base_url = resp["instance_url"]
+
+        # Refresh token rotation: if Salesforce returns a new refresh token, replace the stored one
+        # immediately so the old (now invalidated) token is not used again.
+        new_refresh_token = resp.get("refresh_token")
+        if new_refresh_token:
+            self._state["refresh_token"] = encryption_helper.encrypt(new_refresh_token, self.get_asset_id())  # pylint: disable=E1101
+
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_username_password(self, action_result):
@@ -663,12 +688,22 @@ class SalesforceConnector(BaseConnector):
             return ret_val
 
         asset_id = self.get_asset_id()
-        params = {
+
+        # PKCE: generate code_verifier and derive code_challenge (S256 method)
+        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(96)).rstrip(b"=").decode()
+        code_challenge = base64.urlsafe_b64encode(
+            hashlib.sha256(code_verifier.encode("ascii")).digest()
+        ).rstrip(b"=").decode()
+
+        # Authorization params: client_secret is intentionally excluded here.
+        # It must only be sent at the token endpoint (never in the browser redirect URL).
+        auth_params = {
             "response_type": "code",
             "state": asset_id,
             "redirect_uri": app_rest_url + "/start_oauth",
             "client_id": client_id,
-            "client_secret": client_secret,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
         }
 
         if config.get("is_test_environment"):
@@ -678,14 +713,16 @@ class SalesforceConnector(BaseConnector):
             url_get_code = sf_consts.URL_GET_CODE
             url_get_token = sf_consts.URL_GET_TOKEN
 
-        prep = requests.Request("post", url_get_code, params=params).prepare()
-
-        creds = encryption_helper.encrypt(json.dumps(params), asset_id)  # pylint: disable=E1101
-        url = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
+        prep = requests.Request("get", url_get_code, params=auth_params).prepare()
 
         state = {}
-        state["creds"] = creds
-        state["url"] = url
+        # Store auth params (no secret) so _handle_oauth_start can rebuild client_id/redirect_uri
+        state["creds"] = encryption_helper.encrypt(json.dumps(auth_params), asset_id)  # pylint: disable=E1101
+        # Store client_secret separately so it is only sent at the token endpoint
+        state["client_secret"] = encryption_helper.encrypt(client_secret, asset_id)  # pylint: disable=E1101
+        # Store code_verifier for PKCE token exchange
+        state["code_verifier"] = encryption_helper.encrypt(code_verifier, asset_id)  # pylint: disable=E1101
+        state["url"] = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
         state["url_get_token"] = url_get_token
         _save_app_state(state, asset_id, self)
 

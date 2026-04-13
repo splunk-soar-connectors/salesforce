@@ -10,76 +10,95 @@ This app implements actions to manage objects on Salesforce
 
 ## Authentication
 
-To pass test connectivity, you need to configure an app on Salesforce. To do so, navigate to
-<https://www.salesforce.com/> in a browser and navigate to the login page. Log in with a Salesforce
-account.
+Starting with Salesforce Spring '26, new Connected Apps can no longer be created by default.
+Salesforce now requires new integrations to use **External Client Apps (ECA)**. This connector
+supports External Client Apps using the OAuth 2.0 Web Server (authorization code) flow with PKCE
+and refresh token rotation.
 
-1. In the drop-down list of the account (in the upper-right corner), select **Setup**
-1. Go to **Apps** , then **App Manager** and click on **New Connected App**
-1. On the New Connected App page, fill the following required fields under Basic Information:
-   - Connected App Name. For example, Salesforce Splunk SOAR App
-   - API name. For example, Salesforce Splunk SOAR App
-   - Contact Email. For example, xyz@xyz.com
-1. Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in
-   the below image or else follow these steps
-   - Under the **Callback URL** , we will be updating the entry of https://splunk_soar.local to
-     reflect the actual redirect URI. We will get this while we create Splunk SOAR App's asset in
-     the below section titled "Configure the Salesforce Phantom app's Asset"
+> **Note for existing Connected App users:** If you already have a Connected App configured and
+> working, it will continue to function. Only new app creation is restricted. Follow the External
+> Client App steps below for any new setup.
 
-   - Under **Selected OAuth Scopes field** add the following two scopes from **Available OAuth
-     Scopes**
+## Step 1: Create an External Client App in Salesforce
 
-     - Access and manage your data(api)
-     - Perform requests on your behalf at any time(refresh_token,ofline_access)
+1. Navigate to <https://www.salesforce.com/> and log in with a Salesforce account.
+1. In the account drop-down (upper-right corner), select **Setup**.
+1. In the Quick Find box, search for **External Client Apps** and select **External Client App
+   Manager**.
+1. Click **New External Client App**.
+1. Fill in the required fields under **Basic Information**:
+   - **External Client App Name**: for example, `Salesforce Splunk SOAR App`
+   - **API Name**: for example, `Salesforce_Splunk_SOAR_App`
+   - **Contact Email**: for example, `xyz@xyz.com`
+   - **Distribution State**: set to `Local`
+1. Under **OAuth Settings**, click **Enable OAuth Settings** and configure the following:
+   - **Callback URL**: Enter a placeholder for now (for example, `https://splunk_soar.local/start_oauth`).
+     You will replace this with the real URL in Step 3 below.
+   - **Selected OAuth Scopes**: Add the following two scopes from the **Available OAuth Scopes** list:
+     - `Manage user data via APIs (api)`
+     - `Perform requests at any time (refresh_token, offline_access)`
+   - Enable **Require Proof Key for Code Exchange (PKCE) Extension for Supported Authorization Flows**
+     (the connector now implements PKCE).
+   - Enable **Require Secret for Web Server Flow**.
+   - Enable **Require Secret for Refresh Token Flow**.
+1. Click **Save**.
+1. After saving, locate your app in External Client App Manager and note the following values:
+   - **Consumer Key** — this maps to the **Client ID** field in the Splunk SOAR asset.
+   - **Consumer Secret** — this maps to the **Client Secret** field in the Splunk SOAR asset.
 
-   - Select the **Require Secret for Web Server Flow** checkbox
+## Step 2: Configure the Salesforce Splunk SOAR App Asset
 
-     [![](img/app_config.png)](img/app_config.png)
-1. Click on **Save**
+1. In Splunk SOAR, open the **Apps** page and find the **Salesforce** app.
+1. Click **Configure New Asset**.
+1. In the **Asset Settings** tab, fill in:
+   - **Client ID**: paste the **Consumer Key** from your External Client App.
+   - **Client Secret**: paste the **Consumer Secret** from your External Client App.
+1. Click **SAVE**.
+1. After saving, a new field appears in the **Asset Settings** tab:
+   **POST incoming for Salesforce to this location**. Copy that URL and append **/start_oauth** to it.
+   The resulting URL will look like:
 
-## Configure the Salesforce Splunk SOAR app's Asset
+   `https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/start_oauth`
 
-When creating an asset for the **Salesforce** app, place the **Consumer Key** of the app created
-during the previous step in the **Client ID** field and place the **Consumer Secret** generated
-during the app creation process in the **Client Secret** field. Then, click **SAVE** .
+## Step 3: Set the Callback URL in Your External Client App
 
-After saving, a new field will appear in the **Asset Settings** tab. Take the URL found in the
-**POST incoming for Salesforce to this location** field. To this URL, add **/start_oauth** . After
-doing so the URL should look something like:
+1. Return to Salesforce Setup and open your External Client App.
+1. Click **Edit** and replace the placeholder **Callback URL** with the `/start_oauth` URL you
+   copied in Step 2.
+1. Click **Save**.
 
-https://\<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/\<asset_name>/start_oauth
+## Method to Run Test Connectivity with OAuth
 
-[![](img/asset_config.png)](img/asset_config.png)
-
-Click **Edit** on the app created in a previous step and place it in the **Callback URL** field.
-
-Once again, click on Save.
-
-## Method to Run Test Connectivity with Oauth
-
-After setting up the asset, click the **TEST CONNECTIVITY** button. A window should pop up and
-display a URL as shown in the below image. Navigate to this URL in a separate browser tab. This new
-tab will redirect to a Salesforce login page. Log in to a Salesforce account. Finally, close that
-tab when instructed to do. The test connectivity window should show a success. **The app should now
-be ready to use.**
+After completing the above setup, click the **TEST CONNECTIVITY** button in the Splunk SOAR asset.
+A window will appear with a URL. Open that URL in a new browser tab. The tab will redirect to a
+Salesforce login page. Log in with a Salesforce account and authorize the app. Close the tab when
+instructed. The test connectivity window should show success. **The app is now ready to use.**
 
 [![](img/modal.png)](img/modal.png)
 
-## Method to Run Test Connectivity with Username and Password
+> **Security note:** This connector uses PKCE (Proof Key for Code Exchange) to protect the
+> authorization code flow and supports Salesforce refresh token rotation. If Salesforce issues a new
+> refresh token during a session refresh, the connector automatically replaces the stored token so
+> the integration remains active.
 
-If you optionally specify username and password in the asset configuration, test connectivity will
-work differently; the main difference being that when you launch the test connectivity, there is no
-need to log into the Salesforce instance to authorize the app.
+## Method to Run Test Connectivity with Username and Password (Legacy)
 
-**Note:** The password field should be composed of your password with your account's security token
-appended at the end. Example: MyPasswordMyToken (this is not the same as the **client_secret** )
+> **This flow is not recommended for new External Client App setups.** External Client Apps in
+> Salesforce no longer support the resource owner password grant by default.
+
+If you are using a legacy Connected App that still allows the username-password flow, you can
+optionally specify a username and password in the asset configuration. When both are provided, test
+connectivity will authenticate directly without requiring a browser login.
+
+**Note:** The **Password** field must be your Salesforce password with your account's security
+token appended at the end. Example: `MyPasswordMyToken` (this is not the same as the
+**Client Secret**).
 
 ## Test Environment
 
-You may want to configure an asset to work with a Salesforce test environment. This is the case if
-the login URL for that Salesforce instance is <https://test.salesforce.com> as opposed to
-<https://login.salesforce.com> . In this case, you should check the appropriate box in the asset
-configuration.
+If the login URL for your Salesforce instance is <https://test.salesforce.com> rather than
+<https://login.salesforce.com>, enable the **Use a Salesforce test environment** checkbox in the
+asset configuration before running test connectivity.
 
 ## Ingestion
 
