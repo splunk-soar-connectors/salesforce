@@ -39,11 +39,16 @@ and refresh token rotation.
 ## Step 2: Configure the Salesforce Splunk SOAR App Asset
 
 1. In Splunk SOAR, open the **Apps** page and find the **Salesforce** app.
+
 1. Click **Configure New Asset**.
+
 1. In the **Asset Settings** tab, fill in:
+
    - **Client ID**: paste the **Consumer Key** from your External Client App.
    - **Client Secret**: paste the **Consumer Secret** from your External Client App.
+
 1. Click **SAVE**.
+
 1. After saving, a new field appears in the **Asset Settings** tab:
    **POST incoming for Salesforce to this location**. Copy that URL and append **/start_oauth** to it.
    The resulting URL will look like:

@@ -1,6 +1,6 @@
 # File: salesforce_connector.py
 #
-# Copyright (c) 2017-2025 Splunk Inc.
+# Copyright (c) 2017-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -691,9 +691,7 @@ class SalesforceConnector(BaseConnector):
 
         # PKCE: generate code_verifier and derive code_challenge (S256 method)
         code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(96)).rstrip(b"=").decode()
-        code_challenge = base64.urlsafe_b64encode(
-            hashlib.sha256(code_verifier.encode("ascii")).digest()
-        ).rstrip(b"=").decode()
+        code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("ascii")).digest()).rstrip(b"=").decode()
 
         # Authorization params: client_secret is intentionally excluded here.
         # It must only be sent at the token endpoint (never in the browser redirect URL).

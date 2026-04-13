@@ -1,10 +1,10 @@
 # Salesforce
 
-Publisher: Splunk \
-Connector Version: 2.1.4 \
-Product Vendor: Salesforce \
-Product Name: Salesforce \
-Minimum Product Version: 5.5.0
+Publisher: Splunk <br>
+Connector Version: 2.1.4 <br>
+Product Vendor: Salesforce <br>
+Product Name: Salesforce <br>
+Minimum Product Version: 6.3.0
 
 This app implements actions to manage objects on Salesforce
 
@@ -49,11 +49,16 @@ and refresh token rotation.
 ## Step 2: Configure the Salesforce Splunk SOAR App Asset
 
 1. In Splunk SOAR, open the **Apps** page and find the **Salesforce** app.
+
 1. Click **Configure New Asset**.
+
 1. In the **Asset Settings** tab, fill in:
+
    - **Client ID**: paste the **Consumer Key** from your External Client App.
    - **Client Secret**: paste the **Consumer Secret** from your External Client App.
+
 1. Click **SAVE**.
+
 1. After saving, a new field appears in the **Asset Settings** tab:
    **POST incoming for Salesforce to this location**. Copy that URL and append **/start_oauth** to it.
    The resulting URL will look like:
@@ -168,10 +173,10 @@ This table lists the configuration variables required to operate Salesforce. The
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
-**client_id** | required | string | Client ID |
-**client_secret** | required | password | Client Secret |
-**username** | optional | string | Username |
-**password** | optional | password | Password |
+**client_id** | required | string | Consumer Key / Client ID from your Salesforce External Client App |
+**client_secret** | required | password | Consumer Secret / Client Secret from your Salesforce External Client App |
+**username** | optional | string | (Legacy) Username for username-password OAuth flow. Not required for External Client App setup. |
+**password** | optional | password | (Legacy) Password with security token appended. Not required for External Client App setup. |
 **is_test_environment** | optional | boolean | Use a Salesforce test environment |
 **poll_sobject** | optional | string | Poll for this Salesforce Object |
 **poll_view_name** | optional | string | Poll this List View |
@@ -181,26 +186,26 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 
 ### Supported Actions
 
-[test connectivity](#action-test-connectivity) - Validate connection using the configured credentials \
-[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL) \
-[create object](#action-create-object) - Create a new Salesforce object \
-[create ticket](#action-create-ticket) - Create a new Case \
-[delete object](#action-delete-object) - Delete an object \
-[delete ticket](#action-delete-ticket) - Delete a Case \
-[update object](#action-update-object) - Update an object \
-[update ticket](#action-update-ticket) - Update a Case \
-[list objects](#action-list-objects) - Get a list of objects \
-[list tickets](#action-list-tickets) - Get a list of Cases \
-[get object](#action-get-object) - Get info about a Salesforce object \
-[get ticket](#action-get-ticket) - Get info about a Case \
-[post chatter](#action-post-chatter) - Post on the Chatter feed for a specified case \
+[test connectivity](#action-test-connectivity) - Validate connection using the configured credentials <br>
+[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL) <br>
+[create object](#action-create-object) - Create a new Salesforce object <br>
+[create ticket](#action-create-ticket) - Create a new Case <br>
+[delete object](#action-delete-object) - Delete an object <br>
+[delete ticket](#action-delete-ticket) - Delete a Case <br>
+[update object](#action-update-object) - Update an object <br>
+[update ticket](#action-update-ticket) - Update a Case <br>
+[list objects](#action-list-objects) - Get a list of objects <br>
+[list tickets](#action-list-tickets) - Get a list of Cases <br>
+[get object](#action-get-object) - Get info about a Salesforce object <br>
+[get ticket](#action-get-ticket) - Get info about a Case <br>
+[post chatter](#action-post-chatter) - Post on the Chatter feed for a specified case <br>
 [on poll](#action-on-poll) - Poll for new Objects on Salesforce
 
 ## action: 'test connectivity'
 
 Validate connection using the configured credentials
 
-Type: **test** \
+Type: **test** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -215,7 +220,7 @@ No Output
 
 Run a query using the Salesforce Object Query Language (SOQL)
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.
@@ -244,7 +249,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Create a new Salesforce object
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -272,7 +277,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Create a new Case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -306,7 +311,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Delete an object
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -333,7 +338,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Delete a Case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -358,7 +363,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Update an object
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -387,7 +392,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Update a Case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -424,7 +429,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get a list of objects
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.
@@ -459,7 +464,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get a list of Cases
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.
@@ -506,7 +511,7 @@ action_result.parameter.ph | ph | | |
 
 Get info about a Salesforce object
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.
@@ -536,7 +541,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get info about a Case
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.
@@ -629,7 +634,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Post on the Chatter feed for a specified case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -659,7 +664,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Poll for new Objects on Salesforce
 
-Type: **ingest** \
+Type: **ingest** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -680,7 +685,7 @@ ______________________________________________________________________
 
 Auto-generated Splunk SOAR Connector documentation.
 
-Copyright 2025 Splunk Inc.
+Copyright 2026 Splunk Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
