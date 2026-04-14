@@ -18,6 +18,12 @@ and refresh token rotation.
 > **Note for existing Connected App users:** If you already have a Connected App configured and
 > working, it will continue to function. Only new app creation is restricted. Follow the External
 > Client App steps below for any new setup.
+>
+> **Legacy Connected App availability note:** Some Salesforce environments may no longer allow
+> creation or use of Connected Apps by default. If your organization still needs the legacy
+> Connected App-based authentication flow and the option is unavailable, contact your Salesforce
+> administrator, Salesforce account team, or Salesforce support to determine whether it can be
+> enabled for your org.
 
 ## Step 1: Create an External Client App in Salesforce
 
@@ -92,8 +98,15 @@ instructed. The test connectivity window should show success. **The app is now r
 > Salesforce no longer support the resource owner password grant by default.
 
 If you are using a legacy Connected App that still allows the username-password flow, you can
-optionally specify a username and password in the asset configuration. When both are provided, test
-connectivity will authenticate directly without requiring a browser login.
+optionally specify a username and password in the asset configuration.
+
+When both **Username** and **Password** are provided, the asset uses the legacy username-password
+flow instead of the browser-based OAuth flow. Leave both fields blank to use the External Client
+App browser-based OAuth flow described above.
+
+If your Salesforce environment does not show Connected Apps or does not allow this legacy flow,
+contact your Salesforce administrator, Salesforce account team, or Salesforce support. This is a
+Salesforce-side org setting, not a Splunk SOAR connector setting.
 
 **Note:** The **Password** field must be your Salesforce password with your account's security
 token appended at the end. Example: `MyPasswordMyToken` (this is not the same as the
