@@ -46,3 +46,6 @@ SALESFORCE_INVALID_INTEGER = 'Please provide non-zero positive integer in "{para
 SALESFORCE_UNKNOWN_ERR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
 SALESFORCE_ERR_CODE_UNAVAILABLE = "Error code unavailable"
 SALESFORCE_DEFAULT_TIMEOUT = 30
+
+# Number of random bytes used to generate the PKCE code_verifier (RFC 7636).
+SALESFORCE_PKCE_VERIFIER_BYTES = 96

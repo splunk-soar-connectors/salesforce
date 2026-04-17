@@ -144,10 +144,14 @@ def _handle_oauth_start(request, path_parts):
     if not asset_id:
         return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
+    # Load state here so it is available in both the success and error branches below.
+    state = _load_app_state(asset_id)
+
     code = request.GET.get("code")
     if code:
-        state = _load_app_state(asset_id)
-        url_get_token = state["url_get_token"]
+        url_get_token = state.get("url_get_token")
+        if not url_get_token:
+            return _return_error("State file is missing token URL. Please re-run test connectivity.", state, asset_id, 400)
 
         # Decrypt the authorization params (contains client_id and redirect_uri; no client_secret)
         creds_dict = json.loads(encryption_helper.decrypt(state["creds"], asset_id))  # pylint: disable=E1101
@@ -170,18 +174,28 @@ def _handle_oauth_start(request, path_parts):
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
-            # nosemgrep: semgrep.request-sensitive-data
+            # nosemgrep: semgrep.request-sensitive-data — body contains client_secret and code_verifier
             r = requests.post(url_get_token, data=token_body, headers=headers, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
             resp_json = r.json()
         except Exception as e:
             return _return_error(f"Error retrieving OAuth Token: {e!s}. URL: {url_get_token}", state, asset_id, 401)
+
+        # Surface Salesforce-side errors (e.g. invalid scope, bad client_id) so operators can diagnose.
+        sf_error = resp_json.get("error_description") or resp_json.get("error")
+        if sf_error:
+            return _return_error(f"Salesforce token exchange failed: {sf_error}", state, asset_id, 401)
+
         refresh_token = resp_json.get("refresh_token")
         if not refresh_token:
             return _return_error("Unable to retrieve refresh token. Maybe app scope is set incorrectly?", state, asset_id, 401)
         state["refresh_token"] = encryption_helper.encrypt(refresh_token, asset_id)  # pylint: disable=E1101
         _save_app_state(state, asset_id)
         return HttpResponse("You can now close this page", content_type="text/plain")
-    return _return_error("Something went wrong during authentication", state, asset_id, 401)
+
+    # Salesforce sends `error` and `error_description` when the user denies or an error occurs.
+    sf_error = request.GET.get("error_description") or request.GET.get("error")
+    msg = f"Authentication failed: {sf_error}" if sf_error else "Something went wrong during authentication"
+    return _return_error(msg, state, asset_id, 401)
 
 
 def _handle_redirect(request, path_parts):
@@ -499,10 +513,12 @@ class SalesforceConnector(BaseConnector):
         self._base_url = resp["instance_url"]
 
         # Refresh token rotation: if Salesforce returns a new refresh token, replace the stored one
-        # immediately so the old (now invalidated) token is not used again.
+        # and persist immediately. The old token is already invalidated at this point, so any
+        # unhandled exception after this line would otherwise leave the connector with no valid token.
         new_refresh_token = resp.get("refresh_token")
         if new_refresh_token:
             self._state["refresh_token"] = encryption_helper.encrypt(new_refresh_token, self.get_asset_id())  # pylint: disable=E1101
+            self.save_state(self._state)
 
         return phantom.APP_SUCCESS
 
@@ -690,7 +706,7 @@ class SalesforceConnector(BaseConnector):
         asset_id = self.get_asset_id()
 
         # PKCE: generate code_verifier and derive code_challenge (S256 method)
-        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(96)).rstrip(b"=").decode()
+        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(sf_consts.SALESFORCE_PKCE_VERIFIER_BYTES)).rstrip(b"=").decode()
         code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("ascii")).digest()).rstrip(b"=").decode()
 
         # Authorization params: client_secret is intentionally excluded here.
@@ -721,6 +737,7 @@ class SalesforceConnector(BaseConnector):
         # Store code_verifier for PKCE token exchange
         state["code_verifier"] = encryption_helper.encrypt(code_verifier, asset_id)  # pylint: disable=E1101
         state["url"] = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
+        # url_get_token is a well-known public Salesforce endpoint (not a secret), stored plaintext intentionally.
         state["url_get_token"] = url_get_token
         _save_app_state(state, asset_id, self)
 
@@ -744,6 +761,8 @@ class SalesforceConnector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR)
 
         _delete_app_state(asset_id)
+        # Intentionally wipe any partial/failed state from a previous run before storing the
+        # newly acquired refresh token — prevents stale PKCE or error flags from carrying over.
         self._state = {}
         self._state["refresh_token"] = refresh_token
 
