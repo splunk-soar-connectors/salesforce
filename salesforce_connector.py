@@ -159,7 +159,7 @@ def _handle_oauth_start(request, path_parts):
         creds_dict.pop("code_challenge", None)
         creds_dict.pop("code_challenge_method", None)
 
-        # Build the token exchange body; client_secret lives only here, never in the browser URL
+        # Build the token exchange body
         token_body = {
             "grant_type": "authorization_code",
             "code": code,
@@ -180,7 +180,6 @@ def _handle_oauth_start(request, path_parts):
         except Exception as e:
             return _return_error(f"Error retrieving OAuth Token: {e!s}. URL: {url_get_token}", state, asset_id, 401)
 
-        # Surface Salesforce-side errors (e.g. invalid scope, bad client_id) so operators can diagnose.
         sf_error = resp_json.get("error_description") or resp_json.get("error")
         if sf_error:
             return _return_error(f"Salesforce token exchange failed: {sf_error}", state, asset_id, 401)
