@@ -25,6 +25,7 @@ import os
 import secrets
 import sys
 import time
+from urllib.parse import urlparse
 
 import encryption_helper
 import phantom.app as phantom
@@ -243,6 +244,7 @@ def _get_dir_name_from_app_name(app_name):
 class SalesforceConnector(BaseConnector):
     OAUTH_FLOW = 1
     USERNAME_PASSWORD = 2
+    CLIENT_CREDENTIALS = 3
 
     def __init__(self):
         # Call the BaseConnectors init first
@@ -283,6 +285,64 @@ class SalesforceConnector(BaseConnector):
             error_text = f"Error Code: {error_code}. Error Message: {error_msg}"
 
         return error_text
+
+    def _get_client_credentials_domain_url(self, action_result):
+        """Return the Salesforce My Domain base URL required for client credentials flow."""
+
+        domain_url = (self.get_config().get("domain_url") or "").strip()
+        if not domain_url:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "My Domain URL must be specified for Client Credentials flow. "
+                    "In Salesforce Setup, open My Domain and copy the Current My Domain URL "
+                    "(for example, https://your-org.my.salesforce.com).",
+                ),
+                None,
+            )
+
+        # Some Salesforce screens display the host followed by helper text such as
+        # "with enhanced domains". Strip that text so copy/paste from the UI still works.
+        enhanced_domains_suffix = " with enhanced domains"
+        if domain_url.lower().endswith(enhanced_domains_suffix):
+            domain_url = domain_url[: -len(enhanced_domains_suffix)].strip()
+
+        # Salesforce's "Current My Domain URL" field may display only the hostname, without
+        # an explicit scheme. Accept that user input and normalize it to HTTPS.
+        if "://" not in domain_url:
+            domain_url = f"https://{domain_url}"
+
+        parsed = urlparse(domain_url)
+        if parsed.scheme != "https" or not parsed.netloc:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "My Domain URL must be a full HTTPS URL, for example https://your-org.my.salesforce.com",
+                ),
+                None,
+            )
+
+        host = parsed.netloc.lower()
+        if host in {"login.salesforce.com", "test.salesforce.com"}:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "Use your org's Current My Domain URL, not login.salesforce.com or test.salesforce.com, for Client Credentials flow.",
+                ),
+                None,
+            )
+
+        if host.endswith(".lightning.force.com"):
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "Use the Salesforce Current My Domain URL ending in .my.salesforce.com, "
+                    "not the Lightning UI URL ending in .lightning.force.com.",
+                ),
+                None,
+            )
+
+        return phantom.APP_SUCCESS, f"{parsed.scheme}://{parsed.netloc}"
 
     def _validate_integers(self, action_result, parameter, key, allow_zero=False):
         """Validate the provided input parameter value is a non-zero positive integer and returns the integer value of the parameter itself.
@@ -556,6 +616,39 @@ class SalesforceConnector(BaseConnector):
         self._base_url = resp["instance_url"]
         return phantom.APP_SUCCESS
 
+    def _retrieve_oauth_token_client_credentials(self, action_result):
+        """Get an access token using the OAuth 2.0 Client Credentials flow.
+
+        No browser or user interaction required. Salesforce issues a fresh access token
+        on every call. There is no refresh token in this flow.
+
+        Parameters:
+            :param action_result: Object of action result
+        Returns:
+            :return: status(phantom.APP_SUCCESS/phantom.APP_ERROR)
+        """
+
+        config = self.get_config()
+        body = {
+            "grant_type": "client_credentials",
+            "client_id": config["client_id"],
+            "client_secret": config["client_secret"],
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        ret_val, domain_url = self._get_client_credentials_domain_url(action_result)
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        url_get_token = f"{domain_url}{sf_consts.SALESFORCE_OAUTH_TOKEN_PATH}"
+
+        ret_val, resp = self._make_rest_call(url_get_token, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        self._oauth_token = resp["access_token"]
+        self._base_url = resp.get("instance_url") or domain_url
+        return phantom.APP_SUCCESS
+
     def _retrieve_oauth_token_helper(self, action_result):
         """Function that helps to retrieve oauth token for the app.
 
@@ -566,6 +659,8 @@ class SalesforceConnector(BaseConnector):
         """
         if self._auth_flow == self.OAUTH_FLOW:
             return self._retrieve_oauth_token(action_result)
+        if self._auth_flow == self.CLIENT_CREDENTIALS:
+            return self._retrieve_oauth_token_client_credentials(action_result)
         return self._retrieve_oauth_token_username_password(action_result)
 
     def _make_rest_call_helper(self, endpoint, action_result, headers=None, *args, **kwargs):
@@ -1396,7 +1491,12 @@ class SalesforceConnector(BaseConnector):
 
         self._username = config.get("username")
         self._password = config.get("password")
-        if self._username:
+
+        if config.get("use_client_credentials"):
+            # Client Credentials flow: no browser, no user — fresh token on every action.
+            # Requires 'Enable Client Credentials Flow' to be turned on in Salesforce ECA settings.
+            self._auth_flow = self.CLIENT_CREDENTIALS
+        elif self._username:
             if not self._password:
                 return self.set_status(phantom.APP_ERROR, "Password must be specified with a username")
             self._auth_flow = self.USERNAME_PASSWORD

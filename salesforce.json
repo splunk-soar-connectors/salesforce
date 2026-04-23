@@ -30,63 +30,73 @@
     ],
     "configuration": {
         "client_id": {
-            "description": "Consumer Key / Client ID from your Salesforce External Client App",
+            "description": "Consumer Key / Client ID from Salesforce External Client App -> Settings tab -> OAuth Settings -> Consumer Key and Secret",
             "data_type": "string",
             "required": true,
             "order": 0
         },
         "client_secret": {
-            "description": "Consumer Secret / Client Secret from your Salesforce External Client App",
+            "description": "Consumer Secret / Client Secret from Salesforce External Client App -> Settings tab -> OAuth Settings -> Consumer Key and Secret",
             "data_type": "password",
             "required": true,
             "order": 1
         },
+        "use_client_credentials": {
+            "description": "Use Client Credentials OAuth flow (no browser required). In Salesforce, enable 'Enable Client Credentials Flow' on the app and again under Policies -> OAuth Policies, set Run As (Username), and fill in My Domain URL below.",
+            "data_type": "boolean",
+            "order": 2
+        },
+        "domain_url": {
+            "description": "Salesforce Setup -> Company Settings -> My Domain -> Current My Domain URL. You can paste either your-org.my.salesforce.com or https://your-org.my.salesforce.com. Required for Client Credentials flow.",
+            "data_type": "string",
+            "order": 3
+        },
         "username": {
             "description": "(Legacy) Username for username-password OAuth flow. Not required for External Client App setup.",
             "data_type": "string",
-            "order": 2
+            "order": 4
         },
         "password": {
             "description": "(Legacy) Password with security token appended. Not required for External Client App setup.",
             "data_type": "password",
-            "order": 3
+            "order": 5
         },
         "is_test_environment": {
-            "description": "Use a Salesforce test environment",
+            "description": "Use a Salesforce test environment for browser OAuth and legacy username-password flows",
             "data_type": "boolean",
-            "order": 4
+            "order": 6
         },
         "ph": {
             "data_type": "ph",
-            "order": 5
+            "order": 7
         },
         "poll_sobject": {
             "description": "Poll for this Salesforce Object",
             "data_type": "string",
             "default": "Case",
-            "order": 6
+            "order": 8
         },
         "poll_view_name": {
             "description": "Poll this List View",
             "data_type": "string",
-            "order": 7
+            "order": 9
         },
         "first_ingestion_max": {
             "description": "Get this many results on first ingestion",
             "data_type": "numeric",
             "default": 10,
-            "order": 8
+            "order": 10
         },
         "cef_name_map": {
             "description": "Mapping of Salesforce to CEF fields (JSON file)",
             "data_type": "file",
-            "order": 9
+            "order": 11
         },
         "last_view_date": {
             "description": "Include view date in artifact",
             "data_type": "boolean",
             "default": true,
-            "order": 10
+            "order": 12
         }
     },
     "actions": [

@@ -16,11 +16,14 @@ PHANTOM_SYS_INFO_URL = "{url}rest/system_info"
 PHANTOM_ASSET_INFO_URL = "{url}rest/asset/{asset_id}"
 
 
-URL_GET_CODE = "https://login.salesforce.com/services/oauth2/authorize"
-URL_GET_TOKEN = "https://login.salesforce.com/services/oauth2/token"
+SALESFORCE_OAUTH_AUTHORIZE_PATH = "/services/oauth2/authorize"
+SALESFORCE_OAUTH_TOKEN_PATH = "/services/oauth2/token"
 
-URL_GET_CODE_TEST = "https://test.salesforce.com/services/oauth2/authorize"
-URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"
+URL_GET_CODE = f"https://login.salesforce.com{SALESFORCE_OAUTH_AUTHORIZE_PATH}"
+URL_GET_TOKEN = f"https://login.salesforce.com{SALESFORCE_OAUTH_TOKEN_PATH}"
+
+URL_GET_CODE_TEST = f"https://test.salesforce.com{SALESFORCE_OAUTH_AUTHORIZE_PATH}"
+URL_GET_TOKEN_TEST = f"https://test.salesforce.com{SALESFORCE_OAUTH_TOKEN_PATH}"
 
 
 API_ENDPOINT_DESCRIBE_GLOBAL = "{version}/sobjects/"
