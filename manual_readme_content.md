@@ -84,6 +84,43 @@ Use this step only for Client Credentials OAuth.
    used for API calls.
 1. Do not leave **Run As (Username)** empty. Salesforce rejects Client Credentials requests when no
    Run As user is assigned.
+1. The access token acts as this **Run As** user. The connector can only read, create, update, or
+   list data that this user is already allowed to access in Salesforce.
+1. Use a dedicated integration user when possible instead of a human administrator account.
+1. Grant that user only the permissions required for your use case, typically through permission
+   sets or permission set groups. At minimum, review:
+   - object permissions for the Salesforce objects the connector will read or modify
+   - field-level permissions for any fields the connector must read or write
+   - record and list-view access for the specific records or list views used for polling
+1. If your org provides the **Salesforce Integration** user license, Salesforce recommends using a
+   dedicated integration user with the **Minimum Access - API Only Integrations** profile and then
+   granting the required data and operation access through permission sets.
+1. To grant access to the **Run As** user in Salesforce:
+   - open **Setup**
+   - use **Quick Find** and open **Permission Sets**
+   - click **New**
+   - enter a label such as `Splunk SOAR Salesforce Integration`
+   - if you are using the **Salesforce Integration** user license, select the **Salesforce API
+     Integration** permission set license when prompted
+   - save the permission set
+   - open **Object Settings** inside the permission set
+   - open each object the connector needs, such as **Account**, **Case**, or custom objects, click
+     **Edit**, and enable only the required permissions such as **Read**, **Create**, **Edit**, or
+     **Delete**
+   - within the same object, review **Field Permissions** and enable access only for the fields the
+     connector must read or write
+   - click **Manage Assignments** -> **Add Assignments**, select the same user you chose in
+     **Run As (Username)**, and assign the permission set
+   - if you use polling with a Salesforce list view, make sure that user can see the underlying
+     records and the selected list view through your org's sharing and list-view visibility rules
+1. Optional quick validation path: if you are only trying to confirm that Client Credentials auth
+   works and you are unsure which minimum permissions to grant yet, you can temporarily choose a
+   known Salesforce administrator or another user who already has confirmed API, object, field, and
+   list-view access. After the smoke test succeeds, switch to a dedicated least-privilege
+   integration user for production use.
+1. Do not assume a Salesforce username or login email is an administrator account. Confirm the
+   user's profile, permission sets, and object access in Salesforce before using that user as
+   **Run As (Username)**.
 1. Save your changes.
 
 Client Credentials flow does not use `refresh_token`, `offline_access`, PKCE, or the callback URL.
