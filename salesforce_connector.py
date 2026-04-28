@@ -145,7 +145,6 @@ def _handle_oauth_start(request, path_parts):
     if not asset_id:
         return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
-    # Load state here so it is available in both the success and error branches below.
     state = _load_app_state(asset_id)
 
     code = request.GET.get("code")
@@ -154,22 +153,14 @@ def _handle_oauth_start(request, path_parts):
         if not url_get_token:
             return _return_error("State file is missing token URL. Please re-run test connectivity.", state, asset_id, 400)
 
-        # Decrypt the authorization params (contains client_id and redirect_uri; no client_secret)
-        creds_dict = json.loads(encryption_helper.decrypt(state["creds"], asset_id))  # pylint: disable=E1101
-        creds_dict.pop("response_type", None)
-        creds_dict.pop("code_challenge", None)
-        creds_dict.pop("code_challenge_method", None)
-
-        # Build the token exchange body
         token_body = {
             "grant_type": "authorization_code",
             "code": code,
-            "client_id": creds_dict["client_id"],
-            "redirect_uri": creds_dict["redirect_uri"],
+            "client_id": encryption_helper.decrypt(state["client_id"], asset_id),  # pylint: disable=E1101
+            "redirect_uri": encryption_helper.decrypt(state["redirect_uri"], asset_id),  # pylint: disable=E1101
             "client_secret": encryption_helper.decrypt(state["client_secret"], asset_id),  # pylint: disable=E1101
         }
 
-        # PKCE: include code_verifier if it was generated during the authorization request
         if state.get("code_verifier"):
             token_body["code_verifier"] = encryption_helper.decrypt(state["code_verifier"], asset_id)  # pylint: disable=E1101
 
@@ -301,12 +292,6 @@ class SalesforceConnector(BaseConnector):
                 None,
             )
 
-        # Some Salesforce screens display the host followed by helper text such as
-        # "with enhanced domains". Strip that text so copy/paste from the UI still works.
-        enhanced_domains_suffix = " with enhanced domains"
-        if domain_url.lower().endswith(enhanced_domains_suffix):
-            domain_url = domain_url[: -len(enhanced_domains_suffix)].strip()
-
         # Salesforce's "Current My Domain URL" field may display only the hostname, without
         # an explicit scheme. Accept that user input and normalize it to HTTPS.
         if "://" not in domain_url:
@@ -338,6 +323,16 @@ class SalesforceConnector(BaseConnector):
                     phantom.APP_ERROR,
                     "Use the Salesforce Current My Domain URL ending in .my.salesforce.com, "
                     "not the Lightning UI URL ending in .lightning.force.com.",
+                ),
+                None,
+            )
+
+        if not host.endswith(".my.salesforce.com"):
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "My Domain URL must be the Salesforce Current My Domain URL ending in .my.salesforce.com. "
+                    "Copy only the hostname or HTTPS URL, without helper text such as 'with enhanced domains'.",
                 ),
                 None,
             )
@@ -803,12 +798,14 @@ class SalesforceConnector(BaseConnector):
         code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(sf_consts.SALESFORCE_PKCE_VERIFIER_BYTES)).rstrip(b"=").decode()
         code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("ascii")).digest()).rstrip(b"=").decode()
 
+        redirect_uri = app_rest_url + "/start_oauth"
+
         # Authorization params: client_secret is intentionally excluded here.
         # It must only be sent at the token endpoint (never in the browser redirect URL).
         auth_params = {
             "response_type": "code",
             "state": asset_id,
-            "redirect_uri": app_rest_url + "/start_oauth",
+            "redirect_uri": redirect_uri,
             "client_id": client_id,
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
@@ -824,11 +821,9 @@ class SalesforceConnector(BaseConnector):
         prep = requests.Request("get", url_get_code, params=auth_params).prepare()
 
         state = {}
-        # Store auth params (no secret) so _handle_oauth_start can rebuild client_id/redirect_uri
-        state["creds"] = encryption_helper.encrypt(json.dumps(auth_params), asset_id)  # pylint: disable=E1101
-        # Store client_secret separately so it is only sent at the token endpoint
+        state["client_id"] = encryption_helper.encrypt(client_id, asset_id)  # pylint: disable=E1101
+        state["redirect_uri"] = encryption_helper.encrypt(redirect_uri, asset_id)  # pylint: disable=E1101
         state["client_secret"] = encryption_helper.encrypt(client_secret, asset_id)  # pylint: disable=E1101
-        # Store code_verifier for PKCE token exchange
         state["code_verifier"] = encryption_helper.encrypt(code_verifier, asset_id)  # pylint: disable=E1101
         state["url"] = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
         # url_get_token is a well-known public Salesforce endpoint (not a secret), stored plaintext intentionally.
@@ -1493,8 +1488,6 @@ class SalesforceConnector(BaseConnector):
         self._password = config.get("password")
 
         if config.get("use_client_credentials"):
-            # Client Credentials flow: no browser, no user — fresh token on every action.
-            # Requires 'Enable Client Credentials Flow' to be turned on in Salesforce ECA settings.
             self._auth_flow = self.CLIENT_CREDENTIALS
         elif self._username:
             if not self._password:

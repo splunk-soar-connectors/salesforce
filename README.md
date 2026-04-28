@@ -28,26 +28,42 @@ supports External Client Apps in two ways:
 > administrator, Salesforce account team, or Salesforce support to determine whether it can be
 > enabled for your org.
 
+## Choose an Authentication Flow
+
+Choose the flow before you start setup:
+
+1. **Browser-based OAuth with PKCE**: use this flow when an administrator can complete a one-time
+   browser login and consent step. This flow uses a callback URL and stores a refresh token for
+   later actions. Follow **Steps 1, 2A, 3, and 4A**.
+1. **Client Credentials OAuth**: use this flow for headless server-to-server authentication with no
+   browser login. This flow does not use a callback URL, PKCE, or refresh tokens. Follow
+   **Steps 1, 2B, 3, and 4B**.
+1. **Username-password OAuth**: this is a legacy flow for existing Connected Apps only. It is not
+   recommended for new External Client App setups.
+
 ## Step 1: Open External Client App Manager in Salesforce
 
 1. Sign in to Salesforce.
 1. Open **Setup**.
 1. In Setup, use either of these navigation paths:
-   - left navigation: **Apps** → **External Client Apps** → **External Client App Manager**
+   - left navigation: **Apps** -> **External Client Apps** -> **External Client App Manager**
    - **Quick Find** search: type `External Client App Manager` and select it
 1. Click **New External Client App**.
-
-## Step 2: Create the External Client App
-
 1. Under **Basic Information**, fill in:
    - **External Client App Name**: for example, `Salesforce Splunk SOAR App`
    - **API Name**: keep the default or use `Salesforce_Splunk_SOAR_App`
    - **Contact Email**: your admin or support email address
    - **Distribution State**: `Local`
 1. Expand **API (Enable OAuth Settings)** and select **Enable OAuth**.
-1. In **Callback URL**, enter a temporary placeholder value for now, for example
-   `https://placeholder.example/callback`
-1. Under **Available OAuth Scopes**, move these exact scopes to **Selected OAuth Scopes**:
+1. If Salesforce requires a **Callback URL** during creation, enter a temporary placeholder value
+   such as `https://placeholder.example/callback`. Browser OAuth users replace this later in
+   Step 4A. Client Credentials users do not use this callback URL.
+
+## Step 2A: Configure Browser-Based OAuth Settings
+
+Use this step only for browser-based OAuth with PKCE.
+
+1. Under **Available OAuth Scopes**, move these scopes to **Selected OAuth Scopes**:
    - `Manage user data via APIs (api)`
    - `Perform requests at any time (refresh_token, offline_access)`
 1. Under **Flow Enablement**, select **Enable Authorization Code and Credentials Flow**.
@@ -57,7 +73,30 @@ supports External Client Apps in two ways:
    - `Require Proof Key for Code Exchange (PKCE) Extension for Supported Authorization Flows`
    - `Require Secret for Web Server Flow`
    - `Require Secret for Refresh Token Flow`
-1. Click **Create**.
+1. Click **Create** or **Save**.
+
+## Step 2B: Configure Client Credentials Settings
+
+Use this step only for Client Credentials OAuth.
+
+1. Under **Available OAuth Scopes**, move this scope to **Selected OAuth Scopes**:
+   - `Manage user data via APIs (api)`
+1. Click **Create** or **Save**.
+1. Open the external client app.
+1. On the **Settings** tab, expand **OAuth Settings**.
+1. If your Salesforce screen shows **Enable Client Credentials Flow** on the settings page, select
+   it and save the settings.
+1. Open the **Policies** tab.
+1. Expand **OAuth Policies** and click **Edit**.
+1. In **OAuth Flows and External Client App Enhancements**, select **Enable Client Credentials
+   Flow**.
+1. In **Run As (Username)**, select or enter the active Salesforce user whose permissions should be
+   used for API calls.
+1. Do not leave **Run As (Username)** empty. Salesforce rejects Client Credentials requests when no
+   Run As user is assigned.
+1. Save your changes.
+
+Client Credentials flow does not use `refresh_token`, `offline_access`, PKCE, or the callback URL.
 
 ## Step 3: Retrieve Consumer Key and Consumer Secret
 
@@ -67,84 +106,35 @@ supports External Client Apps in two ways:
 1. Click **Consumer Key and Secret**.
 1. If Salesforce sends a verification code to your email, complete that verification step.
 1. Copy these two values:
-   - **Consumer Key** → paste into the Splunk SOAR **Client ID** field
-   - **Consumer Secret** → paste into the Splunk SOAR **Client Secret** field
+   - **Consumer Key** -> paste into the Splunk SOAR **Client ID** field
+   - **Consumer Secret** -> paste into the Splunk SOAR **Client Secret** field
 
-## Step 4: Copy the Salesforce My Domain value
+## Step 4A: Configure Splunk SOAR for Browser-Based OAuth
 
-1. In Salesforce Setup, open **My Domain** using either of these paths:
-   - left navigation: **Company Settings** → **My Domain**
-   - **Quick Find** search: type `My Domain` and select it
-1. On the **My Domain Details** page, locate **Current My Domain URL**.
-1. Copy only the Salesforce host value shown there. Example:
-   `d3t000003xsqyeay-dev-ed.my.salesforce.com`
-1. If Salesforce shows helper text such as `with enhanced domains` next to the value, copy only
-   the hostname portion. The connector also tolerates that extra helper text if it is pasted in.
-1. If you prefer, you can add `https://` before pasting it into Splunk SOAR. The connector accepts
-   either format.
-1. Do **not** use:
-   - the browser address bar host ending in `.lightning.force.com`
-   - `login.salesforce.com`
-   - `test.salesforce.com`
-
-## Step 5: Configure the Salesforce Splunk SOAR App Asset
+Use this step only when **Use Client Credentials OAuth flow** is unchecked.
 
 1. In Splunk SOAR, open **Apps** and find the **Salesforce** app.
 1. Click **Configure New Asset**.
 1. In **Asset Settings**, fill in:
    - **Client ID**: the **Consumer Key** from Step 3
    - **Client Secret**: the **Consumer Secret** from Step 3
-   - **Use Client Credentials OAuth flow**:
-     leave unchecked for browser-based OAuth; check it only if you want the headless
-     client-credentials mode
-   - **My Domain URL**:
-     required only for Client Credentials flow; paste the value from Step 4
-   - **Username** and **Password**:
-     leave blank unless you are intentionally using the legacy username-password flow
+   - **Use Client Credentials OAuth flow**: unchecked
+   - **My Domain URL**: leave blank
+   - **Username** and **Password**: leave blank
 1. Click **SAVE**.
+1. After saving, copy the value shown in **POST incoming for Salesforce to this location** and append
+   `/start_oauth`.
 
-If you are using browser-based OAuth, after saving a new field appears:
-**POST incoming for Salesforce to this location**.
-Copy that value and append `/start_oauth`.
-The final callback URL will look like:
+The final callback URL looks like:
 
 `https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/start_oauth`
-
-## Step 6: Update the Callback URL in Salesforce for browser-based OAuth
 
 1. Return to **External Client App Manager** in Salesforce.
 1. Open the same external client app.
 1. Use **Edit** or **Edit Settings** for the app, depending on how your Salesforce screen is laid out.
-1. In **Callback URL**, replace the temporary placeholder with the `/start_oauth` URL from Step 5.
+1. In **Callback URL**, replace the temporary placeholder with the `/start_oauth` URL.
 1. Save your changes.
-
-If you will use only Client Credentials flow and never browser OAuth, the callback URL isn't used by
-that headless flow, so a valid placeholder callback URL is acceptable.
-
-## Step 7: Extra Salesforce setup for Client Credentials flow
-
-Use this step only if you want headless server-to-server authentication with no browser login.
-
-1. Open the external client app in Salesforce.
-1. On the **Settings** tab, expand **OAuth Settings**.
-1. If your Salesforce screen shows **Enable Client Credentials Flow** on the settings page, select
-   it and save the settings.
-1. Open the **Policies** tab.
-1. Expand **OAuth Policies** and click **Edit**.
-1. In **OAuth Flows and External Client App Enhancements**, select **Enable Client Credentials
-   Flow**.
-1. In **Run As (Username)**, select or enter the Salesforce user who should own the API calls.
-1. Save your changes.
-
-## Method to Run Test Connectivity with OAuth
-
-Use this method when **Use Client Credentials OAuth flow** is **unchecked**.
-
-1. Confirm that:
-   - **Use Client Credentials OAuth flow** is unchecked
-   - **Username** and **Password** are blank
-   - the Salesforce app's **Callback URL** was updated to the Splunk SOAR `/start_oauth` URL
-1. Click **TEST CONNECTIVITY** in the Splunk SOAR asset.
+1. In Splunk SOAR, click **TEST CONNECTIVITY**.
 1. A window displays a URL. Open that URL in a new browser tab.
 1. Sign in to Salesforce if prompted.
 1. Approve the app when Salesforce asks for consent.
@@ -156,21 +146,37 @@ Use this method when **Use Client Credentials OAuth flow** is **unchecked**.
 > **Security note:** This connector uses PKCE (Proof Key for Code Exchange) to protect the
 > authorization code flow and supports Salesforce refresh token rotation. If Salesforce issues a new
 > refresh token during a session refresh, the connector automatically replaces the stored token so
-> the integration remains active.
+> the integration remains active. If the stored refresh token later expires, is revoked, or becomes
+> invalid, re-run **TEST CONNECTIVITY** to authorize the app again and store a new refresh token.
 
-## Method to Run Test Connectivity with Client Credentials
+## Step 4B: Configure Splunk SOAR for Client Credentials OAuth
 
-Use this flow for headless server-to-server integrations where no browser login is desired.
+Use this step only when **Use Client Credentials OAuth flow** is checked.
 
-1. In Salesforce, complete Step 7 above so **Enable Client Credentials Flow** is turned on in the
-   app's policy section and **Run As (Username)** is set.
-1. In Splunk SOAR asset settings:
-   - check **Use Client Credentials OAuth flow**
-   - set **My Domain URL** to the **Current My Domain URL** value from Step 4
-   - leave **Username** and **Password** blank
+1. In Salesforce Setup, open **My Domain** using either of these paths:
+   - left navigation: **Company Settings** -> **My Domain**
+   - **Quick Find** search: type `My Domain` and select it
+1. On the **My Domain Details** page, locate **Current My Domain URL**.
+1. Copy only the Salesforce hostname or HTTPS URL. Example:
+   `d3t000003xsqyeay-dev-ed.my.salesforce.com`
+1. Do **not** copy helper text such as `with enhanced domains`.
+1. Do **not** use:
+   - the browser address bar host ending in `.lightning.force.com`
+   - `login.salesforce.com`
+   - `test.salesforce.com`
+1. In Splunk SOAR, open **Apps** and find the **Salesforce** app.
+1. Click **Configure New Asset**.
+1. In **Asset Settings**, fill in:
+   - **Client ID**: the **Consumer Key** from Step 3
+   - **Client Secret**: the **Consumer Secret** from Step 3
+   - **Use Client Credentials OAuth flow**: checked
+   - **My Domain URL**: the **Current My Domain URL** value copied above; you can paste either the
+     bare hostname or the full `https://` URL
+   - **Username** and **Password**: leave blank
+1. Click **SAVE**.
 1. Click **TEST CONNECTIVITY**.
 
-The connector will send the token request to:
+The connector sends the token request to:
 
 `https://<your-my-domain>/services/oauth2/token`
 
@@ -187,9 +193,9 @@ The connector will send the token request to:
 If you are using a legacy Connected App that still allows the username-password flow, you can
 optionally specify a username and password in the asset configuration.
 
-When both **Username** and **Password** are provided, the asset uses the legacy username-password
-flow instead of the browser-based OAuth flow. Leave both fields blank to use the External Client
-App browser-based OAuth flow described above.
+When both **Username** and **Password** are provided and **Use Client Credentials OAuth flow** is
+unchecked, the asset uses the legacy username-password flow instead of the browser-based OAuth flow.
+Leave both fields blank to use the External Client App browser-based OAuth flow described above.
 
 If your Salesforce environment does not show Connected Apps or does not allow this legacy flow,
 contact your Salesforce administrator, Salesforce account team, or Salesforce support. This is a
