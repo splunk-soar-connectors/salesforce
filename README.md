@@ -266,16 +266,7 @@ flow uses the **My Domain URL** field instead.
   Salesforce. You may want to map these to standard CEF fields. This can be done by providing a
   JSON that describes the mapping. For example, if the Salesforce object has the field
   **ip_address\_\_c** , and you want this to be **sourceAddress** , the following file would be
-  appropriate.
-
-  ```shell
-                  
-                  {
-                      "ip_address__c": "sourceAddress"
-                  }
-                  
-                  
-  ```
+  appropriate: `{"ip_address__c": "sourceAddress"}`.
 
 ### 'Include view data in artifact' Configuration Parameter
 
