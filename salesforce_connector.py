@@ -800,8 +800,6 @@ class SalesforceConnector(BaseConnector):
 
         redirect_uri = app_rest_url + "/start_oauth"
 
-        # Authorization params: client_secret is intentionally excluded here.
-        # It must only be sent at the token endpoint (never in the browser redirect URL).
         auth_params = {
             "response_type": "code",
             "state": asset_id,
