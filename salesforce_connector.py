@@ -287,7 +287,7 @@ class SalesforceConnector(BaseConnector):
                     phantom.APP_ERROR,
                     "My Domain URL must be specified for Client Credentials flow. "
                     "In Salesforce Setup, open My Domain and copy the Current My Domain URL "
-                    "(for example, https://your-org.my.salesforce.com).",
+                    "(for example, https://d3t000000example-dev-ed.my.salesforce.com).",
                 ),
                 None,
             )
@@ -302,7 +302,7 @@ class SalesforceConnector(BaseConnector):
             return (
                 action_result.set_status(
                     phantom.APP_ERROR,
-                    "My Domain URL must be a full HTTPS URL, for example https://your-org.my.salesforce.com",
+                    "My Domain URL must be a full HTTPS URL, for example https://d3t000000example-dev-ed.my.salesforce.com",
                 ),
                 None,
             )

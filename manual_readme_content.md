@@ -185,7 +185,7 @@ Use this step only when **Use Client Credentials OAuth flow** is checked.
    - **Quick Find** search: type `My Domain` and select it
 1. On the **My Domain Details** page, locate **Current My Domain URL**.
 1. Copy only the Salesforce hostname or HTTPS URL. Example:
-   `d3t000003xsqyeay-dev-ed.my.salesforce.com`
+   `d3t000000example-dev-ed.my.salesforce.com`
 1. Do **not** copy helper text such as `with enhanced domains`.
 1. Do **not** use:
    - the browser address bar host ending in `.lightning.force.com`
