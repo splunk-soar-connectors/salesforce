@@ -1,6 +1,6 @@
 # File: salesforce_connector.py
 #
-# Copyright (c) 2017-2025 Splunk Inc.
+# Copyright (c) 2017-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -832,7 +832,7 @@ class SalesforceConnector(BaseConnector):
 
         endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(version=self._version_uri, sobject=sobject, id=obj_id)
 
-        ret_val, response = self._make_rest_call_helper(endpoint, action_result, method="delete")
+        ret_val, _response = self._make_rest_call_helper(endpoint, action_result, method="delete")
         if phantom.is_fail(ret_val):
             return ret_val
 
@@ -1274,7 +1274,7 @@ class SalesforceConnector(BaseConnector):
 
             for artifact in container_artifact:
                 artifact["container_id"] = container_id
-            ret_val, status_string, artifact_ids = self.save_artifacts(container_artifact)
+            ret_val, status_string, _artifact_ids = self.save_artifacts(container_artifact)
             if phantom.is_fail(ret_val):
                 self.save_progress(f"Error saving artifacts: {status_string}")
 
