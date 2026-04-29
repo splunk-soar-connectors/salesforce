@@ -308,30 +308,12 @@ class SalesforceConnector(BaseConnector):
             )
 
         host = parsed.netloc.lower()
-        if host in {"login.salesforce.com", "test.salesforce.com"}:
-            return (
-                action_result.set_status(
-                    phantom.APP_ERROR,
-                    "Use your org's Current My Domain URL, not login.salesforce.com or test.salesforce.com, for Client Credentials flow.",
-                ),
-                None,
-            )
-
-        if host.endswith(".lightning.force.com"):
-            return (
-                action_result.set_status(
-                    phantom.APP_ERROR,
-                    "Use the Salesforce Current My Domain URL ending in .my.salesforce.com, "
-                    "not the Lightning UI URL ending in .lightning.force.com.",
-                ),
-                None,
-            )
-
         if not host.endswith(".my.salesforce.com"):
             return (
                 action_result.set_status(
                     phantom.APP_ERROR,
-                    "My Domain URL must be the Salesforce Current My Domain URL ending in .my.salesforce.com. "
+                    "My Domain URL must be your Salesforce Current My Domain URL ending in .my.salesforce.com. "
+                    "Do not use a login, test, or any other domain URL. ",
                     "Copy only the hostname or HTTPS URL, without helper text such as 'with enhanced domains'.",
                 ),
                 None,
