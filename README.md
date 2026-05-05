@@ -310,10 +310,10 @@ This table lists the configuration variables required to operate Salesforce. The
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
-**client_id** | required | string | Consumer Key / Client ID from Salesforce External Client App -> Settings tab -> OAuth Settings -> Consumer Key and Secret |
-**client_secret** | required | password | Consumer Secret / Client Secret from Salesforce External Client App -> Settings tab -> OAuth Settings -> Consumer Key and Secret |
-**use_client_credentials** | optional | boolean | Use Client Credentials OAuth flow (no browser required). In Salesforce, enable 'Enable Client Credentials Flow' on the app and again under Policies -> OAuth Policies, set Run As (Username), and fill in My Domain URL below. |
-**domain_url** | optional | string | Salesforce Setup -> Company Settings -> My Domain -> Current My Domain URL. You can paste either your-org.my.salesforce.com or https://your-org.my.salesforce.com. Required for Client Credentials flow. |
+**client_id** | required | string | Salesforce OAuth client identifier, also called the consumer key. |
+**client_secret** | required | password | Salesforce OAuth client secret, also called the consumer secret. |
+**use_client_credentials** | optional | boolean | Use Salesforce Client Credentials OAuth flow. |
+**domain_url** | optional | string | Salesforce Current My Domain URL used for Client Credentials flow. |
 **username** | optional | string | (Legacy) Username for username-password OAuth flow. Not required for External Client App setup. |
 **password** | optional | password | (Legacy) Password with security token appended. Not required for External Client App setup. |
 **is_test_environment** | optional | boolean | Use a Salesforce test environment for browser OAuth and legacy username-password flows |

@@ -313,7 +313,7 @@ class SalesforceConnector(BaseConnector):
                 action_result.set_status(
                     phantom.APP_ERROR,
                     "My Domain URL must be your Salesforce Current My Domain URL ending in .my.salesforce.com. "
-                    "Do not use a login, test, or any other domain URL. ",
+                    "Do not use a login, test, or any other domain URL. "
                     "Copy only the hostname or HTTPS URL, without helper text such as 'with enhanced domains'.",
                 ),
                 None,
