@@ -1,7 +1,7 @@
 # Salesforce
 
 Publisher: Splunk <br>
-Connector Version: 2.1.4 <br>
+Connector Version: 2.2.0 <br>
 Product Vendor: Salesforce <br>
 Product Name: Salesforce <br>
 Minimum Product Version: 6.3.0
