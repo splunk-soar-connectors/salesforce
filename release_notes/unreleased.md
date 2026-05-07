@@ -1,2 +1,3 @@
 **Unreleased**
 * Remove beautifulsoup4 from requirements.txt
+* Updated Salesforce authentication to support External Client Apps (ECA) using the OAuth authorization code flow with PKCE, and added Client Credentials (`client_credentials`) flow for headless authentication.

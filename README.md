@@ -1,85 +1,255 @@
 # Salesforce
 
-Publisher: Splunk \
-Connector Version: 2.1.4 \
-Product Vendor: Salesforce \
-Product Name: Salesforce \
-Minimum Product Version: 5.5.0
+Publisher: Splunk <br>
+Connector Version: 2.1.4 <br>
+Product Vendor: Salesforce <br>
+Product Name: Salesforce <br>
+Minimum Product Version: 6.3.0
 
 This app implements actions to manage objects on Salesforce
 
 ## Authentication
 
-To pass test connectivity, you need to configure an app on Salesforce. To do so, navigate to
-<https://www.salesforce.com/> in a browser and navigate to the login page. Log in with a Salesforce
-account.
+Starting with Salesforce Spring '26, new Connected Apps can no longer be created by default.
+Salesforce now requires new integrations to use **External Client Apps (ECA)**. This connector
+supports External Client Apps in two ways:
 
-1. In the drop-down list of the account (in the upper-right corner), select **Setup**
-1. Go to **Apps** , then **App Manager** and click on **New Connected App**
-1. On the New Connected App page, fill the following required fields under Basic Information:
-   - Connected App Name. For example, Salesforce Splunk SOAR App
-   - API name. For example, Salesforce Splunk SOAR App
-   - Contact Email. For example, xyz@xyz.com
-1. Go to API (Enable OAuth Settings), and select Enable OAuth Settings. Fill it out as mention in
-   the below image or else follow these steps
-   - Under the **Callback URL** , we will be updating the entry of https://splunk_soar.local to
-     reflect the actual redirect URI. We will get this while we create Splunk SOAR App's asset in
-     the below section titled "Configure the Salesforce Phantom app's Asset"
+- browser-based OAuth authorization using **Enable Authorization Code and Credentials Flow** with
+  PKCE and refresh token rotation
+- headless server-to-server authentication using **Client Credentials Flow**
 
-   - Under **Selected OAuth Scopes field** add the following two scopes from **Available OAuth
-     Scopes**
+> **Note for existing Connected App users:** If you already have a Connected App configured and
+> working, it will continue to function. Only new app creation is restricted. Follow the External
+> Client App steps below for any new setup.
+>
+> **Legacy Connected App availability note:** Some Salesforce environments may no longer allow
+> creation or use of Connected Apps by default. If your organization still needs the legacy
+> Connected App-based authentication flow and the option is unavailable, contact your Salesforce
+> administrator, Salesforce account team, or Salesforce support to determine whether it can be
+> enabled for your org.
 
-     - Access and manage your data(api)
-     - Perform requests on your behalf at any time(refresh_token,ofline_access)
+## Choose an Authentication Flow
 
-   - Select the **Require Secret for Web Server Flow** checkbox
+Choose the flow before you start setup:
 
-     [![](img/app_config.png)](img/app_config.png)
-1. Click on **Save**
+1. **Browser-based OAuth with PKCE**: use this flow when an administrator can complete a one-time
+   browser login and consent step. This flow uses a callback URL and stores a refresh token for
+   later actions. Follow **Steps 1, 2A, 3, and 4A**.
+1. **Client Credentials OAuth**: use this flow for headless server-to-server authentication with no
+   browser login. This flow does not use a callback URL, PKCE, or refresh tokens. Follow
+   **Steps 1, 2B, 3, and 4B**.
+1. **Username-password OAuth**: this is a legacy flow for existing Connected Apps only. It is not
+   recommended for new External Client App setups.
 
-## Configure the Salesforce Splunk SOAR app's Asset
+## Step 1: Open External Client App Manager in Salesforce
 
-When creating an asset for the **Salesforce** app, place the **Consumer Key** of the app created
-during the previous step in the **Client ID** field and place the **Consumer Secret** generated
-during the app creation process in the **Client Secret** field. Then, click **SAVE** .
+1. Sign in to Salesforce.
+1. Open **Setup**.
+1. In Setup, use either of these navigation paths:
+   - left navigation: **Apps** -> **External Client Apps** -> **External Client App Manager**
+   - **Quick Find** search: type `External Client App Manager` and select it
+1. Click **New External Client App**.
+1. Under **Basic Information**, fill in:
+   - **External Client App Name**: for example, `Salesforce Splunk SOAR App`
+   - **API Name**: keep the default or use `Salesforce_Splunk_SOAR_App`
+   - **Contact Email**: your admin or support email address
+   - **Distribution State**: `Local`
+1. Expand **API (Enable OAuth Settings)** and select **Enable OAuth**.
+1. If Salesforce requires a **Callback URL** during creation, enter a temporary placeholder value
+   such as `https://placeholder.example/callback`. Browser OAuth users replace this later in
+   Step 4A. Client Credentials users do not use this callback URL.
 
-After saving, a new field will appear in the **Asset Settings** tab. Take the URL found in the
-**POST incoming for Salesforce to this location** field. To this URL, add **/start_oauth** . After
-doing so the URL should look something like:
+## Step 2A: Configure Browser-Based OAuth Settings
 
-https://\<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/\<asset_name>/start_oauth
+Use this step only for browser-based OAuth with PKCE.
 
-[![](img/asset_config.png)](img/asset_config.png)
+1. Under **Available OAuth Scopes**, move these scopes to **Selected OAuth Scopes**:
+   - `Manage user data via APIs (api)`
+   - `Perform requests at any time (refresh_token, offline_access)`
+1. Under **Flow Enablement**, select **Enable Authorization Code and Credentials Flow**.
+1. Leave **Require user credentials in the POST body for Authorization Code and Credentials Flow**
+   unchecked.
+1. Under **Security**, select:
+   - `Require Proof Key for Code Exchange (PKCE) Extension for Supported Authorization Flows`
+   - `Require Secret for Web Server Flow`
+   - `Require Secret for Refresh Token Flow`
+1. Click **Create** or **Save**.
 
-Click **Edit** on the app created in a previous step and place it in the **Callback URL** field.
+## Step 2B: Configure Client Credentials Settings
 
-Once again, click on Save.
+Use this step only for Client Credentials OAuth.
 
-## Method to Run Test Connectivity with Oauth
+1. Under **Available OAuth Scopes**, move this scope to **Selected OAuth Scopes**:
+   - `Manage user data via APIs (api)`
+1. Click **Create** or **Save**.
+1. Open the external client app.
+1. On the **Settings** tab, expand **OAuth Settings**.
+1. If your Salesforce screen shows **Enable Client Credentials Flow** on the settings page, select
+   it and save the settings.
+1. Open the **Policies** tab.
+1. Expand **OAuth Policies** and click **Edit**.
+1. In **OAuth Flows and External Client App Enhancements**, select **Enable Client Credentials
+   Flow**.
+1. In **Run As (Username)**, select or enter the active Salesforce user whose permissions should be
+   used for API calls.
+1. Do not leave **Run As (Username)** empty. Salesforce rejects Client Credentials requests when no
+   Run As user is assigned.
+1. The access token acts as this **Run As** user. The connector can only read, create, update, or
+   list data that this user is already allowed to access in Salesforce.
+1. Use a dedicated integration user when possible instead of a human administrator account.
+1. Grant that user only the permissions required for your use case, typically through permission
+   sets or permission set groups. At minimum, review:
+   - object permissions for the Salesforce objects the connector will read or modify
+   - field-level permissions for any fields the connector must read or write
+   - record and list-view access for the specific records or list views used for polling
+1. If your org provides the **Salesforce Integration** user license, Salesforce recommends using a
+   dedicated integration user with the **Minimum Access - API Only Integrations** profile and then
+   granting the required data and operation access through permission sets.
+1. To grant access to the **Run As** user in Salesforce:
+   - open **Setup**
+   - use **Quick Find** and open **Permission Sets**
+   - click **New**
+   - enter a label such as `Splunk SOAR Salesforce Integration`
+   - if you are using the **Salesforce Integration** user license, select the **Salesforce API
+     Integration** permission set license when prompted
+   - save the permission set
+   - open **Object Settings** inside the permission set
+   - open each object the connector needs, such as **Account**, **Case**, or custom objects, click
+     **Edit**, and enable only the required permissions such as **Read**, **Create**, **Edit**, or
+     **Delete**
+   - within the same object, review **Field Permissions** and enable access only for the fields the
+     connector must read or write
+   - click **Manage Assignments** -> **Add Assignments**, select the same user you chose in
+     **Run As (Username)**, and assign the permission set
+   - if you use polling with a Salesforce list view, make sure that user can see the underlying
+     records and the selected list view through your org's sharing and list-view visibility rules
+1. Optional quick validation path: if you are only trying to confirm that Client Credentials auth
+   works and you are unsure which minimum permissions to grant yet, you can temporarily choose a
+   known Salesforce administrator or another user who already has confirmed API, object, field, and
+   list-view access. After the smoke test succeeds, switch to a dedicated least-privilege
+   integration user for production use.
+1. Do not assume a Salesforce username or login email is an administrator account. Confirm the
+   user's profile, permission sets, and object access in Salesforce before using that user as
+   **Run As (Username)**.
+1. Save your changes.
 
-After setting up the asset, click the **TEST CONNECTIVITY** button. A window should pop up and
-display a URL as shown in the below image. Navigate to this URL in a separate browser tab. This new
-tab will redirect to a Salesforce login page. Log in to a Salesforce account. Finally, close that
-tab when instructed to do. The test connectivity window should show a success. **The app should now
-be ready to use.**
+Client Credentials flow does not use `refresh_token`, `offline_access`, PKCE, or the callback URL.
+
+## Step 3: Retrieve Consumer Key and Consumer Secret
+
+1. Open the newly created external client app.
+1. Click the **Settings** tab.
+1. Expand **OAuth Settings**.
+1. Click **Consumer Key and Secret**.
+1. If Salesforce sends a verification code to your email, complete that verification step.
+1. Copy these two values:
+   - **Consumer Key** -> paste into the Splunk SOAR **Client ID** field
+   - **Consumer Secret** -> paste into the Splunk SOAR **Client Secret** field
+
+## Step 4A: Configure Splunk SOAR for Browser-Based OAuth
+
+Use this step only when **Use Client Credentials OAuth flow** is unchecked.
+
+1. In Splunk SOAR, open **Apps** and find the **Salesforce** app.
+1. Click **Configure New Asset**.
+1. In **Asset Settings**, fill in:
+   - **Client ID**: the **Consumer Key** from Step 3
+   - **Client Secret**: the **Consumer Secret** from Step 3
+   - **Use Client Credentials OAuth flow**: unchecked
+   - **My Domain URL**: leave blank
+   - **Username** and **Password**: leave blank
+1. Click **SAVE**.
+1. After saving, copy the value shown in **POST incoming for Salesforce to this location** and append
+   `/start_oauth`.
+
+The final callback URL looks like:
+
+`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/start_oauth`
+
+1. Return to **External Client App Manager** in Salesforce.
+1. Open the same external client app.
+1. Use **Edit** or **Edit Settings** for the app, depending on how your Salesforce screen is laid out.
+1. In **Callback URL**, replace the temporary placeholder with the `/start_oauth` URL.
+1. Save your changes.
+1. In Splunk SOAR, click **TEST CONNECTIVITY**.
+1. A window displays a URL. Open that URL in a new browser tab.
+1. Sign in to Salesforce if prompted.
+1. Approve the app when Salesforce asks for consent.
+1. Close the browser tab when instructed.
+1. The Splunk SOAR test connectivity window should show success.
 
 [![](img/modal.png)](img/modal.png)
 
-## Method to Run Test Connectivity with Username and Password
+> **Security note:** This connector uses PKCE (Proof Key for Code Exchange) to protect the
+> authorization code flow and supports Salesforce refresh token rotation. If Salesforce issues a new
+> refresh token during a session refresh, the connector automatically replaces the stored token so
+> the integration remains active. If the stored refresh token later expires, is revoked, or becomes
+> invalid, re-run **TEST CONNECTIVITY** to authorize the app again and store a new refresh token.
 
-If you optionally specify username and password in the asset configuration, test connectivity will
-work differently; the main difference being that when you launch the test connectivity, there is no
-need to log into the Salesforce instance to authorize the app.
+## Step 4B: Configure Splunk SOAR for Client Credentials OAuth
 
-**Note:** The password field should be composed of your password with your account's security token
-appended at the end. Example: MyPasswordMyToken (this is not the same as the **client_secret** )
+Use this step only when **Use Client Credentials OAuth flow** is checked.
+
+1. In Salesforce Setup, open **My Domain** using either of these paths:
+   - left navigation: **Company Settings** -> **My Domain**
+   - **Quick Find** search: type `My Domain` and select it
+1. On the **My Domain Details** page, locate **Current My Domain URL**.
+1. Copy only the Salesforce hostname or HTTPS URL. Example:
+   `d3t000000example-dev-ed.my.salesforce.com`
+1. Do **not** copy helper text such as `with enhanced domains`.
+1. Do **not** use:
+   - the browser address bar host ending in `.lightning.force.com`
+   - `login.salesforce.com`
+   - `test.salesforce.com`
+1. In Splunk SOAR, open **Apps** and find the **Salesforce** app.
+1. Click **Configure New Asset**.
+1. In **Asset Settings**, fill in:
+   - **Client ID**: the **Consumer Key** from Step 3
+   - **Client Secret**: the **Consumer Secret** from Step 3
+   - **Use Client Credentials OAuth flow**: checked
+   - **My Domain URL**: the **Current My Domain URL** value copied above; you can paste either the
+     bare hostname or the full `https://` URL
+   - **Username** and **Password**: leave blank
+1. Click **SAVE**.
+1. Click **TEST CONNECTIVITY**.
+
+The connector sends the token request to:
+
+`https://<your-my-domain>/services/oauth2/token`
+
+> **Important:** Salesforce returns `invalid_grant` with `request not supported on this domain`
+> when Client Credentials requests are sent to `login.salesforce.com` or `test.salesforce.com`.
+> This flow must use your org-specific **My Domain URL** instead. The **Use a Salesforce test
+> environment** checkbox does not apply to Client Credentials flow.
+
+## Method to Run Test Connectivity with Username and Password (Legacy)
+
+> **This flow is not recommended for new External Client App setups.** External Client Apps in
+> Salesforce no longer support the resource owner password grant by default.
+
+If you are using a legacy Connected App that still allows the username-password flow, you can
+optionally specify a username and password in the asset configuration.
+
+When both **Username** and **Password** are provided and **Use Client Credentials OAuth flow** is
+unchecked, the asset uses the legacy username-password flow instead of the browser-based OAuth flow.
+Leave both fields blank to use the External Client App browser-based OAuth flow described above.
+
+If your Salesforce environment does not show Connected Apps or does not allow this legacy flow,
+contact your Salesforce administrator, Salesforce account team, or Salesforce support. This is a
+Salesforce-side org setting, not a Splunk SOAR connector setting.
+
+**Note:** The **Password** field must be your Salesforce password with your account's security
+token appended at the end. Example: `MyPasswordMyToken` (this is not the same as the
+**Client Secret**).
 
 ## Test Environment
 
-You may want to configure an asset to work with a Salesforce test environment. This is the case if
-the login URL for that Salesforce instance is <https://test.salesforce.com> as opposed to
-<https://login.salesforce.com> . In this case, you should check the appropriate box in the asset
-configuration.
+If your browser-based Salesforce login normally starts at <https://test.salesforce.com> rather than
+<https://login.salesforce.com>, enable the **Use a Salesforce test environment** checkbox in the
+asset configuration before running browser OAuth test connectivity.
+
+This checkbox applies to browser OAuth and the legacy username-password flow. Client Credentials
+flow uses the **My Domain URL** field instead.
 
 ## Ingestion
 
@@ -96,16 +266,7 @@ configuration.
   Salesforce. You may want to map these to standard CEF fields. This can be done by providing a
   JSON that describes the mapping. For example, if the Salesforce object has the field
   **ip_address\_\_c** , and you want this to be **sourceAddress** , the following file would be
-  appropriate.
-
-  ```shell
-                  
-                  {
-                      "ip_address__c": "sourceAddress"
-                  }
-                  
-                  
-  ```
+  appropriate: `{"ip_address__c": "sourceAddress"}`.
 
 ### 'Include view data in artifact' Configuration Parameter
 
@@ -149,11 +310,13 @@ This table lists the configuration variables required to operate Salesforce. The
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
-**client_id** | required | string | Client ID |
-**client_secret** | required | password | Client Secret |
-**username** | optional | string | Username |
-**password** | optional | password | Password |
-**is_test_environment** | optional | boolean | Use a Salesforce test environment |
+**client_id** | required | string | Salesforce OAuth client identifier, also called the consumer key. |
+**client_secret** | required | password | Salesforce OAuth client secret, also called the consumer secret. |
+**use_client_credentials** | optional | boolean | Use Salesforce Client Credentials OAuth flow. |
+**domain_url** | optional | string | Salesforce Current My Domain URL used for Client Credentials flow. |
+**username** | optional | string | (Legacy) Username for username-password OAuth flow. Not required for External Client App setup. |
+**password** | optional | password | (Legacy) Password with security token appended. Not required for External Client App setup. |
+**is_test_environment** | optional | boolean | Use a Salesforce test environment for browser OAuth and legacy username-password flows |
 **poll_sobject** | optional | string | Poll for this Salesforce Object |
 **poll_view_name** | optional | string | Poll this List View |
 **first_ingestion_max** | optional | numeric | Get this many results on first ingestion |
@@ -162,26 +325,26 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 
 ### Supported Actions
 
-[test connectivity](#action-test-connectivity) - Validate connection using the configured credentials \
-[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL) \
-[create object](#action-create-object) - Create a new Salesforce object \
-[create ticket](#action-create-ticket) - Create a new Case \
-[delete object](#action-delete-object) - Delete an object \
-[delete ticket](#action-delete-ticket) - Delete a Case \
-[update object](#action-update-object) - Update an object \
-[update ticket](#action-update-ticket) - Update a Case \
-[list objects](#action-list-objects) - Get a list of objects \
-[list tickets](#action-list-tickets) - Get a list of Cases \
-[get object](#action-get-object) - Get info about a Salesforce object \
-[get ticket](#action-get-ticket) - Get info about a Case \
-[post chatter](#action-post-chatter) - Post on the Chatter feed for a specified case \
+[test connectivity](#action-test-connectivity) - Validate connection using the configured credentials <br>
+[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL) <br>
+[create object](#action-create-object) - Create a new Salesforce object <br>
+[create ticket](#action-create-ticket) - Create a new Case <br>
+[delete object](#action-delete-object) - Delete an object <br>
+[delete ticket](#action-delete-ticket) - Delete a Case <br>
+[update object](#action-update-object) - Update an object <br>
+[update ticket](#action-update-ticket) - Update a Case <br>
+[list objects](#action-list-objects) - Get a list of objects <br>
+[list tickets](#action-list-tickets) - Get a list of Cases <br>
+[get object](#action-get-object) - Get info about a Salesforce object <br>
+[get ticket](#action-get-ticket) - Get info about a Case <br>
+[post chatter](#action-post-chatter) - Post on the Chatter feed for a specified case <br>
 [on poll](#action-on-poll) - Poll for new Objects on Salesforce
 
 ## action: 'test connectivity'
 
 Validate connection using the configured credentials
 
-Type: **test** \
+Type: **test** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -196,7 +359,7 @@ No Output
 
 Run a query using the Salesforce Object Query Language (SOQL)
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.
@@ -225,7 +388,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Create a new Salesforce object
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -253,7 +416,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Create a new Case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -287,7 +450,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Delete an object
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -314,7 +477,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Delete a Case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -339,7 +502,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Update an object
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -368,7 +531,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Update a Case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -405,7 +568,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get a list of objects
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.
@@ -440,7 +603,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get a list of Cases
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.
@@ -487,7 +650,7 @@ action_result.parameter.ph | ph | | |
 
 Get info about a Salesforce object
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.
@@ -517,7 +680,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Get info about a Case
 
-Type: **investigate** \
+Type: **investigate** <br>
 Read only: **True**
 
 If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.
@@ -610,7 +773,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Post on the Chatter feed for a specified case
 
-Type: **generic** \
+Type: **generic** <br>
 Read only: **False**
 
 #### Action Parameters
@@ -640,7 +803,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 Poll for new Objects on Salesforce
 
-Type: **ingest** \
+Type: **ingest** <br>
 Read only: **True**
 
 #### Action Parameters
@@ -661,7 +824,7 @@ ______________________________________________________________________
 
 Auto-generated Splunk SOAR Connector documentation.
 
-Copyright 2025 Splunk Inc.
+Copyright 2026 Splunk Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

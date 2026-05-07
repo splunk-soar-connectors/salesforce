@@ -1,6 +1,6 @@
 # File: salesforce_consts.py
 #
-# Copyright (c) 2017-2025 Splunk Inc.
+# Copyright (c) 2017-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@ PHANTOM_SYS_INFO_URL = "{url}rest/system_info"
 PHANTOM_ASSET_INFO_URL = "{url}rest/asset/{asset_id}"
 
 
-URL_GET_CODE = "https://login.salesforce.com/services/oauth2/authorize"
-URL_GET_TOKEN = "https://login.salesforce.com/services/oauth2/token"
+SALESFORCE_OAUTH_AUTHORIZE_PATH = "/services/oauth2/authorize"
+SALESFORCE_OAUTH_TOKEN_PATH = "/services/oauth2/token"
 
-URL_GET_CODE_TEST = "https://test.salesforce.com/services/oauth2/authorize"
-URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"
+URL_GET_CODE = f"https://login.salesforce.com{SALESFORCE_OAUTH_AUTHORIZE_PATH}"
+URL_GET_TOKEN = f"https://login.salesforce.com{SALESFORCE_OAUTH_TOKEN_PATH}"
+
+URL_GET_CODE_TEST = f"https://test.salesforce.com{SALESFORCE_OAUTH_AUTHORIZE_PATH}"
+URL_GET_TOKEN_TEST = f"https://test.salesforce.com{SALESFORCE_OAUTH_TOKEN_PATH}"
 
 
 API_ENDPOINT_DESCRIBE_GLOBAL = "{version}/sobjects/"
@@ -46,3 +49,6 @@ SALESFORCE_INVALID_INTEGER = 'Please provide non-zero positive integer in "{para
 SALESFORCE_UNKNOWN_ERR_MSG = "Unknown error occurred. Please check the asset configuration and|or action parameters."
 SALESFORCE_ERR_CODE_UNAVAILABLE = "Error code unavailable"
 SALESFORCE_DEFAULT_TIMEOUT = 30
+
+# Number of random bytes used to generate the PKCE code_verifier (RFC 7636).
+SALESFORCE_PKCE_VERIFIER_BYTES = 96

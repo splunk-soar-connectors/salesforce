@@ -9,13 +9,19 @@
     "product_name": "Salesforce",
     "product_version_regex": ".*",
     "publisher": "Splunk",
-    "license": "Copyright (c) 2017-2025 Splunk Inc.",
+    "license": "Copyright (c) 2017-2026 Splunk Inc.",
     "app_version": "2.1.4",
     "utctime_updated": "2025-08-01T20:38:25.004141Z",
     "package_name": "phantom_salesforce",
     "main_module": "salesforce_connector.py",
-    "min_phantom_version": "5.5.0",
+    "min_phantom_version": "6.3.0",
     "python_version": "3.9, 3.13",
+    "pip39_dependencies": {
+        "wheel": []
+    },
+    "pip313_dependencies": {
+        "wheel": []
+    },
     "fips_compliant": true,
     "app_wizard_version": "1.0.0",
     "rest_handler": "salesforce_connector.handle_request",
@@ -24,63 +30,73 @@
     ],
     "configuration": {
         "client_id": {
-            "description": "Client ID",
+            "description": "Salesforce OAuth client identifier, also called the consumer key.",
             "data_type": "string",
             "required": true,
             "order": 0
         },
         "client_secret": {
-            "description": "Client Secret",
+            "description": "Salesforce OAuth client secret, also called the consumer secret.",
             "data_type": "password",
             "required": true,
             "order": 1
         },
-        "username": {
-            "description": "Username",
-            "data_type": "string",
+        "use_client_credentials": {
+            "description": "Use Salesforce Client Credentials OAuth flow.",
+            "data_type": "boolean",
             "order": 2
         },
-        "password": {
-            "description": "Password",
-            "data_type": "password",
+        "domain_url": {
+            "description": "Salesforce Current My Domain URL used for Client Credentials flow.",
+            "data_type": "string",
             "order": 3
         },
-        "is_test_environment": {
-            "description": "Use a Salesforce test environment",
-            "data_type": "boolean",
+        "username": {
+            "description": "(Legacy) Username for username-password OAuth flow. Not required for External Client App setup.",
+            "data_type": "string",
             "order": 4
+        },
+        "password": {
+            "description": "(Legacy) Password with security token appended. Not required for External Client App setup.",
+            "data_type": "password",
+            "order": 5
+        },
+        "is_test_environment": {
+            "description": "Use a Salesforce test environment for browser OAuth and legacy username-password flows",
+            "data_type": "boolean",
+            "order": 6
         },
         "ph": {
             "data_type": "ph",
-            "order": 5
+            "order": 7
         },
         "poll_sobject": {
             "description": "Poll for this Salesforce Object",
             "data_type": "string",
             "default": "Case",
-            "order": 6
+            "order": 8
         },
         "poll_view_name": {
             "description": "Poll this List View",
             "data_type": "string",
-            "order": 7
+            "order": 9
         },
         "first_ingestion_max": {
             "description": "Get this many results on first ingestion",
             "data_type": "numeric",
             "default": 10,
-            "order": 8
+            "order": 10
         },
         "cef_name_map": {
             "description": "Mapping of Salesforce to CEF fields (JSON file)",
             "data_type": "file",
-            "order": 9
+            "order": 11
         },
         "last_view_date": {
             "description": "Include view date in artifact",
             "data_type": "boolean",
             "default": true,
-            "order": 10
+            "order": 12
         }
     },
     "actions": [

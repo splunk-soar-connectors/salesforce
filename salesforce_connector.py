@@ -1,6 +1,6 @@
 # File: salesforce_connector.py
 #
-# Copyright (c) 2017-2025 Splunk Inc.
+# Copyright (c) 2017-2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@
 #
 # Splunk SOAR App imports
 
+import base64
 import hashlib
 import json
 
 # import re
 import os
+import secrets
 import sys
 import time
+from urllib.parse import urlparse
 
 import encryption_helper
 import phantom.app as phantom
@@ -135,35 +138,55 @@ def _return_error(msg, state, asset_id, status):
 
 
 def _handle_oauth_start(request, path_parts):
-    # This is where we should land AFTER the redirect callback when the user authenticates on Salesforce
-    # After that, it will retrieve the "code" which is sent, and then use that to retrieve the refresh_token
+    # This is where we land AFTER the redirect callback when the user authenticates on Salesforce.
+    # The authorization code is exchanged for tokens using a POST body (not URL params) per OAuth spec.
+    # client_secret and code_verifier (PKCE) are read from state and sent only at the token endpoint.
     asset_id = request.GET.get("state")
     if not asset_id:
         return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
+    state = _load_app_state(asset_id)
+
     code = request.GET.get("code")
     if code:
-        state = _load_app_state(asset_id)
-        creds = state["creds"]
-        url_get_token = state["url_get_token"]
-        creds_dict = json.loads(encryption_helper.decrypt(creds, asset_id))  # pylint: disable=E1101
-        params = creds_dict
-        params.pop("response_type", None)
-        params["grant_type"] = "authorization_code"
-        params["code"] = code
+        url_get_token = state.get("url_get_token")
+        if not url_get_token:
+            return _return_error("State file is missing token URL. Please re-run test connectivity.", state, asset_id, 400)
+
+        token_body = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": encryption_helper.decrypt(state["client_id"], asset_id),  # pylint: disable=E1101
+            "redirect_uri": encryption_helper.decrypt(state["redirect_uri"], asset_id),  # pylint: disable=E1101
+            "client_secret": encryption_helper.decrypt(state["client_secret"], asset_id),  # pylint: disable=E1101
+        }
+
+        if state.get("code_verifier"):
+            token_body["code_verifier"] = encryption_helper.decrypt(state["code_verifier"], asset_id)  # pylint: disable=E1101
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
         try:
-            # nosemgrep: semgrep.request-sensitive-data
-            r = requests.post(url_get_token, params=params, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
+            # nosemgrep: semgrep.request-sensitive-data — body contains client_secret and code_verifier
+            r = requests.post(url_get_token, data=token_body, headers=headers, timeout=sf_consts.SALESFORCE_DEFAULT_TIMEOUT)
             resp_json = r.json()
         except Exception as e:
             return _return_error(f"Error retrieving OAuth Token: {e!s}. URL: {url_get_token}", state, asset_id, 401)
+
+        sf_error = resp_json.get("error_description") or resp_json.get("error")
+        if sf_error:
+            return _return_error(f"Salesforce token exchange failed: {sf_error}", state, asset_id, 401)
+
         refresh_token = resp_json.get("refresh_token")
         if not refresh_token:
             return _return_error("Unable to retrieve refresh token. Maybe app scope is set incorrectly?", state, asset_id, 401)
         state["refresh_token"] = encryption_helper.encrypt(refresh_token, asset_id)  # pylint: disable=E1101
         _save_app_state(state, asset_id)
         return HttpResponse("You can now close this page", content_type="text/plain")
-    return _return_error("Something went wrong during authentication", state, asset_id, 401)
+
+    # Salesforce sends `error` and `error_description` when the user denies or an error occurs.
+    sf_error = request.GET.get("error_description") or request.GET.get("error")
+    msg = f"Authentication failed: {sf_error}" if sf_error else "Something went wrong during authentication"
+    return _return_error(msg, state, asset_id, 401)
 
 
 def _handle_redirect(request, path_parts):
@@ -212,6 +235,7 @@ def _get_dir_name_from_app_name(app_name):
 class SalesforceConnector(BaseConnector):
     OAUTH_FLOW = 1
     USERNAME_PASSWORD = 2
+    CLIENT_CREDENTIALS = 3
 
     def __init__(self):
         # Call the BaseConnectors init first
@@ -252,6 +276,50 @@ class SalesforceConnector(BaseConnector):
             error_text = f"Error Code: {error_code}. Error Message: {error_msg}"
 
         return error_text
+
+    def _get_client_credentials_domain_url(self, action_result):
+        """Return the Salesforce My Domain base URL required for client credentials flow."""
+
+        domain_url = (self.get_config().get("domain_url") or "").strip()
+        if not domain_url:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "My Domain URL must be specified for Client Credentials flow. "
+                    "In Salesforce Setup, open My Domain and copy the Current My Domain URL "
+                    "(for example, https://d3t000000example-dev-ed.my.salesforce.com).",
+                ),
+                None,
+            )
+
+        # Salesforce's "Current My Domain URL" field may display only the hostname, without
+        # an explicit scheme. Accept that user input and normalize it to HTTPS.
+        if "://" not in domain_url:
+            domain_url = f"https://{domain_url}"
+
+        parsed = urlparse(domain_url)
+        if parsed.scheme != "https" or not parsed.netloc:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "My Domain URL must be a full HTTPS URL, for example https://d3t000000example-dev-ed.my.salesforce.com",
+                ),
+                None,
+            )
+
+        host = parsed.netloc.lower()
+        if not host.endswith(".my.salesforce.com"):
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "My Domain URL must be your Salesforce Current My Domain URL ending in .my.salesforce.com. "
+                    "Do not use a login, test, or any other domain URL. "
+                    "Copy only the hostname or HTTPS URL, without helper text such as 'with enhanced domains'.",
+                ),
+                None,
+            )
+
+        return phantom.APP_SUCCESS, f"{parsed.scheme}://{parsed.netloc}"
 
     def _validate_integers(self, action_result, parameter, key, allow_zero=False):
         """Validate the provided input parameter value is a non-zero positive integer and returns the integer value of the parameter itself.
@@ -479,6 +547,15 @@ class SalesforceConnector(BaseConnector):
 
         self._oauth_token = resp["access_token"]
         self._base_url = resp["instance_url"]
+
+        # Refresh token rotation: if Salesforce returns a new refresh token, replace the stored one
+        # and persist immediately. The old token is already invalidated at this point, so any
+        # unhandled exception after this line would otherwise leave the connector with no valid token.
+        new_refresh_token = resp.get("refresh_token")
+        if new_refresh_token:
+            self._state["refresh_token"] = encryption_helper.encrypt(new_refresh_token, self.get_asset_id())  # pylint: disable=E1101
+            self.save_state(self._state)
+
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_username_password(self, action_result):
@@ -516,6 +593,39 @@ class SalesforceConnector(BaseConnector):
         self._base_url = resp["instance_url"]
         return phantom.APP_SUCCESS
 
+    def _retrieve_oauth_token_client_credentials(self, action_result):
+        """Get an access token using the OAuth 2.0 Client Credentials flow.
+
+        No browser or user interaction required. Salesforce issues a fresh access token
+        on every call. There is no refresh token in this flow.
+
+        Parameters:
+            :param action_result: Object of action result
+        Returns:
+            :return: status(phantom.APP_SUCCESS/phantom.APP_ERROR)
+        """
+
+        config = self.get_config()
+        body = {
+            "grant_type": "client_credentials",
+            "client_id": config["client_id"],
+            "client_secret": config["client_secret"],
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        ret_val, domain_url = self._get_client_credentials_domain_url(action_result)
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        url_get_token = f"{domain_url}{sf_consts.SALESFORCE_OAUTH_TOKEN_PATH}"
+
+        ret_val, resp = self._make_rest_call(url_get_token, action_result, data=body, headers=headers, ignore_base_url=True, method="post")
+        if phantom.is_fail(ret_val):
+            return ret_val
+
+        self._oauth_token = resp["access_token"]
+        self._base_url = resp.get("instance_url") or domain_url
+        return phantom.APP_SUCCESS
+
     def _retrieve_oauth_token_helper(self, action_result):
         """Function that helps to retrieve oauth token for the app.
 
@@ -526,6 +636,8 @@ class SalesforceConnector(BaseConnector):
         """
         if self._auth_flow == self.OAUTH_FLOW:
             return self._retrieve_oauth_token(action_result)
+        if self._auth_flow == self.CLIENT_CREDENTIALS:
+            return self._retrieve_oauth_token_client_credentials(action_result)
         return self._retrieve_oauth_token_username_password(action_result)
 
     def _make_rest_call_helper(self, endpoint, action_result, headers=None, *args, **kwargs):
@@ -663,12 +775,20 @@ class SalesforceConnector(BaseConnector):
             return ret_val
 
         asset_id = self.get_asset_id()
-        params = {
+
+        # PKCE: generate code_verifier and derive code_challenge (S256 method)
+        code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(sf_consts.SALESFORCE_PKCE_VERIFIER_BYTES)).rstrip(b"=").decode()
+        code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("ascii")).digest()).rstrip(b"=").decode()
+
+        redirect_uri = app_rest_url + "/start_oauth"
+
+        auth_params = {
             "response_type": "code",
             "state": asset_id,
-            "redirect_uri": app_rest_url + "/start_oauth",
+            "redirect_uri": redirect_uri,
             "client_id": client_id,
-            "client_secret": client_secret,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
         }
 
         if config.get("is_test_environment"):
@@ -678,14 +798,15 @@ class SalesforceConnector(BaseConnector):
             url_get_code = sf_consts.URL_GET_CODE
             url_get_token = sf_consts.URL_GET_TOKEN
 
-        prep = requests.Request("post", url_get_code, params=params).prepare()
-
-        creds = encryption_helper.encrypt(json.dumps(params), asset_id)  # pylint: disable=E1101
-        url = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
+        prep = requests.Request("get", url_get_code, params=auth_params).prepare()
 
         state = {}
-        state["creds"] = creds
-        state["url"] = url
+        state["client_id"] = encryption_helper.encrypt(client_id, asset_id)  # pylint: disable=E1101
+        state["redirect_uri"] = encryption_helper.encrypt(redirect_uri, asset_id)  # pylint: disable=E1101
+        state["client_secret"] = encryption_helper.encrypt(client_secret, asset_id)  # pylint: disable=E1101
+        state["code_verifier"] = encryption_helper.encrypt(code_verifier, asset_id)  # pylint: disable=E1101
+        state["url"] = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
+        # url_get_token is a well-known public Salesforce endpoint (not a secret), stored plaintext intentionally.
         state["url_get_token"] = url_get_token
         _save_app_state(state, asset_id, self)
 
@@ -709,6 +830,8 @@ class SalesforceConnector(BaseConnector):
             return action_result.set_status(phantom.APP_ERROR)
 
         _delete_app_state(asset_id)
+        # Intentionally wipe any partial/failed state from a previous run before storing the
+        # newly acquired refresh token — prevents stale PKCE or error flags from carrying over.
         self._state = {}
         self._state["refresh_token"] = refresh_token
 
@@ -832,7 +955,7 @@ class SalesforceConnector(BaseConnector):
 
         endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(version=self._version_uri, sobject=sobject, id=obj_id)
 
-        ret_val, response = self._make_rest_call_helper(endpoint, action_result, method="delete")
+        ret_val, _response = self._make_rest_call_helper(endpoint, action_result, method="delete")
         if phantom.is_fail(ret_val):
             return ret_val
 
@@ -1274,7 +1397,7 @@ class SalesforceConnector(BaseConnector):
 
             for artifact in container_artifact:
                 artifact["container_id"] = container_id
-            ret_val, status_string, artifact_ids = self.save_artifacts(container_artifact)
+            ret_val, status_string, _artifact_ids = self.save_artifacts(container_artifact)
             if phantom.is_fail(ret_val):
                 self.save_progress(f"Error saving artifacts: {status_string}")
 
@@ -1343,7 +1466,10 @@ class SalesforceConnector(BaseConnector):
 
         self._username = config.get("username")
         self._password = config.get("password")
-        if self._username:
+
+        if config.get("use_client_credentials"):
+            self._auth_flow = self.CLIENT_CREDENTIALS
+        elif self._username:
             if not self._password:
                 return self.set_status(phantom.APP_ERROR, "Password must be specified with a username")
             self._auth_flow = self.USERNAME_PASSWORD
