@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import secrets
 import time
 from typing import Union
@@ -18,6 +19,8 @@ from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.params import Param, Params, OnPollParams, OnESPollParams
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+
+from .salesforce_client import SalesforceClient
 
 logger = getLogger()
 
@@ -127,9 +130,126 @@ def handle_start_oauth(request: WebhookRequest) -> WebhookResponse:
     return WebhookResponse.text_response("You can now close this page.")
 
 
+SEVERITY_MAP = {
+    "severity 1 (high impact)": "high",
+    "severity 2 (medium impact)": "medium",
+    "severity 3 (low impact)": "low",
+    "severity 4 (false positive)": "low",
+}
+SENSITIVITY_MAP = {
+    "sensitive": "red",
+    "not sensitive": "white",
+}
+
+
 @app.on_poll()
-def on_poll(soar: SOARClient, asset: Asset, params: OnPollParams) -> Iterator[Union[Container, Artifact]]:
-    raise NotImplementedError()
+def on_poll(params: OnPollParams, soar: SOARClient, asset: Asset) -> Iterator[Union[Container, Artifact]]:
+    sobject = asset.poll_sobject or "Case"
+    view_name = asset.poll_view_name
+    include_view_date = asset.last_view_date if asset.last_view_date is not None else True
+
+    if not view_name:
+        raise ActionFailure("poll_view_name must be set in asset configuration.")
+
+    # Load the CEF field name map from the JSON file if configured
+    cef_name_map: dict[str, str] = {}
+    if asset.cef_name_map:
+        try:
+            cef_name_map = json.loads(asset.cef_name_map)
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ActionFailure(f"cef_name_map is not valid JSON: {e}") from e
+        for k, v in cef_name_map.items():
+            if not isinstance(v, str) or not k.strip() or not v.strip():
+                raise ActionFailure("cef_name_map must contain non-empty string keys and values.")
+
+    is_manual = params.is_manual_poll()
+
+    if is_manual:
+        # Poll Now: always start from offset 0, respect container_count cap
+        offset = 0
+        max_records = int(params.container_count) if params.container_count else 10
+    else:
+        # Scheduled poll: resume from last saved offset
+        offset = int(asset.ingest_state.get("cur_offset") or 0)
+        # On very first run, cap to first_ingestion_max
+        max_records = None
+        if offset == 0:
+            max_records = int(asset.first_ingestion_max or 10)
+
+    logger.info(f"Polling {sobject} list view '{view_name}' from offset {offset}, max={max_records}")
+
+    client = SalesforceClient(asset)
+    new_offset, list_records = client.list_view_records_paged(
+        sobject, view_name, offset=offset, max_records=max_records
+    )
+
+    if not list_records:
+        logger.info("No new records found.")
+        if not is_manual:
+            asset.ingest_state["cur_offset"] = new_offset
+        return
+
+    # Extract IDs from the list-view summary records and fetch full objects in batches of 25
+    record_ids = [
+        row["fields"]["Id"]["value"]
+        for row in list_records
+        if row.get("fields", {}).get("Id", {}).get("value")
+    ]
+
+    full_records: list[dict] = []
+    for i in range(0, len(record_ids), 25):
+        batch = client.batch_get(sobject, record_ids[i:i + 25])
+        full_records.extend(batch)
+
+    logger.info(f"Fetched {len(full_records)} full {sobject} records")
+
+    for record in full_records:
+        cef: dict = {}
+        cef_types: dict = {}
+
+        for k, v in record.items():
+            if k == "attributes":
+                continue
+            cef_key = cef_name_map.get(k, k)
+            cef[cef_key] = v
+            # Auto-tag any field ending in "Id" as a salesforce object id CEF type
+            if k.endswith("Id") and v is not None:
+                cef_types[cef_key] = ["salesforce object id"]
+
+        if not include_view_date:
+            cef.pop("LastViewedDate", None)
+            cef.pop("LastReferencedDate", None)
+
+        # Container name: prefer Subject, fall back to CaseNumber / Id
+        container_name = (
+            record.get("Subject")
+            or f"Salesforce {sobject} # {record.get('CaseNumber') or record.get('Id', '')}"
+        )
+
+        record_id = record.get("Id", "")
+        container_sdi = hashlib.sha256(f"{sobject}{record_id}".encode()).hexdigest()
+        artifact_sdi = hashlib.sha256(json.dumps(cef, sort_keys=True).encode()).hexdigest()
+
+        container = Container(
+            name=container_name,
+            source_data_identifier=container_sdi,
+            severity=SEVERITY_MAP.get((record.get("Incident_Severity__c") or "").lower()),
+            sensitivity=SENSITIVITY_MAP.get((record.get("Incident_Sensitivity__c") or "").lower()),
+        )
+        yield container
+
+        yield Artifact(
+            name=sobject,
+            label="event",
+            source_data_identifier=artifact_sdi,
+            cef=cef,
+            cef_types=cef_types if cef_types else None,
+        )
+
+    # Persist offset only for scheduled polls so the next run continues where this left off
+    if not is_manual:
+        asset.ingest_state["cur_offset"] = new_offset
+        logger.info(f"Saved poll offset: {new_offset}")
 
 
 @app.test_connectivity()
@@ -345,6 +465,8 @@ def _get_salesforce_instance_url(asset: Asset) -> str:
         raise ActionFailure("No instance URL found. Re-run test connectivity.")
     return url
 
+
+
 class RunQueryParams(Params):
     query: str = Param(description='SOQL Query')
     endpoint: str = Param(description='Which Query endpoint to use', default='query', value_list=['query', 'queryAll'])
@@ -354,7 +476,10 @@ class RunQueryOutput(ActionOutput):
 
 @app.action(description='Run a query using the Salesforce Object Query Language (SOQL)', action_type='investigate', verbose='To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.')
 def run_query(params: RunQueryParams, soar: SOARClient, asset: Asset) -> RunQueryOutput:
-    raise NotImplementedError()
+    client = SalesforceClient(asset)
+    records = client.query(params.query, endpoint=params.endpoint)
+    logger.info(f"Query returned {len(records)} record(s)")
+    return RunQueryOutput(records=[str(r) for r in records])
 
 class CreateObjectParams(Params):
     sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
@@ -366,7 +491,13 @@ class CreateObjectOutput(ActionOutput):
 
 @app.action(description='Create a new Salesforce object', action_type='generic', read_only=False)
 def create_object(params: CreateObjectParams, soar: SOARClient, asset: Asset) -> CreateObjectOutput:
-    raise NotImplementedError()
+    try:
+        fields = json.loads(params.field_values)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ActionFailure(f"field_values must be valid JSON: {e}") from e
+    client = SalesforceClient(asset)
+    result = client.create(params.sobject, fields)
+    return CreateObjectOutput(id=result["id"], success=result.get("success", True))
 
 class CreateTicketParams(Params):
     parent_case_id: str | None = Param(description='Object ID of Parent Case', primary=True, cef_types=['salesforce object id'])
@@ -381,7 +512,24 @@ class CreateTicketOutput(ActionOutput):
 
 @app.action(description='Create a new Case', action_type='generic', read_only=False)
 def create_ticket(params: CreateTicketParams, soar: SOARClient, asset: Asset) -> CreateTicketOutput:
-    raise NotImplementedError()
+    fields: dict = {}
+    if params.parent_case_id:
+        fields["ParentId"] = params.parent_case_id
+    if params.subject:
+        fields["Subject"] = params.subject
+    if params.priority:
+        fields["Priority"] = params.priority
+    if params.description:
+        fields["Description"] = params.description
+    if params.field_values:
+        try:
+            extra = json.loads(params.field_values)
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ActionFailure(f"field_values must be valid JSON: {e}") from e
+        fields.update(extra)
+    client = SalesforceClient(asset)
+    result = client.create("Case", fields)
+    return CreateTicketOutput(id=result["id"], success=result.get("success", True))
 
 class DeleteObjectParams(Params):
     sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
@@ -389,14 +537,18 @@ class DeleteObjectParams(Params):
 
 @app.action(description='Delete an object', action_type='generic', read_only=False)
 def delete_object(params: DeleteObjectParams, soar: SOARClient, asset: Asset) -> ActionOutput:
-    raise NotImplementedError()
+    SalesforceClient(asset).delete(params.sobject, params.id)
+    logger.info(f"Deleted {params.sobject} {params.id}")
+    return ActionOutput()
 
 class DeleteTicketParams(Params):
     id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
 
 @app.action(description='Delete a Case', action_type='generic', read_only=False)
 def delete_ticket(params: DeleteTicketParams, soar: SOARClient, asset: Asset) -> ActionOutput:
-    raise NotImplementedError()
+    SalesforceClient(asset).delete("Case", params.id)
+    logger.info(f"Deleted Case {params.id}")
+    return ActionOutput()
 
 class UpdateObjectParams(Params):
     sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
@@ -405,7 +557,15 @@ class UpdateObjectParams(Params):
 
 @app.action(description='Update an object', action_type='generic', read_only=False)
 def update_object(params: UpdateObjectParams, soar: SOARClient, asset: Asset) -> ActionOutput:
-    raise NotImplementedError()
+    if not params.field_values:
+        raise ActionFailure("field_values is required to update an object.")
+    try:
+        fields = json.loads(params.field_values)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ActionFailure(f"field_values must be valid JSON: {e}") from e
+    SalesforceClient(asset).update(params.sobject, params.id, fields)
+    logger.info(f"Updated {params.sobject} {params.id}")
+    return ActionOutput()
 
 class UpdateTicketParams(Params):
     id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
@@ -418,7 +578,28 @@ class UpdateTicketParams(Params):
 
 @app.action(description='Update a Case', action_type='generic', read_only=False)
 def update_ticket(params: UpdateTicketParams, soar: SOARClient, asset: Asset) -> ActionOutput:
-    raise NotImplementedError()
+    fields: dict = {}
+    if params.parent_case_id:
+        fields["ParentId"] = params.parent_case_id
+    if params.subject:
+        fields["Subject"] = params.subject
+    if params.priority:
+        fields["Priority"] = params.priority
+    if params.description:
+        fields["Description"] = params.description
+    if params.status:
+        fields["Status"] = params.status
+    if params.field_values:
+        try:
+            extra = json.loads(params.field_values)
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ActionFailure(f"field_values must be valid JSON: {e}") from e
+        fields.update(extra)
+    if not fields:
+        raise ActionFailure("Provide at least one field to update.")
+    SalesforceClient(asset).update("Case", params.id, fields)
+    logger.info(f"Updated Case {params.id}")
+    return ActionOutput()
 
 class ListObjectsParams(Params):
     sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
@@ -426,92 +607,48 @@ class ListObjectsParams(Params):
     limit: float | None = Param(description='Paging limit')
     offset: float | None = Param(description='Paging offset')
 
-class IdOutput(ActionOutput):
-    value: str = OutputField(cef_types=['salesforce object id'], example_values=['0033t000035qrSYAAY'])
-
-class ColumnsOutput(ActionOutput):
-    Id: IdOutput
-
 class ListObjectsOutput(ActionOutput):
-    columns: ColumnsOutput
+    records: list[str]
+    count: int
 
 @app.action(description='Get a list of objects', action_type='investigate', verbose='To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.')
 def list_objects(params: ListObjectsParams, soar: SOARClient, asset: Asset) -> ListObjectsOutput:
-    raise NotImplementedError()
+    client = SalesforceClient(asset)
+    if not params.view_name:
+        views = client.list_views(params.sobject)
+        names = [v.get("developerName", v.get("label", "")) for v in views]
+        logger.info(f"Available list views for {params.sobject}: {', '.join(names)}")
+        return ListObjectsOutput(records=names, count=len(names))
+    view_id = client.resolve_list_view_id(params.sobject, params.view_name)
+    limit = int(params.limit) if params.limit else None
+    offset = int(params.offset) if params.offset else None
+    data = client.list_view_results(params.sobject, view_id, limit=limit, offset=offset)
+    records = data.get("records", [])
+    return ListObjectsOutput(records=[str(r) for r in records], count=len(records))
 
 class ListTicketsParams(Params):
     view_name: str | None = Param(description='Unique name of a list view', primary=True, cef_types=['salesforce listview name'])
     limit: float | None = Param(description='Paging limit')
     offset: float | None = Param(description='Paging offset')
 
-class CasenumberOutput(ActionOutput):
-    value: str = OutputField(example_values=['00001028'])
-
-class ContactidOutput(ActionOutput):
-    value: str = OutputField(cef_types=['salesforce object id'], example_values=['0033t000035qrSWABZ'])
-
-class ContactIdOutput(ActionOutput):
-    value: str = OutputField(cef_types=['salesforce object id'], example_values=['0033t000035qrSWABZ'])
-
-class ContactNameOutput(ActionOutput):
-    value: str = OutputField(example_values=['Abcd'])
-
-class CreateddateOutput(ActionOutput):
-    value: str = OutputField(example_values=['Thu Nov 30 23:50:55 GMT 2017'])
-
-class IdOutput(ActionOutput):
-    value: str = OutputField(cef_types=['salesforce object id'], example_values=['5001I000002Sd2hQAC'])
-
-class LastmodifieddateOutput(ActionOutput):
-    value: str = OutputField(example_values=['Fri Dec 01 00:17:47 GMT 2017'])
-
-class OwneridOutput(ActionOutput):
-    value: str = OutputField(cef_types=['salesforce object id'], example_values=['0051I000000PRsCQAW'])
-
-class OwnerIdOutput(ActionOutput):
-    value: str = OutputField(cef_types=['salesforce object id'], example_values=['0051I000000PRsCQAW'])
-
-class OwnerNameoraliasOutput(ActionOutput):
-    value: str = OutputField(example_values=['testuser'])
-
-class PriorityOutput(ActionOutput):
-    value: str = OutputField(example_values=['Medium'])
-
-class RecordtypeidOutput(ActionOutput):
-    value: str = OutputField(example_values=['0121I000000F7aZQAS'])
-
-class StatusOutput(ActionOutput):
-    value: str = OutputField(example_values=['In-Progress'])
-
-class SubjectOutput(ActionOutput):
-    value: str = OutputField(example_values=['Panic'])
-
-class SystemmodstampOutput(ActionOutput):
-    value: str = OutputField(example_values=['Sat Dec 02 11:18:29 GMT 2017'])
-
-class ColumnsOutput(ActionOutput):
-    CaseNumber: CasenumberOutput
-    ContactId: ContactidOutput
-    Contact_Id: ContactIdOutput
-    Contact_Name: ContactNameOutput
-    CreatedDate: CreateddateOutput
-    Id: IdOutput
-    LastModifiedDate: LastmodifieddateOutput
-    OwnerId: OwneridOutput
-    Owner_Id: OwnerIdOutput
-    Owner_NameOrAlias: OwnerNameoraliasOutput
-    Priority: PriorityOutput
-    RecordTypeId: RecordtypeidOutput
-    Status: StatusOutput
-    Subject: SubjectOutput
-    SystemModstamp: SystemmodstampOutput
-
 class ListTicketsOutput(ActionOutput):
-    columns: ColumnsOutput
+    records: list[str]
+    count: int
 
 @app.action(description='Get a list of Cases', action_type='investigate', verbose='To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.')
 def list_tickets(params: ListTicketsParams, soar: SOARClient, asset: Asset) -> ListTicketsOutput:
-    raise NotImplementedError()
+    client = SalesforceClient(asset)
+    if not params.view_name:
+        views = client.list_views("Case")
+        names = [v.get("developerName", v.get("label", "")) for v in views]
+        logger.info(f"Available list views for Case: {', '.join(names)}")
+        return ListTicketsOutput(records=names, count=len(names))
+    view_id = client.resolve_list_view_id("Case", params.view_name)
+    limit = int(params.limit) if params.limit else None
+    offset = int(params.offset) if params.offset else None
+    data = client.list_view_results("Case", view_id, limit=limit, offset=offset)
+    records = data.get("records", [])
+    return ListTicketsOutput(records=[str(r) for r in records], count=len(records))
 
 class GetObjectParams(Params):
     sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
@@ -522,7 +659,8 @@ class GetObjectOutput(ActionOutput):
 
 @app.action(description='Get info about a Salesforce object', action_type='investigate', verbose='If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.')
 def get_object(params: GetObjectParams, soar: SOARClient, asset: Asset) -> GetObjectOutput:
-    raise NotImplementedError()
+    record = SalesforceClient(asset).get(params.sobject, params.id)
+    return GetObjectOutput(id=record.get("Id", params.id))
 
 class GetTicketParams(Params):
     id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
@@ -532,76 +670,79 @@ class AttributesOutput(ActionOutput):
     url: str = OutputField(example_values=['/services/data/v41.0/sobjects/Case/5001I000002SfMMQA0'])
 
 class GetTicketOutput(ActionOutput):
-    AccountId: str = OutputField(cef_types=['salesforce object id'], example_values=['0013t00001ZyVVTAB4'])
-    AssetId: str
-    CaseNumber: str = OutputField(example_values=['00001030'])
-    Case_Open_minutes__c: float = OutputField(example_values=[4218])
-    ClosedDate: str = OutputField(example_values=['2019-06-25T18:59:51.000+0000'])
-    Closed_Time_Days__c: str
-    ContactEmail: str = OutputField(example_values=['test@example.com'])
-    ContactFax: str = OutputField(example_values=['(1) 234 567'])
-    ContactId: str = OutputField(cef_types=['salesforce object id'], example_values=['0033t000035qrSWABZ'])
-    ContactMobile: str = OutputField(example_values=['(1) 222 333'])
-    ContactPhone: str = OutputField(example_values=['(1) 33 444'])
-    CreatedById: str = OutputField(cef_types=['salesforce object id'], example_values=['0051I000000PRsCQAW'])
-    CreatedDate: str = OutputField(example_values=['2017-12-01T21:32:33.000+0000'])
-    Customer_Impacting__c: str
-    Date_Reviewed__c: str
-    Days_Open__c: float = OutputField(example_values=[3])
-    Description: str = OutputField(example_values=['Case Description'])
-    Discovery_Method__c: str
-    Discovery_Time_Hours__c: str
-    EngineeringReqNumber__c: str = OutputField(example_values=['765810'])
-    Executive_Summary__c: str
+    # Always-present fields on an existing Case
     Id: str = OutputField(cef_types=['salesforce object id'], example_values=['5001I000002SfMMQA0'])
-    Impact_Summary__c: str
-    Impacted_Environment__c: str
-    Incident_Category__c: str
-    Incident_Date__c: str
-    Incident_Root_Cause__c: str
-    Incident_Sensitivity__c: str
-    Incident_Severity__c: str
-    Incident_Type__c: str
-    Investigation_Category__c: str
-    Investigation_Date__c: str
-    Investigation_Summary__c: str
-    Investigation_Type__c: str
-    IsClosed: bool
-    IsDeleted: bool
-    IsEscalated: bool
-    LastModifiedById: str = OutputField(cef_types=['salesforce object id'], example_values=['0051I000000PRsCQAW'])
-    LastModifiedDate: str = OutputField(example_values=['2017-12-01T21:32:33.000+0000'])
-    LastReferencedDate: str = OutputField(example_values=['2017-12-01T21:33:05.000+0000'])
-    LastViewedDate: str = OutputField(example_values=['2017-12-01T21:33:05.000+0000'])
-    Origin: str
+    CaseNumber: str = OutputField(example_values=['00001030'])
     OwnerId: str = OutputField(cef_types=['salesforce object id'], example_values=['0051I000000PRsCQAW'])
-    ParentId: str = OutputField(cef_types=['salesforce object id'], example_values=['0061I000000PRsCABC'])
-    PotentialLiability__c: str = OutputField(example_values=['No'])
-    Priority: str = OutputField(example_values=['High'])
-    Product__c: str = OutputField(example_values=['GC5555'])
-    Reason: str = OutputField(example_values=['Test Complexity'])
-    RecordTypeId: str = OutputField(example_values=['0121I000000F7aZQAS'])
-    Resolution_Date__c: str
-    Resolution_Time_Hours__c: str
-    Response_Time_Hours__c: str
-    Response_Time_Minutes__c: float = OutputField(example_values=[4218])
-    SITrack_Response_Task__c: str
-    SITracker_Handoff_Notes__c: str
-    SITracker_Include_in_Handoff__c: bool
-    SLAViolation__c: str
-    Status: str = OutputField(example_values=['New'])
-    Subject: str = OutputField(example_values=['Case Subject'])
-    SuppliedCompany: str
-    SuppliedEmail: str
-    SuppliedName: str
-    SuppliedPhone: str
+    CreatedDate: str = OutputField(example_values=['2017-12-01T21:32:33.000+0000'])
+    LastModifiedDate: str = OutputField(example_values=['2017-12-01T21:32:33.000+0000'])
     SystemModstamp: str = OutputField(example_values=['2017-12-02T11:18:29.000+0000'])
-    Type: str = OutputField(example_values=['Electrical'])
-    attributes: AttributesOutput
+    IsClosed: bool = False
+    IsDeleted: bool = False
+    IsEscalated: bool = False
+    # Optional standard fields
+    AccountId: str | None = None
+    AssetId: str | None = None
+    Case_Open_minutes__c: float | None = None
+    ClosedDate: str | None = None
+    Closed_Time_Days__c: str | None = None
+    ContactEmail: str | None = None
+    ContactFax: str | None = None
+    ContactId: str | None = None
+    ContactMobile: str | None = None
+    ContactPhone: str | None = None
+    CreatedById: str | None = None
+    Customer_Impacting__c: str | None = None
+    Date_Reviewed__c: str | None = None
+    Days_Open__c: float | None = None
+    Description: str | None = None
+    Discovery_Method__c: str | None = None
+    Discovery_Time_Hours__c: str | None = None
+    EngineeringReqNumber__c: str | None = None
+    Executive_Summary__c: str | None = None
+    Impact_Summary__c: str | None = None
+    Impacted_Environment__c: str | None = None
+    Incident_Category__c: str | None = None
+    Incident_Date__c: str | None = None
+    Incident_Root_Cause__c: str | None = None
+    Incident_Sensitivity__c: str | None = None
+    Incident_Severity__c: str | None = None
+    Incident_Type__c: str | None = None
+    Investigation_Category__c: str | None = None
+    Investigation_Date__c: str | None = None
+    Investigation_Summary__c: str | None = None
+    Investigation_Type__c: str | None = None
+    LastModifiedById: str | None = None
+    LastReferencedDate: str | None = None
+    LastViewedDate: str | None = None
+    Origin: str | None = None
+    ParentId: str | None = None
+    PotentialLiability__c: str | None = None
+    Priority: str | None = None
+    Product__c: str | None = None
+    Reason: str | None = None
+    RecordTypeId: str | None = None
+    Resolution_Date__c: str | None = None
+    Resolution_Time_Hours__c: str | None = None
+    Response_Time_Hours__c: str | None = None
+    Response_Time_Minutes__c: float | None = None
+    SITrack_Response_Task__c: str | None = None
+    SITracker_Handoff_Notes__c: str | None = None
+    SITracker_Include_in_Handoff__c: bool | None = None
+    SLAViolation__c: str | None = None
+    Status: str | None = None
+    Subject: str | None = None
+    SuppliedCompany: str | None = None
+    SuppliedEmail: str | None = None
+    SuppliedName: str | None = None
+    SuppliedPhone: str | None = None
+    Type: str | None = None
+    attributes: AttributesOutput | None = None
 
 @app.action(description='Get info about a Case', action_type='investigate', verbose='If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.')
 def get_ticket(params: GetTicketParams, soar: SOARClient, asset: Asset) -> GetTicketOutput:
-    raise NotImplementedError()
+    record = SalesforceClient(asset).get("Case", params.id)
+    return GetTicketOutput(**{k: v for k, v in record.items() if v is not None})
 
 class PostChatterParams(Params):
     id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
@@ -614,6 +755,7 @@ class PostChatterOutput(ActionOutput):
 
 @app.action(description='Post on the Chatter feed for a specified case', action_type='generic', read_only=False)
 def post_chatter(params: PostChatterParams, soar: SOARClient, asset: Asset) -> PostChatterOutput:
-    raise NotImplementedError()
+    result = SalesforceClient(asset).post_chatter(params.id, params.body, title=params.title)
+    return PostChatterOutput(id=result["id"], success=result["success"])
 if __name__ == '__main__':
     app.cli()
