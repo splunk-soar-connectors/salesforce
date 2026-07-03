@@ -1,9 +1,21 @@
+# Copyright (c) 2026 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import base64
 import hashlib
 import json
 import secrets
 import time
-from typing import Union
 from collections.abc import Iterator
 from urllib.parse import urlencode
 
@@ -17,7 +29,7 @@ from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.params import Param, Params, OnPollParams, OnESPollParams
+from soar_sdk.params import Param, Params, OnPollParams
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 from .salesforce_client import SalesforceClient
@@ -32,28 +44,85 @@ URL_GET_TOKEN = "https://login.salesforce.com/services/oauth2/token"
 URL_GET_CODE_TEST = "https://test.salesforce.com/services/oauth2/authorize"
 URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"
 
+
 class Asset(BaseAsset):
-    client_id: str = AssetField(description='Salesforce OAuth client identifier, also called the consumer key.', category=FieldCategory.CONNECTIVITY)
-    client_secret: str = AssetField(description='Salesforce OAuth client secret, also called the consumer secret.', sensitive=True, category=FieldCategory.CONNECTIVITY)
-    use_client_credentials: bool | None = AssetField(description='Use Salesforce Client Credentials OAuth flow.', default=False, category=FieldCategory.CONNECTIVITY)
-    domain_url: str | None = AssetField(description='Salesforce Current My Domain URL used for Client Credentials flow.', default=None, required=False, category=FieldCategory.CONNECTIVITY)
-    username: str | None = AssetField(description='(Legacy) Username for username-password OAuth flow. Not required for External Client App setup.', default=None, required=False, category=FieldCategory.CONNECTIVITY)
-    password: str | None = AssetField(description='(Legacy) Password with security token appended. Not required for External Client App setup.', sensitive=True, default=None, required=False, category=FieldCategory.CONNECTIVITY)
-    is_test_environment: bool | None = AssetField(description='Use a Salesforce test environment for browser OAuth and legacy username-password flows', default=False, category=FieldCategory.CONNECTIVITY)
-    poll_sobject: str | None = AssetField(description='Poll for this Salesforce Object', default='Case', category=FieldCategory.INGEST)
-    poll_view_name: str | None = AssetField(description='Poll this List View', default=None, required=False, category=FieldCategory.INGEST)
-    first_ingestion_max: float | None = AssetField(description='Get this many results on first ingestion', default=10.0, category=FieldCategory.INGEST)
-    cef_name_map: str | None = AssetField(description='Mapping of Salesforce to CEF fields (JSON file)', default=None, required=False, is_file=True, category=FieldCategory.INGEST)
-    last_view_date: bool | None = AssetField(description='Include view date in artifact', default=True, category=FieldCategory.INGEST)
+    client_id: str = AssetField(
+        description="Salesforce OAuth client identifier, also called the consumer key.",
+        category=FieldCategory.CONNECTIVITY,
+    )
+    client_secret: str = AssetField(
+        description="Salesforce OAuth client secret, also called the consumer secret.",
+        sensitive=True,
+        category=FieldCategory.CONNECTIVITY,
+    )
+    use_client_credentials: bool | None = AssetField(
+        description="Use Salesforce Client Credentials OAuth flow.",
+        default=False,
+        category=FieldCategory.CONNECTIVITY,
+    )
+    domain_url: str | None = AssetField(
+        description="Salesforce Current My Domain URL used for Client Credentials flow.",
+        default=None,
+        required=False,
+        category=FieldCategory.CONNECTIVITY,
+    )
+    username: str | None = AssetField(
+        description="(Legacy) Username for username-password OAuth flow. Not required for External Client App setup.",
+        default=None,
+        required=False,
+        category=FieldCategory.CONNECTIVITY,
+    )
+    password: str | None = AssetField(
+        description="(Legacy) Password with security token appended. Not required for External Client App setup.",
+        sensitive=True,
+        default=None,
+        required=False,
+        category=FieldCategory.CONNECTIVITY,
+    )
+    is_test_environment: bool | None = AssetField(
+        description="Use a Salesforce test environment for browser OAuth and legacy username-password flows",
+        default=False,
+        category=FieldCategory.CONNECTIVITY,
+    )
+    poll_sobject: str | None = AssetField(
+        description="Poll for this Salesforce Object",
+        default="Case",
+        category=FieldCategory.INGEST,
+    )
+    poll_view_name: str | None = AssetField(
+        description="Poll this List View",
+        default=None,
+        required=False,
+        category=FieldCategory.INGEST,
+    )
+    first_ingestion_max: float | None = AssetField(
+        description="Get this many results on first ingestion",
+        default=10.0,
+        category=FieldCategory.INGEST,
+    )
+    cef_name_map: str | None = AssetField(
+        description="Mapping of Salesforce to CEF fields (JSON file)",
+        default=None,
+        required=False,
+        is_file=True,
+        category=FieldCategory.INGEST,
+    )
+    last_view_date: bool | None = AssetField(
+        description="Include view date in artifact",
+        default=True,
+        category=FieldCategory.INGEST,
+    )
+
+
 app = App(
-    name='salesforce',
-    app_type='ticketing',
-    logo='logo_salesforce.svg',
-    logo_dark='logo_salesforce_dark.svg',
-    product_vendor='Salesforce',
-    product_name='Salesforce',
-    publisher='Splunk',
-    appid='6c1316b0-88a7-4864-b684-3170f6c455be',
+    name="salesforce",
+    app_type="ticketing",
+    logo="logo_salesforce.svg",
+    logo_dark="logo_salesforce_dark.svg",
+    product_vendor="Salesforce",
+    product_name="Salesforce",
+    publisher="Splunk",
+    appid="6c1316b0-88a7-4864-b684-3170f6c455be",
     fips_compliant=True,
     asset_cls=Asset,
 ).enable_webhooks(default_requires_auth=False)
@@ -65,7 +134,10 @@ def handle_redirect(request: WebhookRequest) -> WebhookResponse:
     asset: Asset = request.asset
     url = asset.auth_state.get("url")
     if not url:
-        return WebhookResponse.text_response("ERROR: No authorization URL found. Re-run test connectivity.", status_code=400)
+        return WebhookResponse.text_response(
+            "ERROR: No authorization URL found. Re-run test connectivity.",
+            status_code=400,
+        )
     return WebhookResponse(status_code=302, content="", headers=[("Location", url)])
 
 
@@ -77,14 +149,22 @@ def handle_start_oauth(request: WebhookRequest) -> WebhookResponse:
 
     code = (request.query.get("code") or [""])[0]
     if not code:
-        error = (request.query.get("error_description") or request.query.get("error") or ["Unknown error"])[0]
+        error = (
+            request.query.get("error_description")
+            or request.query.get("error")
+            or ["Unknown error"]
+        )[0]
         auth_state["error"] = True
-        return WebhookResponse.text_response(f"Authentication failed: {error}", status_code=401)
+        return WebhookResponse.text_response(
+            f"Authentication failed: {error}", status_code=401
+        )
 
     url_get_token = auth_state.get("url_get_token")
     if not url_get_token:
         auth_state["error"] = True
-        return WebhookResponse.text_response("ERROR: State missing token URL. Re-run test connectivity.", status_code=400)
+        return WebhookResponse.text_response(
+            "ERROR: State missing token URL. Re-run test connectivity.", status_code=400
+        )
 
     token_body = {
         "grant_type": "authorization_code",
@@ -106,17 +186,24 @@ def handle_start_oauth(request: WebhookRequest) -> WebhookResponse:
         resp_json = r.json()
     except Exception as e:
         auth_state["error"] = True
-        return WebhookResponse.text_response(f"Error retrieving OAuth token: {e}", status_code=401)
+        return WebhookResponse.text_response(
+            f"Error retrieving OAuth token: {e}", status_code=401
+        )
 
     sf_error = resp_json.get("error_description") or resp_json.get("error")
     if sf_error:
         auth_state["error"] = True
-        return WebhookResponse.text_response(f"Salesforce token exchange failed: {sf_error}", status_code=401)
+        return WebhookResponse.text_response(
+            f"Salesforce token exchange failed: {sf_error}", status_code=401
+        )
 
     refresh_token = resp_json.get("refresh_token")
     if not refresh_token:
         auth_state["error"] = True
-        return WebhookResponse.text_response("Unable to retrieve refresh token. Check OAuth scopes include refresh_token.", status_code=401)
+        return WebhookResponse.text_response(
+            "Unable to retrieve refresh token. Check OAuth scopes include refresh_token.",
+            status_code=401,
+        )
 
     auth_state["refresh_token"] = refresh_token
     auth_state.pop("url", None)
@@ -143,10 +230,14 @@ SENSITIVITY_MAP = {
 
 
 @app.on_poll()
-def on_poll(params: OnPollParams, soar: SOARClient, asset: Asset) -> Iterator[Union[Container, Artifact]]:
+def on_poll(
+    params: OnPollParams, soar: SOARClient, asset: Asset
+) -> Iterator[Container | Artifact]:
     sobject = asset.poll_sobject or "Case"
     view_name = asset.poll_view_name
-    include_view_date = asset.last_view_date if asset.last_view_date is not None else True
+    include_view_date = (
+        asset.last_view_date if asset.last_view_date is not None else True
+    )
 
     if not view_name:
         raise ActionFailure("poll_view_name must be set in asset configuration.")
@@ -160,7 +251,9 @@ def on_poll(params: OnPollParams, soar: SOARClient, asset: Asset) -> Iterator[Un
             raise ActionFailure(f"cef_name_map is not valid JSON: {e}") from e
         for k, v in cef_name_map.items():
             if not isinstance(v, str) or not k.strip() or not v.strip():
-                raise ActionFailure("cef_name_map must contain non-empty string keys and values.")
+                raise ActionFailure(
+                    "cef_name_map must contain non-empty string keys and values."
+                )
 
     is_manual = params.is_manual_poll()
 
@@ -176,7 +269,9 @@ def on_poll(params: OnPollParams, soar: SOARClient, asset: Asset) -> Iterator[Un
         if offset == 0:
             max_records = int(asset.first_ingestion_max or 10)
 
-    logger.info(f"Polling {sobject} list view '{view_name}' from offset {offset}, max={max_records}")
+    logger.info(
+        f"Polling {sobject} list view '{view_name}' from offset {offset}, max={max_records}"
+    )
 
     client = SalesforceClient(asset)
     new_offset, list_records = client.list_view_records_paged(
@@ -198,7 +293,7 @@ def on_poll(params: OnPollParams, soar: SOARClient, asset: Asset) -> Iterator[Un
 
     full_records: list[dict] = []
     for i in range(0, len(record_ids), 25):
-        batch = client.batch_get(sobject, record_ids[i:i + 25])
+        batch = client.batch_get(sobject, record_ids[i : i + 25])
         full_records.extend(batch)
 
     logger.info(f"Fetched {len(full_records)} full {sobject} records")
@@ -228,13 +323,19 @@ def on_poll(params: OnPollParams, soar: SOARClient, asset: Asset) -> Iterator[Un
 
         record_id = record.get("Id", "")
         container_sdi = hashlib.sha256(f"{sobject}{record_id}".encode()).hexdigest()
-        artifact_sdi = hashlib.sha256(json.dumps(cef, sort_keys=True).encode()).hexdigest()
+        artifact_sdi = hashlib.sha256(
+            json.dumps(cef, sort_keys=True).encode()
+        ).hexdigest()
 
         container = Container(
             name=container_name,
             source_data_identifier=container_sdi,
-            severity=SEVERITY_MAP.get((record.get("Incident_Severity__c") or "").lower()),
-            sensitivity=SENSITIVITY_MAP.get((record.get("Incident_Sensitivity__c") or "").lower()),
+            severity=SEVERITY_MAP.get(
+                (record.get("Incident_Severity__c") or "").lower()
+            ),
+            sensitivity=SENSITIVITY_MAP.get(
+                (record.get("Incident_Sensitivity__c") or "").lower()
+            ),
         )
         yield container
 
@@ -282,12 +383,16 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
 
 def _test_connectivity_oauth(soar: SOARClient, asset: Asset) -> None:
     """Browser-based OAuth with PKCE flow."""
-    code_verifier = base64.urlsafe_b64encode(
-        secrets.token_bytes(SALESFORCE_PKCE_VERIFIER_BYTES)
-    ).rstrip(b"=").decode()
-    code_challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(code_verifier.encode("ascii")).digest()
-    ).rstrip(b"=").decode()
+    code_verifier = (
+        base64.urlsafe_b64encode(secrets.token_bytes(SALESFORCE_PKCE_VERIFIER_BYTES))
+        .rstrip(b"=")
+        .decode()
+    )
+    code_challenge = (
+        base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("ascii")).digest())
+        .rstrip(b"=")
+        .decode()
+    )
 
     redirect_uri = app.get_webhook_url("start_oauth")
 
@@ -310,14 +415,16 @@ def _test_connectivity_oauth(soar: SOARClient, asset: Asset) -> None:
     # Write PKCE state so webhooks can pick it up; keep secrets plaintext since
     # AssetState encrypts the whole partition at rest.
     auth_state = asset.auth_state
-    auth_state.put_all({
-        "url": full_auth_url,
-        "url_get_token": url_get_token,
-        "client_id": asset.client_id,
-        "client_secret": asset.client_secret,
-        "redirect_uri": redirect_uri,
-        "code_verifier": code_verifier,
-    })
+    auth_state.put_all(
+        {
+            "url": full_auth_url,
+            "url_get_token": url_get_token,
+            "client_id": asset.client_id,
+            "client_secret": asset.client_secret,
+            "redirect_uri": redirect_uri,
+            "code_verifier": code_verifier,
+        }
+    )
 
     redirect_url = app.get_webhook_url("redirect")
     logger.info(f"To continue, open this link in a new tab: {redirect_url}")
@@ -330,25 +437,23 @@ def _test_connectivity_oauth(soar: SOARClient, asset: Asset) -> None:
             logger.info("Successfully retrieved refresh token")
             break
         if state.get("error"):
-            raise ActionFailure("OAuth authorization failed. Check the browser tab for details.")
+            raise ActionFailure(
+                "OAuth authorization failed. Check the browser tab for details."
+            )
     else:
-        raise ActionFailure("Timed out waiting for OAuth authorization. Please re-run test connectivity.")
+        raise ActionFailure(
+            "Timed out waiting for OAuth authorization. Please re-run test connectivity."
+        )
 
     # Exchange the refresh token for an access token so the API version
     # check (and all subsequent actions) have instance_url + access_token ready.
-    if asset.is_test_environment:
-        url_get_token = URL_GET_TOKEN_TEST
-    else:
-        url_get_token = URL_GET_TOKEN
+    url_get_token = URL_GET_TOKEN_TEST if asset.is_test_environment else URL_GET_TOKEN
     _exchange_refresh_token(asset, url_get_token)
 
 
 def _test_connectivity_username_password(soar: SOARClient, asset: Asset) -> None:
     """Legacy username + password OAuth flow."""
-    if asset.is_test_environment:
-        url_get_token = URL_GET_TOKEN_TEST
-    else:
-        url_get_token = URL_GET_TOKEN
+    url_get_token = URL_GET_TOKEN_TEST if asset.is_test_environment else URL_GET_TOKEN
 
     try:
         resp = httpx.post(
@@ -369,7 +474,9 @@ def _test_connectivity_username_password(soar: SOARClient, asset: Asset) -> None
         raise ActionFailure(f"Token request failed: {e}") from e
 
     if resp_json.get("error"):
-        raise ActionFailure(f"Salesforce rejected credentials: {resp_json.get('error_description') or resp_json['error']}")
+        raise ActionFailure(
+            f"Salesforce rejected credentials: {resp_json.get('error_description') or resp_json['error']}"
+        )
 
     asset.auth_state["access_token"] = resp_json["access_token"]
     asset.auth_state["instance_url"] = resp_json["instance_url"]
@@ -382,14 +489,20 @@ def _test_connectivity_client_credentials(soar: SOARClient, asset: Asset) -> Non
 
     domain_url = (asset.domain_url or "").strip()
     if not domain_url:
-        raise ActionFailure("My Domain URL must be set when using Client Credentials flow.")
+        raise ActionFailure(
+            "My Domain URL must be set when using Client Credentials flow."
+        )
     if "://" not in domain_url:
         domain_url = f"https://{domain_url}"
     parsed = urlparse(domain_url)
     if parsed.scheme != "https" or not parsed.netloc:
-        raise ActionFailure("My Domain URL must be a full HTTPS URL, e.g. https://example.my.salesforce.com")
+        raise ActionFailure(
+            "My Domain URL must be a full HTTPS URL, e.g. https://example.my.salesforce.com"
+        )
     if not parsed.netloc.lower().endswith(".my.salesforce.com"):
-        raise ActionFailure("My Domain URL must end in .my.salesforce.com. Do not use login.salesforce.com or test.salesforce.com.")
+        raise ActionFailure(
+            "My Domain URL must end in .my.salesforce.com. Do not use login.salesforce.com or test.salesforce.com."
+        )
 
     token_url = f"{parsed.scheme}://{parsed.netloc}/services/oauth2/token"
     try:
@@ -409,7 +522,9 @@ def _test_connectivity_client_credentials(soar: SOARClient, asset: Asset) -> Non
         raise ActionFailure(f"Token request failed: {e}") from e
 
     if resp_json.get("error"):
-        raise ActionFailure(f"Salesforce rejected client credentials: {resp_json.get('error_description') or resp_json['error']}")
+        raise ActionFailure(
+            f"Salesforce rejected client credentials: {resp_json.get('error_description') or resp_json['error']}"
+        )
 
     asset.auth_state["access_token"] = resp_json["access_token"]
     asset.auth_state["instance_url"] = resp_json["instance_url"]
@@ -440,7 +555,9 @@ def _exchange_refresh_token(asset: Asset, token_url: str) -> None:
         raise ActionFailure(f"Token refresh failed: {e}") from e
 
     if resp_json.get("error"):
-        raise ActionFailure(f"Salesforce rejected token refresh: {resp_json.get('error_description') or resp_json['error']}")
+        raise ActionFailure(
+            f"Salesforce rejected token refresh: {resp_json.get('error_description') or resp_json['error']}"
+        )
 
     asset.auth_state["access_token"] = resp_json["access_token"]
     asset.auth_state["instance_url"] = resp_json["instance_url"]
@@ -466,52 +583,102 @@ def _get_salesforce_instance_url(asset: Asset) -> str:
     return url
 
 
-
 class RunQueryParams(Params):
-    query: str = Param(description='SOQL Query')
-    endpoint: str = Param(description='Which Query endpoint to use', default='query', value_list=['query', 'queryAll'])
+    query: str = Param(description="SOQL Query")
+    endpoint: str = Param(
+        description="Which Query endpoint to use",
+        default="query",
+        value_list=["query", "queryAll"],
+    )
+
+
+class RunQuerySummary(ActionOutput):
+    num_objects: int = OutputField(example_values=[5])
+
 
 class RunQueryOutput(ActionOutput):
     records: list[str]
 
-@app.action(description='Run a query using the Salesforce Object Query Language (SOQL)', action_type='investigate', verbose='To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.')
+
+@app.action(
+    description="Run a query using the Salesforce Object Query Language (SOQL)",
+    action_type="investigate",
+    verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
+)
 def run_query(params: RunQueryParams, soar: SOARClient, asset: Asset) -> RunQueryOutput:
     client = SalesforceClient(asset)
     records = client.query(params.query, endpoint=params.endpoint)
-    logger.info(f"Query returned {len(records)} record(s)")
+    soar.set_summary(RunQuerySummary(num_objects=len(records)))
+    soar.set_message(f"Successfully retrieved {len(records)} record(s)")
     return RunQueryOutput(records=[str(r) for r in records])
 
+
 class CreateObjectParams(Params):
-    sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
-    field_values: str = Param(description='JSON Object of Key-Value pairs to update')
+    sobject: str = Param(
+        description="Name of object",
+        primary=True,
+        default="Case",
+        cef_types=["salesforce object name"],
+    )
+    field_values: str = Param(description="JSON Object of Key-Value pairs to update")
+
+
+class CreateSummary(ActionOutput):
+    obj_id: str = OutputField(cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"])
+
 
 class CreateObjectOutput(ActionOutput):
-    id: str = OutputField(cef_types=['salesforce object id'], example_values=['5001I000002SfMMQA0'])
+    id: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
     success: bool
 
-@app.action(description='Create a new Salesforce object', action_type='generic', read_only=False)
-def create_object(params: CreateObjectParams, soar: SOARClient, asset: Asset) -> CreateObjectOutput:
+
+@app.action(
+    description="Create a new Salesforce object", action_type="generic", read_only=False
+)
+def create_object(
+    params: CreateObjectParams, soar: SOARClient, asset: Asset
+) -> CreateObjectOutput:
     try:
         fields = json.loads(params.field_values)
     except (json.JSONDecodeError, TypeError) as e:
         raise ActionFailure(f"field_values must be valid JSON: {e}") from e
     client = SalesforceClient(asset)
     result = client.create(params.sobject, fields)
-    return CreateObjectOutput(id=result["id"], success=result.get("success", True))
+    obj_id = result["id"]
+    soar.set_summary(CreateSummary(obj_id=obj_id))
+    soar.set_message(f"Successfully created a new {params.sobject}")
+    return CreateObjectOutput(id=obj_id, success=result.get("success", True))
+
 
 class CreateTicketParams(Params):
-    parent_case_id: str | None = Param(description='Object ID of Parent Case', primary=True, cef_types=['salesforce object id'])
-    subject: str | None = Param(description='Subject')
-    priority: str | None = Param(description='Priority', value_list=['High', 'Medium', 'Low'])
-    description: str | None = Param(description='Description')
-    field_values: str | None = Param(description='JSON Object of Key-Value pairs to update')
+    parent_case_id: str | None = Param(
+        description="Object ID of Parent Case",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+    subject: str | None = Param(description="Subject")
+    priority: str | None = Param(
+        description="Priority", value_list=["High", "Medium", "Low"]
+    )
+    description: str | None = Param(description="Description")
+    field_values: str | None = Param(
+        description="JSON Object of Key-Value pairs to update"
+    )
+
 
 class CreateTicketOutput(ActionOutput):
-    id: str = OutputField(cef_types=['salesforce object id'], example_values=['5001I000002SfMMQA0'])
+    id: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
     success: bool
 
-@app.action(description='Create a new Case', action_type='generic', read_only=False)
-def create_ticket(params: CreateTicketParams, soar: SOARClient, asset: Asset) -> CreateTicketOutput:
+
+@app.action(description="Create a new Case", action_type="generic", read_only=False)
+def create_ticket(
+    params: CreateTicketParams, soar: SOARClient, asset: Asset
+) -> CreateTicketOutput:
     fields: dict = {}
     if params.parent_case_id:
         fields["ParentId"] = params.parent_case_id
@@ -529,34 +696,73 @@ def create_ticket(params: CreateTicketParams, soar: SOARClient, asset: Asset) ->
         fields.update(extra)
     client = SalesforceClient(asset)
     result = client.create("Case", fields)
-    return CreateTicketOutput(id=result["id"], success=result.get("success", True))
+    obj_id = result["id"]
+    soar.set_summary(CreateSummary(obj_id=obj_id))
+    soar.set_message("Successfully created a new Case")
+    return CreateTicketOutput(id=obj_id, success=result.get("success", True))
+
 
 class DeleteObjectParams(Params):
-    sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
-    id: str = Param(description='Salesforce Object ID', primary=True, cef_types=['salesforce object id'])
+    sobject: str = Param(
+        description="Name of object",
+        primary=True,
+        default="Case",
+        cef_types=["salesforce object name"],
+    )
+    id: str = Param(
+        description="Salesforce Object ID",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
 
-@app.action(description='Delete an object', action_type='generic', read_only=False)
-def delete_object(params: DeleteObjectParams, soar: SOARClient, asset: Asset) -> ActionOutput:
+
+@app.action(description="Delete an object", action_type="generic", read_only=False)
+def delete_object(
+    params: DeleteObjectParams, soar: SOARClient, asset: Asset
+) -> ActionOutput:
     SalesforceClient(asset).delete(params.sobject, params.id)
-    logger.info(f"Deleted {params.sobject} {params.id}")
+    soar.set_message(f"Successfully deleted {params.sobject}")
     return ActionOutput()
+
 
 class DeleteTicketParams(Params):
-    id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
+    id: str = Param(
+        description="Object ID of the Case",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
 
-@app.action(description='Delete a Case', action_type='generic', read_only=False)
-def delete_ticket(params: DeleteTicketParams, soar: SOARClient, asset: Asset) -> ActionOutput:
+
+@app.action(description="Delete a Case", action_type="generic", read_only=False)
+def delete_ticket(
+    params: DeleteTicketParams, soar: SOARClient, asset: Asset
+) -> ActionOutput:
     SalesforceClient(asset).delete("Case", params.id)
-    logger.info(f"Deleted Case {params.id}")
+    soar.set_message("Successfully deleted the Case")
     return ActionOutput()
 
-class UpdateObjectParams(Params):
-    sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
-    id: str = Param(description='Salesforce Object ID', primary=True, cef_types=['salesforce object id'])
-    field_values: str | None = Param(description='JSON Object of Key-Value pairs to update')
 
-@app.action(description='Update an object', action_type='generic', read_only=False)
-def update_object(params: UpdateObjectParams, soar: SOARClient, asset: Asset) -> ActionOutput:
+class UpdateObjectParams(Params):
+    sobject: str = Param(
+        description="Name of object",
+        primary=True,
+        default="Case",
+        cef_types=["salesforce object name"],
+    )
+    id: str = Param(
+        description="Salesforce Object ID",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+    field_values: str | None = Param(
+        description="JSON Object of Key-Value pairs to update"
+    )
+
+
+@app.action(description="Update an object", action_type="generic", read_only=False)
+def update_object(
+    params: UpdateObjectParams, soar: SOARClient, asset: Asset
+) -> ActionOutput:
     if not params.field_values:
         raise ActionFailure("field_values is required to update an object.")
     try:
@@ -564,20 +770,38 @@ def update_object(params: UpdateObjectParams, soar: SOARClient, asset: Asset) ->
     except (json.JSONDecodeError, TypeError) as e:
         raise ActionFailure(f"field_values must be valid JSON: {e}") from e
     SalesforceClient(asset).update(params.sobject, params.id, fields)
-    logger.info(f"Updated {params.sobject} {params.id}")
+    soar.set_message(f"Successfully updated the {params.sobject}")
     return ActionOutput()
 
-class UpdateTicketParams(Params):
-    id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
-    parent_case_id: str | None = Param(description='Object ID of Parent Case', primary=True, cef_types=['salesforce object id'])
-    subject: str | None = Param(description='Subject')
-    priority: str | None = Param(description='Priority', value_list=['High', 'Medium', 'Low'])
-    description: str | None = Param(description='Description')
-    status: str | None = Param(description='Status', value_list=['New', 'Working', 'Escalated', 'Closed'])
-    field_values: str | None = Param(description='JSON Object of Key-Value pairs to update')
 
-@app.action(description='Update a Case', action_type='generic', read_only=False)
-def update_ticket(params: UpdateTicketParams, soar: SOARClient, asset: Asset) -> ActionOutput:
+class UpdateTicketParams(Params):
+    id: str = Param(
+        description="Object ID of the Case",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+    parent_case_id: str | None = Param(
+        description="Object ID of Parent Case",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+    subject: str | None = Param(description="Subject")
+    priority: str | None = Param(
+        description="Priority", value_list=["High", "Medium", "Low"]
+    )
+    description: str | None = Param(description="Description")
+    status: str | None = Param(
+        description="Status", value_list=["New", "Working", "Escalated", "Closed"]
+    )
+    field_values: str | None = Param(
+        description="JSON Object of Key-Value pairs to update"
+    )
+
+
+@app.action(description="Update a Case", action_type="generic", read_only=False)
+def update_ticket(
+    params: UpdateTicketParams, soar: SOARClient, asset: Asset
+) -> ActionOutput:
     fields: dict = {}
     if params.parent_case_id:
         fields["ParentId"] = params.parent_case_id
@@ -598,85 +822,192 @@ def update_ticket(params: UpdateTicketParams, soar: SOARClient, asset: Asset) ->
     if not fields:
         raise ActionFailure("Provide at least one field to update.")
     SalesforceClient(asset).update("Case", params.id, fields)
-    logger.info(f"Updated Case {params.id}")
+    soar.set_message("Successfully updated the Case")
     return ActionOutput()
 
+
 class ListObjectsParams(Params):
-    sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
-    view_name: str | None = Param(description='Unique name of a list view', primary=True, cef_types=['salesforce listview name'])
-    limit: float | None = Param(description='Paging limit')
-    offset: float | None = Param(description='Paging offset')
+    sobject: str = Param(
+        description="Name of object",
+        primary=True,
+        default="Case",
+        cef_types=["salesforce object name"],
+    )
+    view_name: str | None = Param(
+        description="Unique name of a list view",
+        primary=True,
+        cef_types=["salesforce listview name"],
+    )
+    limit: float | None = Param(description="Paging limit")
+    offset: float | None = Param(description="Paging offset")
+
+
+class ListSummary(ActionOutput):
+    num_objects: int = OutputField(example_values=[5])
+
+
+class ListColumnIdValue(ActionOutput):
+    value: str = OutputField(cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"])
+
+
+class ListColumnsOutput(ActionOutput):
+    Id: ListColumnIdValue
+
+
+class ListRecordOutput(ActionOutput):
+    columns: ListColumnsOutput
+
 
 class ListObjectsOutput(ActionOutput):
-    records: list[str]
-    count: int
+    columns: ListColumnsOutput
 
-@app.action(description='Get a list of objects', action_type='investigate', verbose='To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.')
-def list_objects(params: ListObjectsParams, soar: SOARClient, asset: Asset) -> ListObjectsOutput:
+
+def _validate_list_params(limit, offset) -> tuple[int | None, int | None]:
+    if limit is not None:
+        lim = int(limit)
+        if lim <= 0:
+            raise ActionFailure("limit must be a positive integer.")
+        return lim, int(offset) if offset is not None else None
+    if offset is not None:
+        off = int(offset)
+        if off < 0:
+            raise ActionFailure("offset must be a non-negative integer.")
+        return None, off
+    return None, None
+
+
+@app.action(
+    description="Get a list of objects",
+    action_type="investigate",
+    verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
+)
+def list_objects(
+    params: ListObjectsParams, soar: SOARClient, asset: Asset
+) -> list[ListObjectsOutput]:
     client = SalesforceClient(asset)
     if not params.view_name:
         views = client.list_views(params.sobject)
         names = [v.get("developerName", v.get("label", "")) for v in views]
-        logger.info(f"Available list views for {params.sobject}: {', '.join(names)}")
-        return ListObjectsOutput(records=names, count=len(names))
+        soar.set_summary(ListSummary(num_objects=len(names)))
+        soar.set_message(f"No view_name specified. Available list views for {params.sobject}: {', '.join(names)}")
+        return []
+    limit, offset = _validate_list_params(params.limit, params.offset)
     view_id = client.resolve_list_view_id(params.sobject, params.view_name)
-    limit = int(params.limit) if params.limit else None
-    offset = int(params.offset) if params.offset else None
     data = client.list_view_results(params.sobject, view_id, limit=limit, offset=offset)
     records = data.get("records", [])
-    return ListObjectsOutput(records=[str(r) for r in records], count=len(records))
+    soar.set_summary(ListSummary(num_objects=len(records)))
+    soar.set_message(f"Successfully fetched a list of {params.sobject} objects")
+    return [
+        ListObjectsOutput(columns=ListColumnsOutput(Id=ListColumnIdValue(
+            value=r.get("fields", {}).get("Id", {}).get("value", "")
+        )))
+        for r in records
+    ]
+
 
 class ListTicketsParams(Params):
-    view_name: str | None = Param(description='Unique name of a list view', primary=True, cef_types=['salesforce listview name'])
-    limit: float | None = Param(description='Paging limit')
-    offset: float | None = Param(description='Paging offset')
+    view_name: str | None = Param(
+        description="Unique name of a list view",
+        primary=True,
+        cef_types=["salesforce listview name"],
+    )
+    limit: float | None = Param(description="Paging limit")
+    offset: float | None = Param(description="Paging offset")
+
 
 class ListTicketsOutput(ActionOutput):
-    records: list[str]
-    count: int
+    columns: ListColumnsOutput
 
-@app.action(description='Get a list of Cases', action_type='investigate', verbose='To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.')
-def list_tickets(params: ListTicketsParams, soar: SOARClient, asset: Asset) -> ListTicketsOutput:
+
+@app.action(
+    description="Get a list of Cases",
+    action_type="investigate",
+    verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.",
+)
+def list_tickets(
+    params: ListTicketsParams, soar: SOARClient, asset: Asset
+) -> list[ListTicketsOutput]:
     client = SalesforceClient(asset)
     if not params.view_name:
         views = client.list_views("Case")
         names = [v.get("developerName", v.get("label", "")) for v in views]
-        logger.info(f"Available list views for Case: {', '.join(names)}")
-        return ListTicketsOutput(records=names, count=len(names))
+        soar.set_summary(ListSummary(num_objects=len(names)))
+        soar.set_message(f"No view_name specified. Available list views for Case: {', '.join(names)}")
+        return []
+    limit, offset = _validate_list_params(params.limit, params.offset)
     view_id = client.resolve_list_view_id("Case", params.view_name)
-    limit = int(params.limit) if params.limit else None
-    offset = int(params.offset) if params.offset else None
     data = client.list_view_results("Case", view_id, limit=limit, offset=offset)
     records = data.get("records", [])
-    return ListTicketsOutput(records=[str(r) for r in records], count=len(records))
+    soar.set_summary(ListSummary(num_objects=len(records)))
+    soar.set_message(f"Successfully fetched {len(records)} Cases")
+    return [
+        ListTicketsOutput(columns=ListColumnsOutput(Id=ListColumnIdValue(
+            value=r.get("fields", {}).get("Id", {}).get("value", "")
+        )))
+        for r in records
+    ]
+
 
 class GetObjectParams(Params):
-    sobject: str = Param(description='Name of object', primary=True, default='Case', cef_types=['salesforce object name'])
-    id: str = Param(description='Salesforce Object ID', primary=True, cef_types=['salesforce object id'])
+    sobject: str = Param(
+        description="Name of object",
+        primary=True,
+        default="Case",
+        cef_types=["salesforce object name"],
+    )
+    id: str = Param(
+        description="Salesforce Object ID",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+
 
 class GetObjectOutput(ActionOutput):
-    id: str = OutputField(cef_types=['salesforce object id'], example_values=['5001I000002SfMMQA0'])
+    id: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
 
-@app.action(description='Get info about a Salesforce object', action_type='investigate', verbose='If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.')
-def get_object(params: GetObjectParams, soar: SOARClient, asset: Asset) -> GetObjectOutput:
+
+@app.action(
+    description="Get info about a Salesforce object",
+    action_type="investigate",
+    verbose="If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+)
+def get_object(
+    params: GetObjectParams, soar: SOARClient, asset: Asset
+) -> GetObjectOutput:
     record = SalesforceClient(asset).get(params.sobject, params.id)
+    soar.set_message(f"Successfully retrieved {params.sobject}")
     return GetObjectOutput(id=record.get("Id", params.id))
 
+
 class GetTicketParams(Params):
-    id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
+    id: str = Param(
+        description="Object ID of the Case",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+
 
 class AttributesOutput(ActionOutput):
-    type: str = OutputField(example_values=['Case'])
-    url: str = OutputField(example_values=['/services/data/v41.0/sobjects/Case/5001I000002SfMMQA0'])
+    type: str = OutputField(example_values=["Case"])
+    url: str = OutputField(
+        example_values=["/services/data/v41.0/sobjects/Case/5001I000002SfMMQA0"]
+    )
+
 
 class GetTicketOutput(ActionOutput):
     # Always-present fields on an existing Case
-    Id: str = OutputField(cef_types=['salesforce object id'], example_values=['5001I000002SfMMQA0'])
-    CaseNumber: str = OutputField(example_values=['00001030'])
-    OwnerId: str = OutputField(cef_types=['salesforce object id'], example_values=['0051I000000PRsCQAW'])
-    CreatedDate: str = OutputField(example_values=['2017-12-01T21:32:33.000+0000'])
-    LastModifiedDate: str = OutputField(example_values=['2017-12-01T21:32:33.000+0000'])
-    SystemModstamp: str = OutputField(example_values=['2017-12-02T11:18:29.000+0000'])
+    Id: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
+    CaseNumber: str = OutputField(example_values=["00001030"])
+    OwnerId: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    )
+    CreatedDate: str = OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
+    LastModifiedDate: str = OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
+    SystemModstamp: str = OutputField(example_values=["2017-12-02T11:18:29.000+0000"])
     IsClosed: bool = False
     IsDeleted: bool = False
     IsEscalated: bool = False
@@ -739,23 +1070,51 @@ class GetTicketOutput(ActionOutput):
     Type: str | None = None
     attributes: AttributesOutput | None = None
 
-@app.action(description='Get info about a Case', action_type='investigate', verbose='If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.')
-def get_ticket(params: GetTicketParams, soar: SOARClient, asset: Asset) -> GetTicketOutput:
+
+@app.action(
+    description="Get info about a Case",
+    action_type="investigate",
+    verbose="If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+)
+def get_ticket(
+    params: GetTicketParams, soar: SOARClient, asset: Asset
+) -> GetTicketOutput:
     record = SalesforceClient(asset).get("Case", params.id)
+    soar.set_message("Successfully retrieved Case")
     return GetTicketOutput(**{k: v for k, v in record.items() if v is not None})
 
+
 class PostChatterParams(Params):
-    id: str = Param(description='Object ID of the Case', primary=True, cef_types=['salesforce object id'])
-    title: str | None = Param(description='Title of the post')
-    body: str = Param(description='Body of the post')
+    id: str = Param(
+        description="Object ID of the Case",
+        primary=True,
+        cef_types=["salesforce object id"],
+    )
+    title: str | None = Param(description="Title of the post")
+    body: str = Param(description="Body of the post")
+
 
 class PostChatterOutput(ActionOutput):
-    id: str = OutputField(cef_types=['salesforce object id'], example_values=['0D51I00000Jw1tnSAB'])
+    id: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["0D51I00000Jw1tnSAB"]
+    )
     success: bool
 
-@app.action(description='Post on the Chatter feed for a specified case', action_type='generic', read_only=False)
-def post_chatter(params: PostChatterParams, soar: SOARClient, asset: Asset) -> PostChatterOutput:
-    result = SalesforceClient(asset).post_chatter(params.id, params.body, title=params.title)
+
+@app.action(
+    description="Post on the Chatter feed for a specified case",
+    action_type="generic",
+    read_only=False,
+)
+def post_chatter(
+    params: PostChatterParams, soar: SOARClient, asset: Asset
+) -> PostChatterOutput:
+    result = SalesforceClient(asset).post_chatter(
+        params.id, params.body, title=params.title
+    )
+    soar.set_message("Successfully posted to chatter")
     return PostChatterOutput(id=result["id"], success=result["success"])
-if __name__ == '__main__':
+
+
+if __name__ == "__main__":
     app.cli()

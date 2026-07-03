@@ -1,3 +1,16 @@
+# Copyright (c) 2026 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
 
 import httpx
@@ -28,7 +41,9 @@ class SalesforceClient:
         return url
 
     def _api_version(self) -> str:
-        return self._asset.cache_state.get("latest_version", SALESFORCE_API_FALLBACK_VERSION)
+        return self._asset.cache_state.get(
+            "latest_version", SALESFORCE_API_FALLBACK_VERSION
+        )
 
     def _base_url(self) -> str:
         return f"{self._instance_url()}{self._api_version()}"
@@ -39,7 +54,8 @@ class SalesforceClient:
     def _request(self, method: str, path: str, **kwargs) -> dict:
         url = f"{self._base_url()}{path}"
         resp = httpx.request(
-            method, url,
+            method,
+            url,
             headers=self._headers(),
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
             verify=False,  # noqa: S501
@@ -48,12 +64,15 @@ class SalesforceClient:
         if not resp.is_success:
             try:
                 errors = resp.json()
-                msg = errors[0].get("message", resp.text) if isinstance(errors, list) else resp.text
+                msg = (
+                    errors[0].get("message", resp.text)
+                    if isinstance(errors, list)
+                    else resp.text
+                )
             except Exception:
                 msg = resp.text
             raise ActionFailure(f"Salesforce API error {resp.status_code}: {msg}")
         return {} if resp.status_code == 204 else resp.json()
-
 
     def query(self, soql: str, endpoint: str = "query") -> list[dict]:
         """Execute a SOQL query and return all records (auto-paginates)."""
@@ -74,7 +93,6 @@ class SalesforceClient:
             next_url = page.get("nextRecordsUrl")
         return records
 
-
     def create(self, sobject: str, fields: dict) -> dict:
         """Create a new sObject record. Returns {id, success}."""
         return self._request("POST", f"/sobjects/{sobject}", json=fields)
@@ -91,7 +109,6 @@ class SalesforceClient:
         """Delete a sObject record (returns nothing on 204)."""
         self._request("DELETE", f"/sobjects/{sobject}/{record_id}")
 
-
     def batch_get(self, sobject: str, record_ids: list[str]) -> list[dict]:
         """Fetch up to 25 sObject records in a single batch request."""
         version = self._api_version()
@@ -99,7 +116,9 @@ class SalesforceClient:
             {"method": "GET", "url": f"{version}/sobjects/{sobject}/{rid}"}
             for rid in record_ids
         ]
-        data = self._request("POST", "/composite/batch", json={"batchRequests": requests})
+        data = self._request(
+            "POST", "/composite/batch", json={"batchRequests": requests}
+        )
         results = []
         for item in data.get("results", []):
             if item.get("statusCode") == 200:
@@ -122,8 +141,14 @@ class SalesforceClient:
         records: list[dict] = []
 
         while True:
-            params: dict = {"sortBy": "LastModifiedDate", "pageSize": MAX_PER_PAGE, "pageToken": offset}
-            data = self._request("GET", f"/sobjects/{sobject}/listviews/{view_id}/results", params=params)
+            params: dict = {
+                "sortBy": "LastModifiedDate",
+                "pageSize": MAX_PER_PAGE,
+                "pageToken": offset,
+            }
+            data = self._request(
+                "GET", f"/sobjects/{sobject}/listviews/{view_id}/results", params=params
+            )
             page = data.get("records", [])
             records.extend(page)
 
@@ -158,18 +183,22 @@ class SalesforceClient:
             params["limit"] = limit
         if offset is not None:
             params["offset"] = offset
-        return self._request("GET", f"/sobjects/{sobject}/listviews/{list_view_id}/results", params=params)
+        return self._request(
+            "GET",
+            f"/sobjects/{sobject}/listviews/{list_view_id}/results",
+            params=params,
+        )
 
     def resolve_list_view_id(self, sobject: str, view_name: str) -> str:
-        """Resolve a developer name or label to a list view ID. Raises ActionFailure if not found."""
+        """Resolve a developer name or label to a list view ID. Case-sensitive. Raises ActionFailure if not found."""
         views = self.list_views(sobject)
-        name_lower = view_name.lower()
         for v in views:
-            if v.get("developerName", "").lower() == name_lower or v.get("label", "").lower() == name_lower:
+            if v.get("developerName") == view_name or v.get("label") == view_name:
                 return v["id"]
         available = ", ".join(v.get("developerName", v.get("label", "")) for v in views)
-        raise ActionFailure(f"List view '{view_name}' not found for {sobject}. Available: {available}")
-
+        raise ActionFailure(
+            f"List view '{view_name}' not found for {sobject}. Available: {available}"
+        )
 
     def post_chatter(self, case_id: str, body: str, title: str | None = None) -> dict:
         """Post a text message to the Chatter feed of a Case."""
@@ -193,7 +222,11 @@ class SalesforceClient:
         if not resp.is_success:
             try:
                 errors = resp.json()
-                msg = errors[0].get("message", resp.text) if isinstance(errors, list) else resp.text
+                msg = (
+                    errors[0].get("message", resp.text)
+                    if isinstance(errors, list)
+                    else resp.text
+                )
             except Exception:
                 msg = resp.text
             raise ActionFailure(f"Chatter post failed {resp.status_code}: {msg}")
