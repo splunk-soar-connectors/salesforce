@@ -770,6 +770,7 @@ def update_object(
     except (json.JSONDecodeError, TypeError) as e:
         raise ActionFailure(f"field_values must be valid JSON: {e}") from e
     SalesforceClient(asset).update(params.sobject, params.id, fields)
+    soar.set_summary(CreateSummary(obj_id=params.id))
     soar.set_message(f"Successfully updated the {params.sobject}")
     return ActionOutput()
 
@@ -822,6 +823,7 @@ def update_ticket(
     if not fields:
         raise ActionFailure("Provide at least one field to update.")
     SalesforceClient(asset).update("Case", params.id, fields)
+    soar.set_summary(CreateSummary(obj_id=params.id))
     soar.set_message("Successfully updated the Case")
     return ActionOutput()
 
@@ -844,6 +846,10 @@ class ListObjectsParams(Params):
 
 class ListSummary(ActionOutput):
     num_objects: int = OutputField(example_values=[5])
+    view_names: list[str] | None = OutputField(
+        description="List of available view names when no view_name is specified",
+        example_values=[["All", "My Cases", "Today's Cases"]],
+    )
 
 
 class ListColumnIdValue(ActionOutput):
@@ -888,14 +894,14 @@ def list_objects(
     if not params.view_name:
         views = client.list_views(params.sobject)
         names = [v.get("developerName", v.get("label", "")) for v in views]
-        soar.set_summary(ListSummary(num_objects=len(names)))
+        soar.set_summary(ListSummary(num_objects=len(names), view_names=names))
         soar.set_message(f"No view_name specified. Available list views for {params.sobject}: {', '.join(names)}")
         return []
     limit, offset = _validate_list_params(params.limit, params.offset)
     view_id = client.resolve_list_view_id(params.sobject, params.view_name)
     data = client.list_view_results(params.sobject, view_id, limit=limit, offset=offset)
     records = data.get("records", [])
-    soar.set_summary(ListSummary(num_objects=len(records)))
+    soar.set_summary(ListSummary(num_objects=len(records), view_names=None))
     soar.set_message(f"Successfully fetched a list of {params.sobject} objects")
     return [
         ListObjectsOutput(columns=ListColumnsOutput(Id=ListColumnIdValue(
@@ -931,14 +937,14 @@ def list_tickets(
     if not params.view_name:
         views = client.list_views("Case")
         names = [v.get("developerName", v.get("label", "")) for v in views]
-        soar.set_summary(ListSummary(num_objects=len(names)))
+        soar.set_summary(ListSummary(num_objects=len(names), view_names=names))
         soar.set_message(f"No view_name specified. Available list views for Case: {', '.join(names)}")
         return []
     limit, offset = _validate_list_params(params.limit, params.offset)
     view_id = client.resolve_list_view_id("Case", params.view_name)
     data = client.list_view_results("Case", view_id, limit=limit, offset=offset)
     records = data.get("records", [])
-    soar.set_summary(ListSummary(num_objects=len(records)))
+    soar.set_summary(ListSummary(num_objects=len(records), view_names=None))
     soar.set_message(f"Successfully fetched {len(records)} Cases")
     return [
         ListTicketsOutput(columns=ListColumnsOutput(Id=ListColumnIdValue(
