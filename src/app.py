@@ -40,9 +40,9 @@ SALESFORCE_PKCE_VERIFIER_BYTES = 96
 SALESFORCE_DEFAULT_TIMEOUT = 30
 
 URL_GET_CODE = "https://login.salesforce.com/services/oauth2/authorize"
-URL_GET_TOKEN = "https://login.salesforce.com/services/oauth2/token"
+URL_GET_TOKEN = "https://login.salesforce.com/services/oauth2/token"  # noqa: S105
 URL_GET_CODE_TEST = "https://test.salesforce.com/services/oauth2/authorize"
-URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"
+URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"  # noqa: S105
 
 
 class Asset(BaseAsset):
@@ -115,7 +115,7 @@ class Asset(BaseAsset):
 
 
 app = App(
-    name="salesforce",
+    name="Salesforce",
     app_type="ticketing",
     logo="logo_salesforce.svg",
     logo_dark="logo_salesforce_dark.svg",
@@ -624,7 +624,9 @@ class CreateObjectParams(Params):
 
 
 class CreateSummary(ActionOutput):
-    obj_id: str = OutputField(cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"])
+    obj_id: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
 
 
 class CreateObjectOutput(ActionOutput):
@@ -847,13 +849,14 @@ class ListObjectsParams(Params):
 class ListSummary(ActionOutput):
     num_objects: int = OutputField(example_values=[5])
     view_names: list[str] | None = OutputField(
-        description="List of available view names when no view_name is specified",
-        example_values=[["All", "My Cases", "Today's Cases"]],
+        example_values=[["All", "My Cases", "Today's Cases"]]
     )
 
 
 class ListColumnIdValue(ActionOutput):
-    value: str = OutputField(cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"])
+    value: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
 
 
 class ListColumnsOutput(ActionOutput):
@@ -866,6 +869,13 @@ class ListRecordOutput(ActionOutput):
 
 class ListObjectsOutput(ActionOutput):
     columns: ListColumnsOutput
+
+
+def _extract_id_from_record(r: dict) -> str:
+    for col in r.get("columns", []):
+        if col.get("fieldNameOrPath") == "Id":
+            return col.get("value", "")
+    return r.get("fields", {}).get("Id", {}).get("value", "")
 
 
 def _validate_list_params(limit, offset) -> tuple[int | None, int | None]:
@@ -895,7 +905,9 @@ def list_objects(
         views = client.list_views(params.sobject)
         names = [v.get("developerName", v.get("label", "")) for v in views]
         soar.set_summary(ListSummary(num_objects=len(names), view_names=names))
-        soar.set_message(f"No view_name specified. Available list views for {params.sobject}: {', '.join(names)}")
+        soar.set_message(
+            f"No view_name specified. Available list views for {params.sobject}: {', '.join(names)}"
+        )
         return []
     limit, offset = _validate_list_params(params.limit, params.offset)
     view_id = client.resolve_list_view_id(params.sobject, params.view_name)
@@ -904,9 +916,11 @@ def list_objects(
     soar.set_summary(ListSummary(num_objects=len(records), view_names=None))
     soar.set_message(f"Successfully fetched a list of {params.sobject} objects")
     return [
-        ListObjectsOutput(columns=ListColumnsOutput(Id=ListColumnIdValue(
-            value=r.get("fields", {}).get("Id", {}).get("value", "")
-        )))
+        ListObjectsOutput(
+            columns=ListColumnsOutput(
+                Id=ListColumnIdValue(value=_extract_id_from_record(r))
+            )
+        )
         for r in records
     ]
 
@@ -938,7 +952,9 @@ def list_tickets(
         views = client.list_views("Case")
         names = [v.get("developerName", v.get("label", "")) for v in views]
         soar.set_summary(ListSummary(num_objects=len(names), view_names=names))
-        soar.set_message(f"No view_name specified. Available list views for Case: {', '.join(names)}")
+        soar.set_message(
+            f"No view_name specified. Available list views for Case: {', '.join(names)}"
+        )
         return []
     limit, offset = _validate_list_params(params.limit, params.offset)
     view_id = client.resolve_list_view_id("Case", params.view_name)
@@ -947,9 +963,11 @@ def list_tickets(
     soar.set_summary(ListSummary(num_objects=len(records), view_names=None))
     soar.set_message(f"Successfully fetched {len(records)} Cases")
     return [
-        ListTicketsOutput(columns=ListColumnsOutput(Id=ListColumnIdValue(
-            value=r.get("fields", {}).get("Id", {}).get("value", "")
-        )))
+        ListTicketsOutput(
+            columns=ListColumnsOutput(
+                Id=ListColumnIdValue(value=_extract_id_from_record(r))
+            )
+        )
         for r in records
     ]
 

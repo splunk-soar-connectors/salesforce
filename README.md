@@ -1,4 +1,4 @@
-# salesforce
+# Salesforce
 
 Publisher: Splunk <br>
 Connector Version: 2.3.0 <br>
@@ -306,7 +306,7 @@ flow uses the **My Domain URL** field instead.
 
 ### Configuration variables
 
-This table lists the configuration variables required to operate salesforce. These variables are specified when configuring a Salesforce asset in Splunk SOAR.
+This table lists the configuration variables required to operate Salesforce. These variables are specified when configuring a Salesforce asset in Splunk SOAR.
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
@@ -611,8 +611,7 @@ action_result.parameter.sobject | string | `salesforce object name` | |
 action_result.parameter.view_name | string | `salesforce listview name` | |
 action_result.parameter.limit | numeric | | |
 action_result.parameter.offset | numeric | | |
-action_result.data.\*.records.\* | string | | |
-action_result.data.\*.count | numeric | | |
+action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -642,8 +641,7 @@ action_result.message | string | | |
 action_result.parameter.view_name | string | `salesforce listview name` | |
 action_result.parameter.limit | numeric | | |
 action_result.parameter.offset | numeric | | |
-action_result.data.\*.records.\* | string | | |
-action_result.data.\*.count | numeric | | |
+action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
