@@ -327,18 +327,19 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 
 [on poll](#action-on-poll) - on poll <br>
 [test connectivity](#action-test-connectivity) - Validate connection using the configured credentials <br>
-[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL) <br>
+[make request](#action-make-request) - make request <br>
 [create object](#action-create-object) - Create a new Salesforce object <br>
 [create ticket](#action-create-ticket) - Create a new Case <br>
 [delete object](#action-delete-object) - Delete an object <br>
 [delete ticket](#action-delete-ticket) - Delete a Case <br>
-[update object](#action-update-object) - Update an object <br>
-[update ticket](#action-update-ticket) - Update a Case <br>
-[list objects](#action-list-objects) - Get a list of objects <br>
-[list tickets](#action-list-tickets) - Get a list of Cases <br>
 [get object](#action-get-object) - Get info about a Salesforce object <br>
 [get ticket](#action-get-ticket) - Get info about a Case <br>
-[post chatter](#action-post-chatter) - Post on the Chatter feed for a specified case
+[list objects](#action-list-objects) - Get a list of objects <br>
+[list tickets](#action-list-tickets) - Get a list of Cases <br>
+[post chatter](#action-post-chatter) - Post on the Chatter feed for a specified case <br>
+[run query](#action-run-query) - Run a query using the Salesforce Object Query Language (SOQL) <br>
+[update object](#action-update-object) - Update an object <br>
+[update ticket](#action-update-ticket) - Update a Case
 
 ## action: 'on poll'
 
@@ -385,21 +386,26 @@ action_result.message | string | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
-## action: 'run query'
+## action: 'make request'
 
-Run a query using the Salesforce Object Query Language (SOQL)
+make request
 
-Type: **investigate** <br>
-Read only: **True**
+Type: **generic** <br>
+Read only: **False**
 
-To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.
+'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset
 
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**query** | required | SOQL Query | string | |
-**endpoint** | required | Which Query endpoint to use | string | |
+**http_method** | required | The HTTP method to use for the request. | string | |
+**endpoint** | required | Salesforce REST API endpoint to call, relative to the instance URL and API version. Example: '/sobjects/Case' or '/query?q=SELECT+Id+FROM+Case' | string | |
+**headers** | optional | The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'} | string | |
+**query_parameters** | optional | Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2 | string | |
+**body** | optional | The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'} | string | |
+**timeout** | optional | The timeout for the request in seconds. | numeric | |
+**verify_ssl** | optional | Whether to verify the SSL certificate. Default is False. | boolean | |
 
 #### Action Output
 
@@ -407,9 +413,15 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.query | string | | |
+action_result.parameter.http_method | string | | |
 action_result.parameter.endpoint | string | | |
-action_result.data.\*.records.\* | string | | |
+action_result.parameter.headers | string | | |
+action_result.parameter.query_parameters | string | | |
+action_result.parameter.body | string | | |
+action_result.parameter.timeout | numeric | | |
+action_result.parameter.verify_ssl | boolean | | |
+action_result.data.\*.status_code | numeric | | 200 |
+action_result.data.\*.response_body | string | | {"totalSize": 1, "records": []} |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -518,130 +530,6 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.id | string | `salesforce object id` | |
-summary.total_objects | numeric | | 1 |
-summary.total_objects_successful | numeric | | 1 |
-
-## action: 'update object'
-
-Update an object
-
-Type: **generic** <br>
-Read only: **False**
-
-#### Action Parameters
-
-PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
---------- | -------- | ----------- | ---- | --------
-**sobject** | required | Name of object | string | `salesforce object name` |
-**id** | required | Salesforce Object ID | string | `salesforce object id` |
-**field_values** | optional | JSON Object of Key-Value pairs to update | string | |
-
-#### Action Output
-
-DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
---------- | ---- | -------- | --------------
-action_result.status | string | | success failure |
-action_result.message | string | | |
-action_result.parameter.sobject | string | `salesforce object name` | |
-action_result.parameter.id | string | `salesforce object id` | |
-action_result.parameter.field_values | string | | |
-summary.total_objects | numeric | | 1 |
-summary.total_objects_successful | numeric | | 1 |
-
-## action: 'update ticket'
-
-Update a Case
-
-Type: **generic** <br>
-Read only: **False**
-
-#### Action Parameters
-
-PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
---------- | -------- | ----------- | ---- | --------
-**id** | required | Object ID of the Case | string | `salesforce object id` |
-**parent_case_id** | optional | Object ID of Parent Case | string | `salesforce object id` |
-**subject** | optional | Subject | string | |
-**priority** | optional | Priority | string | |
-**description** | optional | Description | string | |
-**status** | optional | Status | string | |
-**field_values** | optional | JSON Object of Key-Value pairs to update | string | |
-
-#### Action Output
-
-DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
---------- | ---- | -------- | --------------
-action_result.status | string | | success failure |
-action_result.message | string | | |
-action_result.parameter.id | string | `salesforce object id` | |
-action_result.parameter.parent_case_id | string | `salesforce object id` | |
-action_result.parameter.subject | string | | |
-action_result.parameter.priority | string | | |
-action_result.parameter.description | string | | |
-action_result.parameter.status | string | | |
-action_result.parameter.field_values | string | | |
-summary.total_objects | numeric | | 1 |
-summary.total_objects_successful | numeric | | 1 |
-
-## action: 'list objects'
-
-Get a list of objects
-
-Type: **investigate** <br>
-Read only: **True**
-
-To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.
-
-#### Action Parameters
-
-PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
---------- | -------- | ----------- | ---- | --------
-**sobject** | required | Name of object | string | `salesforce object name` |
-**view_name** | optional | Unique name of a list view | string | `salesforce listview name` |
-**limit** | optional | Paging limit | numeric | |
-**offset** | optional | Paging offset | numeric | |
-
-#### Action Output
-
-DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
---------- | ---- | -------- | --------------
-action_result.status | string | | success failure |
-action_result.message | string | | |
-action_result.parameter.sobject | string | `salesforce object name` | |
-action_result.parameter.view_name | string | `salesforce listview name` | |
-action_result.parameter.limit | numeric | | |
-action_result.parameter.offset | numeric | | |
-action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
-summary.total_objects | numeric | | 1 |
-summary.total_objects_successful | numeric | | 1 |
-
-## action: 'list tickets'
-
-Get a list of Cases
-
-Type: **investigate** <br>
-Read only: **True**
-
-To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.
-
-#### Action Parameters
-
-PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
---------- | -------- | ----------- | ---- | --------
-**view_name** | optional | Unique name of a list view | string | `salesforce listview name` |
-**limit** | optional | Paging limit | numeric | |
-**offset** | optional | Paging offset | numeric | |
-
-#### Action Output
-
-DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
---------- | ---- | -------- | --------------
-action_result.status | string | | success failure |
-action_result.message | string | | |
-action_result.parameter.view_name | string | `salesforce listview name` | |
-action_result.parameter.limit | numeric | | |
-action_result.parameter.offset | numeric | | |
-action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -765,6 +653,68 @@ action_result.data.\*.attributes.url | string | | /services/data/v41.0/sobjects/
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
+## action: 'list objects'
+
+Get a list of objects
+
+Type: **investigate** <br>
+Read only: **True**
+
+To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**sobject** | required | Name of object | string | `salesforce object name` |
+**view_name** | optional | Unique name of a list view | string | `salesforce listview name` |
+**limit** | optional | Paging limit | numeric | |
+**offset** | optional | Paging offset | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.sobject | string | `salesforce object name` | |
+action_result.parameter.view_name | string | `salesforce listview name` | |
+action_result.parameter.limit | numeric | | |
+action_result.parameter.offset | numeric | | |
+action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'list tickets'
+
+Get a list of Cases
+
+Type: **investigate** <br>
+Read only: **True**
+
+To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**view_name** | optional | Unique name of a list view | string | `salesforce listview name` |
+**limit** | optional | Paging limit | numeric | |
+**offset** | optional | Paging offset | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.view_name | string | `salesforce listview name` | |
+action_result.parameter.limit | numeric | | |
+action_result.parameter.offset | numeric | | |
+action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
 ## action: 'post chatter'
 
 Post on the Chatter feed for a specified case
@@ -791,6 +741,96 @@ action_result.parameter.title | string | | |
 action_result.parameter.body | string | | |
 action_result.data.\*.id | string | `salesforce object id` | 0D51I00000Jw1tnSAB |
 action_result.data.\*.success | boolean | | True False |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'run query'
+
+Run a query using the Salesforce Object Query Language (SOQL)
+
+Type: **investigate** <br>
+Read only: **True**
+
+To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**query** | required | SOQL Query | string | |
+**endpoint** | required | Which Query endpoint to use | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.query | string | | |
+action_result.parameter.endpoint | string | | |
+action_result.data.\*.records.\* | string | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'update object'
+
+Update an object
+
+Type: **generic** <br>
+Read only: **False**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**sobject** | required | Name of object | string | `salesforce object name` |
+**id** | required | Salesforce Object ID | string | `salesforce object id` |
+**field_values** | optional | JSON Object of Key-Value pairs to update | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.sobject | string | `salesforce object name` | |
+action_result.parameter.id | string | `salesforce object id` | |
+action_result.parameter.field_values | string | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'update ticket'
+
+Update a Case
+
+Type: **generic** <br>
+Read only: **False**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**id** | required | Object ID of the Case | string | `salesforce object id` |
+**parent_case_id** | optional | Object ID of Parent Case | string | `salesforce object id` |
+**subject** | optional | Subject | string | |
+**priority** | optional | Priority | string | |
+**description** | optional | Description | string | |
+**status** | optional | Status | string | |
+**field_values** | optional | JSON Object of Key-Value pairs to update | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.id | string | `salesforce object id` | |
+action_result.parameter.parent_case_id | string | `salesforce object id` | |
+action_result.parameter.subject | string | | |
+action_result.parameter.priority | string | | |
+action_result.parameter.description | string | | |
+action_result.parameter.status | string | | |
+action_result.parameter.field_values | string | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 

@@ -15,72 +15,64 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from .actions.get_object import GetObjectOutput
+from .actions.get_ticket import GetTicketOutput
+from .actions.list_objects import ListObjectsOutput
+from .actions.run_query import RunQueryOutput
+
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 
 
-def _get_renderer():
-    env = Environment(
+def _get_renderer() -> Environment:
+    return Environment(
         loader=FileSystemLoader(_TEMPLATES_DIR),
         trim_blocks=True,
         lstrip_blocks=True,
         autoescape=select_autoescape(["html"]),
     )
-    return env
 
 
-def list_objects_view(provides, all_app_runs, context) -> str:
-    context["prerender"] = True
+def list_objects_view(results: list[ListObjectsOutput]) -> str:
     rows = []
-    for _summary, action_results in all_app_runs:
-        for ar in action_results:
-            for record in ar.get_data():
-                columns = record.get("columns", {})
-                obj_id = columns.get("Id", {}).get("value", "")
-                if obj_id:
-                    rows.append({"OBJECT ID": obj_id})
-    env = _get_renderer()
-    tmpl = env.get_template("sf_list_objects.html")
-    return tmpl.render(title="List Objects Results", rows=rows)
+    for record in results:
+        obj_id = record.columns.Id.value
+        if obj_id:
+            rows.append({"OBJECT ID": obj_id})
+    return (
+        _get_renderer()
+        .get_template("sf_list_objects.html")
+        .render(title="List Objects Results", rows=rows)
+    )
 
 
-def run_query_view(provides, all_app_runs, context) -> str:
-    context["prerender"] = True
+def run_query_view(results: list[RunQueryOutput]) -> str:
+    rows = [{"RECORD": r} for record in results for r in record.records]
+    return (
+        _get_renderer()
+        .get_template("sf_run_query.html")
+        .render(title="Run Query Results", rows=rows)
+    )
+
+
+def get_object_view(results: list[GetObjectOutput]) -> str:
+    rows = [{"STATUS": "success", "ID": record.id} for record in results]
+    return (
+        _get_renderer()
+        .get_template("sf_get_object.html")
+        .render(title="Get Object Results", rows=rows)
+    )
+
+
+def get_ticket_view(results: list[GetTicketOutput]) -> str:
     rows = []
-    for _summary, action_results in all_app_runs:
-        for ar in action_results:
-            for record in ar.get_data():
-                rows.append({"RECORD": str(record)})
-    env = _get_renderer()
-    tmpl = env.get_template("sf_run_query.html")
-    return tmpl.render(title="Run Query Results", rows=rows)
-
-
-def get_object_view(provides, all_app_runs, context) -> str:
-    context["prerender"] = True
-    rows = []
-    for _summary, action_results in all_app_runs:
-        for ar in action_results:
-            for record in ar.get_data():
-                rows.append(
-                    {
-                        "STATUS": "success",
-                        "ID": record.get("id", ""),
-                    }
-                )
-    env = _get_renderer()
-    tmpl = env.get_template("sf_get_object.html")
-    return tmpl.render(title="Get Object Results", rows=rows)
-
-
-def get_ticket_view(provides, all_app_runs, context) -> str:
-    context["prerender"] = True
-    rows = []
-    for _summary, action_results in all_app_runs:
-        for ar in action_results:
-            for record in ar.get_data():
-                row = {k.upper(): str(v) for k, v in record.items() if v is not None}
-                if row:
-                    rows.append(row)
-    env = _get_renderer()
-    tmpl = env.get_template("sf_get_ticket.html")
-    return tmpl.render(title="Get Ticket Results", rows=rows)
+    for record in results:
+        row = {
+            k.upper(): str(v) for k, v in record.model_dump().items() if v is not None
+        }
+        if row:
+            rows.append(row)
+    return (
+        _get_renderer()
+        .get_template("sf_get_ticket.html")
+        .render(title="Get Ticket Results", rows=rows)
+    )
