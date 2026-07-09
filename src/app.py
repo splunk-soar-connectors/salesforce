@@ -33,6 +33,7 @@ from soar_sdk.params import Param, Params, OnPollParams
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 from .salesforce_client import SalesforceClient
+from . import views
 
 logger = getLogger()
 
@@ -238,6 +239,9 @@ def on_poll(
     include_view_date = (
         asset.last_view_date if asset.last_view_date is not None else True
     )
+    container_label: str | None = (
+        app.actions_manager.get_config().get("ingest", {}).get("container_label")
+    )
 
     if not view_name:
         raise ActionFailure("poll_view_name must be set in asset configuration.")
@@ -278,6 +282,10 @@ def on_poll(
         sobject, view_name, offset=offset, max_records=max_records
     )
 
+    logger.info(
+        f"Fetched {len(list_records)} list-view records from '{view_name}' (offset={offset}, max={max_records}); container_label={container_label!r}"
+    )
+
     if not list_records:
         logger.info("No new records found.")
         if not is_manual:
@@ -285,11 +293,9 @@ def on_poll(
         return
 
     # Extract IDs from the list-view summary records and fetch full objects in batches of 25
-    record_ids = [
-        row["fields"]["Id"]["value"]
-        for row in list_records
-        if row.get("fields", {}).get("Id", {}).get("value")
-    ]
+    record_ids = [_id for row in list_records if (_id := _extract_id_from_record(row))]
+
+    logger.info(f"Extracted {len(record_ids)} record IDs from list-view rows")
 
     full_records: list[dict] = []
     for i in range(0, len(record_ids), 25):
@@ -329,6 +335,7 @@ def on_poll(
 
         container = Container(
             name=container_name,
+            label=container_label,
             source_data_identifier=container_sdi,
             severity=SEVERITY_MAP.get(
                 (record.get("Incident_Severity__c") or "").lower()
@@ -604,6 +611,7 @@ class RunQueryOutput(ActionOutput):
     description="Run a query using the Salesforce Object Query Language (SOQL)",
     action_type="investigate",
     verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
+    view_handler=app.view_handler()(views.run_query_view),
 )
 def run_query(params: RunQueryParams, soar: SOARClient, asset: Asset) -> RunQueryOutput:
     client = SalesforceClient(asset)
@@ -896,6 +904,7 @@ def _validate_list_params(limit, offset) -> tuple[int | None, int | None]:
     description="Get a list of objects",
     action_type="investigate",
     verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
+    view_handler=app.view_handler()(views.list_objects_view),
 )
 def list_objects(
     params: ListObjectsParams, soar: SOARClient, asset: Asset
@@ -996,6 +1005,7 @@ class GetObjectOutput(ActionOutput):
     description="Get info about a Salesforce object",
     action_type="investigate",
     verbose="If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+    view_handler=app.view_handler()(views.get_object_view),
 )
 def get_object(
     params: GetObjectParams, soar: SOARClient, asset: Asset
@@ -1099,6 +1109,7 @@ class GetTicketOutput(ActionOutput):
     description="Get info about a Case",
     action_type="investigate",
     verbose="If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+    view_handler=app.view_handler()(views.get_ticket_view),
 )
 def get_ticket(
     params: GetTicketParams, soar: SOARClient, asset: Asset

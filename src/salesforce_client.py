@@ -132,7 +132,7 @@ class SalesforceClient:
         offset: int = 0,
         max_records: int | None = None,
     ) -> tuple[int, list[dict]]:
-        """Fetch list-view summary records sorted by LastModifiedDate.
+        """Fetch list-view summary records using limit/offset pagination.
 
         Returns (new_offset, records) where records are the raw list-view row dicts.
         """
@@ -141,27 +141,25 @@ class SalesforceClient:
         records: list[dict] = []
 
         while True:
-            params: dict = {
-                "sortBy": "LastModifiedDate",
-                "pageSize": MAX_PER_PAGE,
-                "pageToken": offset,
-            }
+            page_size = MAX_PER_PAGE
+            if max_records is not None:
+                remaining = max_records - len(records)
+                page_size = min(MAX_PER_PAGE, remaining)
+
+            params: dict = {"limit": page_size, "offset": offset}
             data = self._request(
                 "GET", f"/sobjects/{sobject}/listviews/{view_id}/results", params=params
             )
             page = data.get("records", [])
             records.extend(page)
+            offset += len(page)
 
-            if max_records and len(records) >= max_records:
+            if max_records is not None and len(records) >= max_records:
                 records = records[:max_records]
-                offset += len(records)
                 break
 
-            if len(page) < MAX_PER_PAGE:
-                offset += len(page)
+            if len(page) < page_size:
                 break
-
-            offset += MAX_PER_PAGE
 
         return offset, records
 
