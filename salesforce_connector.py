@@ -40,6 +40,31 @@ import salesforce_consts as sf_consts
 
 
 DT_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
+SALESFORCE_INSTANCE_DOMAIN = ".salesforce.com"
+
+
+def _trusted_instance_origin(instance_url):
+    """Return a normalized Salesforce API origin or None for an untrusted URL."""
+    if not isinstance(instance_url, str):
+        return None
+
+    try:
+        parsed = urlparse(instance_url)
+        port = parsed.port
+    except ValueError:
+        return None
+
+    host = (parsed.hostname or "").lower()
+    if (
+        parsed.scheme != "https"
+        or not host.endswith(SALESFORCE_INSTANCE_DOMAIN)
+        or parsed.username is not None
+        or parsed.password is not None
+        or port not in (None, 443)
+    ):
+        return None
+
+    return f"https://{host}"
 
 
 class RetVal(tuple):
@@ -141,11 +166,19 @@ def _handle_oauth_start(request, path_parts):
     # This is where we land AFTER the redirect callback when the user authenticates on Salesforce.
     # The authorization code is exchanged for tokens using a POST body (not URL params) per OAuth spec.
     # client_secret and code_verifier (PKCE) are read from state and sent only at the token endpoint.
-    asset_id = request.GET.get("state")
+    oauth_state = request.GET.get("state", "")
+    asset_id, separator, presented_nonce = oauth_state.partition(":")
     if not asset_id:
         return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
     state = _load_app_state(asset_id)
+    stored_nonce = state.get("flow_nonce", "")
+    if not separator or not stored_nonce or not secrets.compare_digest(stored_nonce, presented_nonce):
+        return HttpResponse("ERROR: OAuth state mismatch", content_type="text/plain", status=400)
+
+    # Treat the callback state as one-shot so a captured authorization response cannot be replayed.
+    state.pop("flow_nonce", None)
+    _save_app_state(state, asset_id)
 
     code = request.GET.get("code")
     if code:
@@ -361,7 +394,15 @@ class SalesforceConnector(BaseConnector):
         """
 
         if self.get_action_identifier() in ("update_ticket", "update_object", "delete_object", "delete_ticket"):
-            return RetVal(phantom.APP_SUCCESS, {})
+            if 200 <= response.status_code < 300:
+                return RetVal(phantom.APP_SUCCESS, {})
+            return RetVal(
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Empty response with status code {response.status_code} and no information in the header",
+                ),
+                None,
+            )
 
         if response.status_code == 200:
             return RetVal(phantom.APP_SUCCESS, {})
@@ -437,8 +478,11 @@ class SalesforceConnector(BaseConnector):
         # store the r_text in debug data, it will get dumped in the logs if the action fails
         if hasattr(action_result, "add_debug_data"):
             action_result.add_debug_data({"r_status_code": r.status_code})
-            action_result.add_debug_data({"r_text": r.text})
-            action_result.add_debug_data({"r_headers": r.headers})
+            if "/services/oauth2/token" in getattr(r, "url", ""):
+                action_result.add_debug_data({"r_text": "<OAuth token response redacted>"})
+            else:
+                action_result.add_debug_data({"r_text": r.text})
+                action_result.add_debug_data({"r_headers": r.headers})
 
         # Process each 'Content-Type' of response separately
 
@@ -545,8 +589,12 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
+        instance_origin = _trusted_instance_origin(resp.get("instance_url"))
+        if not instance_origin:
+            return action_result.set_status(phantom.APP_ERROR, "OAuth token response returned an untrusted Salesforce instance URL")
+
         self._oauth_token = resp["access_token"]
-        self._base_url = resp["instance_url"]
+        self._base_url = instance_origin
 
         # Refresh token rotation: if Salesforce returns a new refresh token, replace the stored one
         # and persist immediately. The old token is already invalidated at this point, so any
@@ -589,8 +637,12 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
+        instance_origin = _trusted_instance_origin(resp.get("instance_url"))
+        if not instance_origin:
+            return action_result.set_status(phantom.APP_ERROR, "OAuth token response returned an untrusted Salesforce instance URL")
+
         self._oauth_token = resp["access_token"]
-        self._base_url = resp["instance_url"]
+        self._base_url = instance_origin
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_client_credentials(self, action_result):
@@ -622,8 +674,12 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
+        instance_origin = _trusted_instance_origin(resp.get("instance_url") or domain_url)
+        if not instance_origin:
+            return action_result.set_status(phantom.APP_ERROR, "OAuth token response returned an untrusted Salesforce instance URL")
+
         self._oauth_token = resp["access_token"]
-        self._base_url = resp.get("instance_url") or domain_url
+        self._base_url = instance_origin
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_helper(self, action_result):
@@ -775,6 +831,7 @@ class SalesforceConnector(BaseConnector):
             return ret_val
 
         asset_id = self.get_asset_id()
+        flow_nonce = secrets.token_urlsafe(32)
 
         # PKCE: generate code_verifier and derive code_challenge (S256 method)
         code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(sf_consts.SALESFORCE_PKCE_VERIFIER_BYTES)).rstrip(b"=").decode()
@@ -784,7 +841,7 @@ class SalesforceConnector(BaseConnector):
 
         auth_params = {
             "response_type": "code",
-            "state": asset_id,
+            "state": f"{asset_id}:{flow_nonce}",
             "redirect_uri": redirect_uri,
             "client_id": client_id,
             "code_challenge": code_challenge,
@@ -808,6 +865,7 @@ class SalesforceConnector(BaseConnector):
         state["url"] = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
         # url_get_token is a well-known public Salesforce endpoint (not a secret), stored plaintext intentionally.
         state["url_get_token"] = url_get_token
+        state["flow_nonce"] = flow_nonce
         _save_app_state(state, asset_id, self)
 
         self.save_progress("To Continue, open this link in a new tab in your browser")
@@ -904,6 +962,9 @@ class SalesforceConnector(BaseConnector):
         self.debug_print("create object called")
         sobject = param.get("sobject", "Case")
 
+        if phantom.is_fail(self._validate_path_segment(action_result, sobject, "sobject")):
+            return action_result.get_status()
+
         endpoint = sf_consts.API_ENDPOINT_OBJECT.format(version=self._version_uri, sobject=sobject)
 
         ret_val, response = self._make_rest_call_helper(endpoint, action_result, json=field_values, method="post")
@@ -928,6 +989,7 @@ class SalesforceConnector(BaseConnector):
         return self._create_object(action_result, param, other_dict)
 
     def _handle_create_ticket(self, param):
+        param.pop("sobject", None)
         action_result = self.add_action_result(ActionResult(dict(param)))
         self.debug_print("create ticket called")
 
@@ -947,11 +1009,26 @@ class SalesforceConnector(BaseConnector):
 
         return self._create_object(action_result, param, other_dict)
 
+    @staticmethod
+    def _validate_path_segment(action_result, value, key):
+        """Reject values that can escape a Salesforce REST path segment."""
+        if not isinstance(value, str) or any(char in value for char in ("/", "\\", "?", "#")) or ".." in value:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Invalid value for '{key}' parameter: must be a single Salesforce path segment",
+            )
+        return phantom.APP_SUCCESS
+
     def _delete_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
         self.debug_print("delete object called")
         sobject = param.get("sobject", "Case")
         obj_id = param["id"]
+
+        if phantom.is_fail(self._validate_path_segment(action_result, sobject, "sobject")):
+            return action_result.get_status()
+        if phantom.is_fail(self._validate_path_segment(action_result, obj_id, "id")):
+            return action_result.get_status()
 
         endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(version=self._version_uri, sobject=sobject, id=obj_id)
 
@@ -966,12 +1043,18 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_delete_ticket(self, param):
         self.debug_print("delete ticket called")
+        param.pop("sobject", None)
         return self._delete_object(param)
 
     def _update_object(self, action_result, param, field_values):
         self.debug_print("update object called")
         sobject = param.get("sobject", "Case")
         obj_id = param["id"]
+
+        if phantom.is_fail(self._validate_path_segment(action_result, sobject, "sobject")):
+            return action_result.get_status()
+        if phantom.is_fail(self._validate_path_segment(action_result, obj_id, "id")):
+            return action_result.get_status()
 
         endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(version=self._version_uri, sobject=sobject, id=obj_id)
 
@@ -998,6 +1081,7 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_update_ticket(self, param):
         self.debug_print("update ticket called")
+        param.pop("sobject", None)
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         other = param.get("field_values")
@@ -1236,20 +1320,22 @@ class SalesforceConnector(BaseConnector):
 
         return container
 
-    def _batch_response_to_containers(self, response, sobject):
+    def _batch_response_to_containers(self, response, sobject, start_index=0):
         containers = []
 
         self.debug_print("BATCH REQUEST HAS ERRORS: {}".format(response["hasErrors"]))
 
         results = response["results"]
-        for result in results:
+        for index, result in enumerate(results):
             if result["statusCode"] != 200:
                 self.debug_print(f"Got bad status code for response: {result}")
                 continue
 
             # response here matches a single call to get object endpoint
             response = result["result"]
-            containers.append(self._object_response_to_container(response, sobject))
+            container = self._object_response_to_container(response, sobject)
+            container["_record_index"] = start_index + index
+            containers.append(container)
 
         return containers
 
@@ -1283,7 +1369,7 @@ class SalesforceConnector(BaseConnector):
             if phantom.is_fail(ret_val):
                 return RetVal(action_result.set_status(phantom.APP_ERROR, f"Error retrieving objects: {action_result.get_message()}"))
 
-            containers.extend(self._batch_response_to_containers(response, sobject))
+            containers.extend(self._batch_response_to_containers(response, sobject, start_index=cur_index))
 
             cur_index += num_batch
 
@@ -1291,17 +1377,23 @@ class SalesforceConnector(BaseConnector):
 
     def _poll_for_all_objects(self, action_result, endpoint, offset, max_containers):
         MAX_OBJECTS_PER_POLL = 2000
+        MAX_PAGES_PER_POLL = 100
 
         records = []
-        while True:
+        for _page_number in range(MAX_PAGES_PER_POLL):
             params = {"sortBy": "LastModifiedDate", "pageSize": MAX_OBJECTS_PER_POLL, "pageToken": offset}
             ret_val, response = self._make_rest_call_helper(endpoint, action_result, params=params)
             if phantom.is_fail(ret_val):
                 if "Maximum SOQL offset allowed is" in action_result.get_message():
-                    self.save_progress("Because of the limitation of the offset value in the API, returning the maximum possible records")
-                    self.debug_print("Because of the limitation of the offset value in the API, returning the maximum possible records")
                     self.debug_print(f"Response from the API: {action_result.get_message()}")
-                    return RetVal(offset, records)
+                    if records:
+                        self.save_progress("Because of the offset limit in the API, returning the maximum possible records")
+                        return RetVal(offset, records)
+                    action_result.set_status(
+                        phantom.APP_ERROR,
+                        f"Polling offset {offset} exceeds the Salesforce limit; reset the asset polling state to resume ingestion",
+                    )
+                    return RetVal(None, None)
                 return RetVal(None, None)
 
             records.extend(response.get("records", []))
@@ -1316,6 +1408,8 @@ class SalesforceConnector(BaseConnector):
                 break
 
             offset += MAX_OBJECTS_PER_POLL
+        else:
+            self.debug_print(f"Reached the maximum of {MAX_PAGES_PER_POLL} pages in one poll cycle")
 
         return RetVal(offset, records)
 
@@ -1389,20 +1483,40 @@ class SalesforceConnector(BaseConnector):
 
         self.save_progress("Saving containers")
 
+        failed_indices = []
+        seen_indices = set()
         for container in containers:
+            record_index = container.pop("_record_index", None)
+            seen_indices.add(record_index)
             container_artifact = container.pop("artifacts")
             ret_val, msg, container_id = self.save_container(container)
             if phantom.is_fail(ret_val):
                 self.save_progress(f"Error saving container: {msg}")
+                failed_indices.append(record_index)
+                continue
 
             for artifact in container_artifact:
                 artifact["container_id"] = container_id
             ret_val, status_string, _artifact_ids = self.save_artifacts(container_artifact)
             if phantom.is_fail(ret_val):
                 self.save_progress(f"Error saving artifacts: {status_string}")
+                failed_indices.append(record_index)
+
+        failed_indices.extend(index for index in range(len(records)) if index not in seen_indices)
 
         if not self.is_poll_now():
-            self._state["cur_offset"] = new_offset
+            known_failed_indices = [index for index in failed_indices if index is not None]
+            if failed_indices:
+                first_failed = min(known_failed_indices) if known_failed_indices else 0
+                self._state["cur_offset"] = cur_offset + first_failed
+            else:
+                self._state["cur_offset"] = new_offset
+
+        if failed_indices:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"{len(failed_indices)} record(s) failed to ingest; the failed records will be retried",
+            )
 
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully ingested containers")
 
