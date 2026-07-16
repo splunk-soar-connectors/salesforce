@@ -141,11 +141,19 @@ def _handle_oauth_start(request, path_parts):
     # This is where we land AFTER the redirect callback when the user authenticates on Salesforce.
     # The authorization code is exchanged for tokens using a POST body (not URL params) per OAuth spec.
     # client_secret and code_verifier (PKCE) are read from state and sent only at the token endpoint.
-    asset_id = request.GET.get("state")
+    oauth_state = request.GET.get("state", "")
+    asset_id, separator, presented_nonce = oauth_state.partition(":")
     if not asset_id:
         return HttpResponse("ERROR: Asset ID not found in URL", content_type="text/plain", status=400)
 
     state = _load_app_state(asset_id)
+    stored_nonce = state.get("flow_nonce", "")
+    if not separator or not stored_nonce or not secrets.compare_digest(stored_nonce, presented_nonce):
+        return HttpResponse("ERROR: OAuth state mismatch", content_type="text/plain", status=400)
+
+    # Treat the callback state as one-shot so a captured authorization response cannot be replayed.
+    state.pop("flow_nonce", None)
+    _save_app_state(state, asset_id)
 
     code = request.GET.get("code")
     if code:
@@ -775,6 +783,7 @@ class SalesforceConnector(BaseConnector):
             return ret_val
 
         asset_id = self.get_asset_id()
+        flow_nonce = secrets.token_urlsafe(32)
 
         # PKCE: generate code_verifier and derive code_challenge (S256 method)
         code_verifier = base64.urlsafe_b64encode(secrets.token_bytes(sf_consts.SALESFORCE_PKCE_VERIFIER_BYTES)).rstrip(b"=").decode()
@@ -784,7 +793,7 @@ class SalesforceConnector(BaseConnector):
 
         auth_params = {
             "response_type": "code",
-            "state": asset_id,
+            "state": f"{asset_id}:{flow_nonce}",
             "redirect_uri": redirect_uri,
             "client_id": client_id,
             "code_challenge": code_challenge,
@@ -808,6 +817,7 @@ class SalesforceConnector(BaseConnector):
         state["url"] = encryption_helper.encrypt(prep.url, asset_id)  # pylint: disable=E1101
         # url_get_token is a well-known public Salesforce endpoint (not a secret), stored plaintext intentionally.
         state["url_get_token"] = url_get_token
+        state["flow_nonce"] = flow_nonce
         _save_app_state(state, asset_id, self)
 
         self.save_progress("To Continue, open this link in a new tab in your browser")
