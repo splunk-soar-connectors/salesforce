@@ -40,6 +40,31 @@ import salesforce_consts as sf_consts
 
 
 DT_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
+SALESFORCE_INSTANCE_DOMAIN = ".salesforce.com"
+
+
+def _trusted_instance_origin(instance_url):
+    """Return a normalized Salesforce API origin or None for an untrusted URL."""
+    if not isinstance(instance_url, str):
+        return None
+
+    try:
+        parsed = urlparse(instance_url)
+        port = parsed.port
+    except ValueError:
+        return None
+
+    host = (parsed.hostname or "").lower()
+    if (
+        parsed.scheme != "https"
+        or not host.endswith(SALESFORCE_INSTANCE_DOMAIN)
+        or parsed.username is not None
+        or parsed.password is not None
+        or port not in (None, 443)
+    ):
+        return None
+
+    return f"https://{host}"
 
 
 class RetVal(tuple):
@@ -553,8 +578,12 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
+        instance_origin = _trusted_instance_origin(resp.get("instance_url"))
+        if not instance_origin:
+            return action_result.set_status(phantom.APP_ERROR, "OAuth token response returned an untrusted Salesforce instance URL")
+
         self._oauth_token = resp["access_token"]
-        self._base_url = resp["instance_url"]
+        self._base_url = instance_origin
 
         # Refresh token rotation: if Salesforce returns a new refresh token, replace the stored one
         # and persist immediately. The old token is already invalidated at this point, so any
@@ -597,8 +626,12 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
+        instance_origin = _trusted_instance_origin(resp.get("instance_url"))
+        if not instance_origin:
+            return action_result.set_status(phantom.APP_ERROR, "OAuth token response returned an untrusted Salesforce instance URL")
+
         self._oauth_token = resp["access_token"]
-        self._base_url = resp["instance_url"]
+        self._base_url = instance_origin
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_client_credentials(self, action_result):
@@ -630,8 +663,12 @@ class SalesforceConnector(BaseConnector):
         if phantom.is_fail(ret_val):
             return ret_val
 
+        instance_origin = _trusted_instance_origin(resp.get("instance_url") or domain_url)
+        if not instance_origin:
+            return action_result.set_status(phantom.APP_ERROR, "OAuth token response returned an untrusted Salesforce instance URL")
+
         self._oauth_token = resp["access_token"]
-        self._base_url = resp.get("instance_url") or domain_url
+        self._base_url = instance_origin
         return phantom.APP_SUCCESS
 
     def _retrieve_oauth_token_helper(self, action_result):
