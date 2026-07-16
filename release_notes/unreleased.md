@@ -5,3 +5,4 @@
 * Restricted bearer-token API requests to HTTPS Salesforce instance origins returned by OAuth.
 * Reported empty-body HTTP errors from Salesforce update and delete actions instead of treating them as successful.
 * Redacted OAuth token response bodies and headers from connector failure diagnostics.
+* Limited scheduled polling to 100 response pages per cycle so a non-terminating upstream cannot grow memory without bound.

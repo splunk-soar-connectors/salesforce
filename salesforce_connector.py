@@ -1375,9 +1375,10 @@ class SalesforceConnector(BaseConnector):
 
     def _poll_for_all_objects(self, action_result, endpoint, offset, max_containers):
         MAX_OBJECTS_PER_POLL = 2000
+        MAX_PAGES_PER_POLL = 100
 
         records = []
-        while True:
+        for _page_number in range(MAX_PAGES_PER_POLL):
             params = {"sortBy": "LastModifiedDate", "pageSize": MAX_OBJECTS_PER_POLL, "pageToken": offset}
             ret_val, response = self._make_rest_call_helper(endpoint, action_result, params=params)
             if phantom.is_fail(ret_val):
@@ -1400,6 +1401,8 @@ class SalesforceConnector(BaseConnector):
                 break
 
             offset += MAX_OBJECTS_PER_POLL
+        else:
+            self.debug_print(f"Reached the maximum of {MAX_PAGES_PER_POLL} pages in one poll cycle")
 
         return RetVal(offset, records)
 
