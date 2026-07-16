@@ -904,6 +904,9 @@ class SalesforceConnector(BaseConnector):
         self.debug_print("create object called")
         sobject = param.get("sobject", "Case")
 
+        if phantom.is_fail(self._validate_path_segment(action_result, sobject, "sobject")):
+            return action_result.get_status()
+
         endpoint = sf_consts.API_ENDPOINT_OBJECT.format(version=self._version_uri, sobject=sobject)
 
         ret_val, response = self._make_rest_call_helper(endpoint, action_result, json=field_values, method="post")
@@ -928,6 +931,7 @@ class SalesforceConnector(BaseConnector):
         return self._create_object(action_result, param, other_dict)
 
     def _handle_create_ticket(self, param):
+        param.pop("sobject", None)
         action_result = self.add_action_result(ActionResult(dict(param)))
         self.debug_print("create ticket called")
 
@@ -947,11 +951,26 @@ class SalesforceConnector(BaseConnector):
 
         return self._create_object(action_result, param, other_dict)
 
+    @staticmethod
+    def _validate_path_segment(action_result, value, key):
+        """Reject values that can escape a Salesforce REST path segment."""
+        if not isinstance(value, str) or any(char in value for char in ("/", "\\", "?", "#")) or ".." in value:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Invalid value for '{key}' parameter: must be a single Salesforce path segment",
+            )
+        return phantom.APP_SUCCESS
+
     def _delete_object(self, param):
         action_result = self.add_action_result(ActionResult(dict(param)))
         self.debug_print("delete object called")
         sobject = param.get("sobject", "Case")
         obj_id = param["id"]
+
+        if phantom.is_fail(self._validate_path_segment(action_result, sobject, "sobject")):
+            return action_result.get_status()
+        if phantom.is_fail(self._validate_path_segment(action_result, obj_id, "id")):
+            return action_result.get_status()
 
         endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(version=self._version_uri, sobject=sobject, id=obj_id)
 
@@ -966,12 +985,18 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_delete_ticket(self, param):
         self.debug_print("delete ticket called")
+        param.pop("sobject", None)
         return self._delete_object(param)
 
     def _update_object(self, action_result, param, field_values):
         self.debug_print("update object called")
         sobject = param.get("sobject", "Case")
         obj_id = param["id"]
+
+        if phantom.is_fail(self._validate_path_segment(action_result, sobject, "sobject")):
+            return action_result.get_status()
+        if phantom.is_fail(self._validate_path_segment(action_result, obj_id, "id")):
+            return action_result.get_status()
 
         endpoint = sf_consts.API_ENDPOINT_OBJECT_ID.format(version=self._version_uri, sobject=sobject, id=obj_id)
 
@@ -998,6 +1023,7 @@ class SalesforceConnector(BaseConnector):
 
     def _handle_update_ticket(self, param):
         self.debug_print("update ticket called")
+        param.pop("sobject", None)
         action_result = self.add_action_result(ActionResult(dict(param)))
 
         other = param.get("field_values")
