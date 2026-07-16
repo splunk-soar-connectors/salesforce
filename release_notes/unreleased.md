@@ -6,3 +6,4 @@
 * Reported empty-body HTTP errors from Salesforce update and delete actions instead of treating them as successful.
 * Redacted OAuth token response bodies and headers from connector failure diagnostics.
 * Limited scheduled polling to 100 response pages per cycle so a non-terminating upstream cannot grow memory without bound.
+* Held the scheduled polling checkpoint at the first failed record and surfaced stalled offsets and save failures to operators.

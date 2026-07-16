@@ -1320,20 +1320,22 @@ class SalesforceConnector(BaseConnector):
 
         return container
 
-    def _batch_response_to_containers(self, response, sobject):
+    def _batch_response_to_containers(self, response, sobject, start_index=0):
         containers = []
 
         self.debug_print("BATCH REQUEST HAS ERRORS: {}".format(response["hasErrors"]))
 
         results = response["results"]
-        for result in results:
+        for index, result in enumerate(results):
             if result["statusCode"] != 200:
                 self.debug_print(f"Got bad status code for response: {result}")
                 continue
 
             # response here matches a single call to get object endpoint
             response = result["result"]
-            containers.append(self._object_response_to_container(response, sobject))
+            container = self._object_response_to_container(response, sobject)
+            container["_record_index"] = start_index + index
+            containers.append(container)
 
         return containers
 
@@ -1367,7 +1369,7 @@ class SalesforceConnector(BaseConnector):
             if phantom.is_fail(ret_val):
                 return RetVal(action_result.set_status(phantom.APP_ERROR, f"Error retrieving objects: {action_result.get_message()}"))
 
-            containers.extend(self._batch_response_to_containers(response, sobject))
+            containers.extend(self._batch_response_to_containers(response, sobject, start_index=cur_index))
 
             cur_index += num_batch
 
@@ -1383,10 +1385,15 @@ class SalesforceConnector(BaseConnector):
             ret_val, response = self._make_rest_call_helper(endpoint, action_result, params=params)
             if phantom.is_fail(ret_val):
                 if "Maximum SOQL offset allowed is" in action_result.get_message():
-                    self.save_progress("Because of the limitation of the offset value in the API, returning the maximum possible records")
-                    self.debug_print("Because of the limitation of the offset value in the API, returning the maximum possible records")
                     self.debug_print(f"Response from the API: {action_result.get_message()}")
-                    return RetVal(offset, records)
+                    if records:
+                        self.save_progress("Because of the offset limit in the API, returning the maximum possible records")
+                        return RetVal(offset, records)
+                    action_result.set_status(
+                        phantom.APP_ERROR,
+                        f"Polling offset {offset} exceeds the Salesforce limit; reset the asset polling state to resume ingestion",
+                    )
+                    return RetVal(None, None)
                 return RetVal(None, None)
 
             records.extend(response.get("records", []))
@@ -1476,20 +1483,40 @@ class SalesforceConnector(BaseConnector):
 
         self.save_progress("Saving containers")
 
+        failed_indices = []
+        seen_indices = set()
         for container in containers:
+            record_index = container.pop("_record_index", None)
+            seen_indices.add(record_index)
             container_artifact = container.pop("artifacts")
             ret_val, msg, container_id = self.save_container(container)
             if phantom.is_fail(ret_val):
                 self.save_progress(f"Error saving container: {msg}")
+                failed_indices.append(record_index)
+                continue
 
             for artifact in container_artifact:
                 artifact["container_id"] = container_id
             ret_val, status_string, _artifact_ids = self.save_artifacts(container_artifact)
             if phantom.is_fail(ret_val):
                 self.save_progress(f"Error saving artifacts: {status_string}")
+                failed_indices.append(record_index)
+
+        failed_indices.extend(index for index in range(len(records)) if index not in seen_indices)
 
         if not self.is_poll_now():
-            self._state["cur_offset"] = new_offset
+            known_failed_indices = [index for index in failed_indices if index is not None]
+            if failed_indices:
+                first_failed = min(known_failed_indices) if known_failed_indices else 0
+                self._state["cur_offset"] = cur_offset + first_failed
+            else:
+                self._state["cur_offset"] = new_offset
+
+        if failed_indices:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"{len(failed_indices)} record(s) failed to ingest; the failed records will be retried",
+            )
 
         return action_result.set_status(phantom.APP_SUCCESS, "Successfully ingested containers")
 
