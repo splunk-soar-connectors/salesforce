@@ -394,7 +394,15 @@ class SalesforceConnector(BaseConnector):
         """
 
         if self.get_action_identifier() in ("update_ticket", "update_object", "delete_object", "delete_ticket"):
-            return RetVal(phantom.APP_SUCCESS, {})
+            if 200 <= response.status_code < 300:
+                return RetVal(phantom.APP_SUCCESS, {})
+            return RetVal(
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    f"Empty response with status code {response.status_code} and no information in the header",
+                ),
+                None,
+            )
 
         if response.status_code == 200:
             return RetVal(phantom.APP_SUCCESS, {})
