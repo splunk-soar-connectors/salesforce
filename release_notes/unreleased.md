@@ -1,4 +1,1 @@
 **Unreleased**
-
-* Make poll container identifiers unpredictable to untrusted container creators.
-* Remove Unicode format-control characters from ingested Case display fields.
