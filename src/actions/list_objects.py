@@ -18,7 +18,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import ListSummary, ListColumnsOutput, ListColumnIdValue
+from .shared import ListSummary, ListObjectsColumnsOutput, ListObjectsColumnIdValue
 
 
 class ListObjectsParams(Params):
@@ -38,7 +38,7 @@ class ListObjectsParams(Params):
 
 
 class ListObjectsOutput(ActionOutput):
-    columns: ListColumnsOutput
+    columns: ListObjectsColumnsOutput
 
 
 def _extract_id_from_record(r: dict) -> str:
@@ -82,8 +82,8 @@ def list_objects(
     soar.set_message(f"Successfully fetched a list of {params.sobject} objects")
     return [
         ListObjectsOutput(
-            columns=ListColumnsOutput(
-                Id=ListColumnIdValue(value=_extract_id_from_record(r))
+            columns=ListObjectsColumnsOutput(
+                Id=ListObjectsColumnIdValue(value=_extract_id_from_record(r))
             )
         )
         for r in records

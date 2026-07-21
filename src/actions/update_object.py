@@ -14,13 +14,12 @@
 import json
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import CreateSummary
+from .shared import CreateSummary, StatusOutput
 
 
 class UpdateObjectParams(Params):
@@ -42,7 +41,7 @@ class UpdateObjectParams(Params):
 
 def update_object(
     params: UpdateObjectParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
+) -> StatusOutput:
     if not params.field_values:
         raise ActionFailure("field_values is required to update an object.")
     try:
@@ -52,4 +51,4 @@ def update_object(
     SalesforceClient(asset).update(params.sobject, params.id, fields)
     soar.set_summary(CreateSummary(obj_id=params.id))
     soar.set_message(f"Successfully updated the {params.sobject}")
-    return ActionOutput()
+    return StatusOutput(status="success")

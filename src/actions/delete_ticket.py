@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
+from .shared import StatusOutput
 
 
 class DeleteTicketParams(Params):
@@ -29,7 +29,7 @@ class DeleteTicketParams(Params):
 
 def delete_ticket(
     params: DeleteTicketParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
+) -> StatusOutput:
     SalesforceClient(asset).delete("Case", params.id)
     soar.set_message("Successfully deleted the Case")
-    return ActionOutput()
+    return StatusOutput(status="success")

@@ -14,13 +14,12 @@
 import json
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import CreateSummary
+from .shared import CreateSummary, StatusOutput
 
 
 class UpdateTicketParams(Params):
@@ -49,7 +48,7 @@ class UpdateTicketParams(Params):
 
 def update_ticket(
     params: UpdateTicketParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
+) -> StatusOutput:
     fields: dict = {}
     if params.parent_case_id:
         fields["ParentId"] = params.parent_case_id
@@ -72,4 +71,4 @@ def update_ticket(
     SalesforceClient(asset).update("Case", params.id, fields)
     soar.set_summary(CreateSummary(obj_id=params.id))
     soar.set_message("Successfully updated the Case")
-    return ActionOutput()
+    return StatusOutput(status="success")

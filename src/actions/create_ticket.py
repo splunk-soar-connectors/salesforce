@@ -14,13 +14,13 @@
 import json
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import OutputField
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import CreateSummary
+from .shared import CreateSummary, StatusOutput
 
 
 class CreateTicketParams(Params):
@@ -39,7 +39,7 @@ class CreateTicketParams(Params):
     )
 
 
-class CreateTicketOutput(ActionOutput):
+class CreateTicketOutput(StatusOutput):
     id: str = OutputField(
         column_name="ID",
         cef_types=["salesforce object id"],
@@ -71,4 +71,6 @@ def create_ticket(
     obj_id = result["id"]
     soar.set_summary(CreateSummary(obj_id=obj_id))
     soar.set_message("Successfully created a new Case")
-    return CreateTicketOutput(id=obj_id, success=result.get("success", True))
+    return CreateTicketOutput(
+        status="success", id=obj_id, success=result.get("success", True)
+    )

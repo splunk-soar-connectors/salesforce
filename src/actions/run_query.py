@@ -20,12 +20,13 @@ from ..salesforce_client import SalesforceClient
 
 
 class RunQueryParams(Params):
-    query: str = Param(description="SOQL Query")
     endpoint: str = Param(
         description="Which Query endpoint to use",
         default="query",
         value_list=["query", "queryAll"],
+        column_name="ENDPOINT",
     )
+    query: str = Param(description="SOQL Query", column_name="QUERY")
 
 
 class RunQuerySummary(ActionOutput):

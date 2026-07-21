@@ -14,13 +14,13 @@
 import json
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import OutputField
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import CreateSummary
+from .shared import CreateSummary, StatusOutput
 
 
 class CreateObjectParams(Params):
@@ -33,7 +33,7 @@ class CreateObjectParams(Params):
     field_values: str = Param(description="JSON Object of Key-Value pairs to update")
 
 
-class CreateObjectOutput(ActionOutput):
+class CreateObjectOutput(StatusOutput):
     id: str = OutputField(
         column_name="ID",
         cef_types=["salesforce object id"],
@@ -54,4 +54,6 @@ def create_object(
     obj_id = result["id"]
     soar.set_summary(CreateSummary(obj_id=obj_id))
     soar.set_message(f"Successfully created a new {params.sobject}")
-    return CreateObjectOutput(id=obj_id, success=result.get("success", True))
+    return CreateObjectOutput(
+        status="success", id=obj_id, success=result.get("success", True)
+    )

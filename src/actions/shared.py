@@ -14,6 +14,10 @@
 from soar_sdk.action_results import ActionOutput, OutputField
 
 
+class StatusOutput(ActionOutput):
+    status: str = OutputField(column_name="STATUS", example_values=["success"])
+
+
 class CreateSummary(ActionOutput):
     obj_id: str = OutputField(
         column_name="ID",
@@ -29,7 +33,15 @@ class ListSummary(ActionOutput):
     )
 
 
-class ListColumnIdValue(ActionOutput):
+class ListObjectsColumnIdValue(ActionOutput):
+    value: str = OutputField(
+        column_name="OBJECT ID",
+        cef_types=["salesforce object id"],
+        example_values=["5001I000002SfMMQA0"],
+    )
+
+
+class ListTicketsColumnIdValue(ActionOutput):
     value: str = OutputField(
         column_name="ID",
         cef_types=["salesforce object id"],
@@ -37,5 +49,28 @@ class ListColumnIdValue(ActionOutput):
     )
 
 
-class ListColumnsOutput(ActionOutput):
-    Id: ListColumnIdValue
+class ListTicketsColumnStringValue(ActionOutput):
+    value: str = OutputField(example_values=[""])
+
+
+class ListTicketsColumnSubjectValue(ActionOutput):
+    value: str = OutputField(column_name="Subject", example_values=[""])
+
+
+class ListTicketsColumnStatusValue(ActionOutput):
+    value: str = OutputField(column_name="Status", example_values=["New"])
+
+
+class ListTicketsColumnPriorityValue(ActionOutput):
+    value: str = OutputField(column_name="Priority", example_values=["High"])
+
+
+class ListObjectsColumnsOutput(ActionOutput):
+    Id: ListObjectsColumnIdValue
+
+
+class ListTicketsColumnsOutput(ActionOutput):
+    Id: ListTicketsColumnIdValue
+    Subject: ListTicketsColumnSubjectValue
+    Status: ListTicketsColumnStatusValue
+    Priority: ListTicketsColumnPriorityValue

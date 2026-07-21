@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import OutputField
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
+from .shared import StatusOutput
 
 
 class PostChatterParams(Params):
@@ -29,7 +30,7 @@ class PostChatterParams(Params):
     body: str = Param(description="Body of the post")
 
 
-class PostChatterOutput(ActionOutput):
+class PostChatterOutput(StatusOutput):
     id: str = OutputField(
         column_name="ID",
         cef_types=["salesforce object id"],
@@ -45,4 +46,6 @@ def post_chatter(
         params.id, params.body, title=params.title
     )
     soar.set_message("Successfully posted to chatter")
-    return PostChatterOutput(id=result["id"], success=result["success"])
+    return PostChatterOutput(
+        status="success", id=result["id"], success=result["success"]
+    )

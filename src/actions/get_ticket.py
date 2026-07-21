@@ -44,14 +44,19 @@ class GetTicketOutput(ActionOutput):
         cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
     )
     CreatedDate: str = OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
-    LastModifiedDate: str = OutputField(
-        column_name="Last Modified", example_values=["2017-12-01T21:32:33.000+0000"]
-    )
     SystemModstamp: str = OutputField(example_values=["2017-12-02T11:18:29.000+0000"])
     IsClosed: bool = False
     IsDeleted: bool = False
     IsEscalated: bool = False
-    # Optional standard fields
+    # Optional standard fields — column_name fields declared first to control column order
+    Subject: str | None = OutputField(column_name="SUBJECT")
+    Description: str | None = OutputField(column_name="DESCRIPTION")
+    LastModifiedDate: str = OutputField(
+        column_name="LAST MODIFIED", example_values=["2017-12-01T21:32:33.000+0000"]
+    )
+    CreatedById: str | None = OutputField(
+        column_name="CREATED BY ID", cef_types=["salesforce object id"]
+    )
     AccountId: str | None = None
     AssetId: str | None = None
     Case_Open_minutes__c: float | None = None
@@ -62,13 +67,9 @@ class GetTicketOutput(ActionOutput):
     ContactId: str | None = None
     ContactMobile: str | None = None
     ContactPhone: str | None = None
-    CreatedById: str | None = OutputField(
-        column_name="Created By ID", cef_types=["salesforce object id"]
-    )
     Customer_Impacting__c: str | None = None
     Date_Reviewed__c: str | None = None
     Days_Open__c: float | None = None
-    Description: str | None = OutputField(column_name="Description")
     Discovery_Method__c: str | None = None
     Discovery_Time_Hours__c: str | None = None
     EngineeringReqNumber__c: str | None = None
@@ -104,7 +105,6 @@ class GetTicketOutput(ActionOutput):
     SITracker_Include_in_Handoff__c: bool | None = None
     SLAViolation__c: str | None = None
     Status: str | None = None
-    Subject: str | None = OutputField(column_name="Subject")
     SuppliedCompany: str | None = None
     SuppliedEmail: str | None = None
     SuppliedName: str | None = None

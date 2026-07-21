@@ -18,6 +18,8 @@ import httpx
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 
+from .auth import get_access_token, get_instance_url
+
 logger = getLogger()
 
 SALESFORCE_DEFAULT_TIMEOUT = 30
@@ -29,16 +31,10 @@ class SalesforceClient:
         self._asset = asset
 
     def _access_token(self) -> str:
-        token = self._asset.auth_state.get("access_token")
-        if not token:
-            raise ActionFailure("No access token found. Re-run test connectivity.")
-        return token
+        return get_access_token(self._asset)
 
     def _instance_url(self) -> str:
-        url = self._asset.auth_state.get("instance_url")
-        if not url:
-            raise ActionFailure("No instance URL found. Re-run test connectivity.")
-        return url
+        return get_instance_url(self._asset)
 
     def _api_version(self) -> str:
         return self._asset.cache_state.get(

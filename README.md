@@ -447,6 +447,7 @@ action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.sobject | string | `salesforce object name` | |
 action_result.parameter.field_values | string | | |
+action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 action_result.data.\*.success | boolean | | True False |
 summary.total_objects | numeric | | 1 |
@@ -480,6 +481,7 @@ action_result.parameter.subject | string | | |
 action_result.parameter.priority | string | | |
 action_result.parameter.description | string | | |
 action_result.parameter.field_values | string | | |
+action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 action_result.data.\*.success | boolean | | True False |
 summary.total_objects | numeric | | 1 |
@@ -507,6 +509,7 @@ action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.sobject | string | `salesforce object name` | |
 action_result.parameter.id | string | `salesforce object id` | |
+action_result.data.\*.status | string | | success |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -530,6 +533,7 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.id | string | `salesforce object id` | |
+action_result.data.\*.status | string | | success |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -557,6 +561,7 @@ action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.sobject | string | `salesforce object name` | |
 action_result.parameter.id | string | `salesforce object id` | |
+action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
@@ -587,11 +592,14 @@ action_result.data.\*.Id | string | `salesforce object id` | 5001I000002SfMMQA0 
 action_result.data.\*.CaseNumber | string | | 00001030 |
 action_result.data.\*.OwnerId | string | `salesforce object id` | 0051I000000PRsCQAW |
 action_result.data.\*.CreatedDate | string | | 2017-12-01T21:32:33.000+0000 |
-action_result.data.\*.LastModifiedDate | string | | 2017-12-01T21:32:33.000+0000 |
 action_result.data.\*.SystemModstamp | string | | 2017-12-02T11:18:29.000+0000 |
 action_result.data.\*.IsClosed | boolean | | True False |
 action_result.data.\*.IsDeleted | boolean | | True False |
 action_result.data.\*.IsEscalated | boolean | | True False |
+action_result.data.\*.Subject | string | | |
+action_result.data.\*.Description | string | | |
+action_result.data.\*.LastModifiedDate | string | | 2017-12-01T21:32:33.000+0000 |
+action_result.data.\*.CreatedById | string | `salesforce object id` | |
 action_result.data.\*.AccountId | string | | |
 action_result.data.\*.AssetId | string | | |
 action_result.data.\*.Case_Open_minutes\_\_c | numeric | | |
@@ -602,11 +610,9 @@ action_result.data.\*.ContactFax | string | | |
 action_result.data.\*.ContactId | string | | |
 action_result.data.\*.ContactMobile | string | | |
 action_result.data.\*.ContactPhone | string | | |
-action_result.data.\*.CreatedById | string | `salesforce object id` | |
 action_result.data.\*.Customer_Impacting\_\_c | string | | |
 action_result.data.\*.Date_Reviewed\_\_c | string | | |
 action_result.data.\*.Days_Open\_\_c | numeric | | |
-action_result.data.\*.Description | string | | |
 action_result.data.\*.Discovery_Method\_\_c | string | | |
 action_result.data.\*.Discovery_Time_Hours\_\_c | string | | |
 action_result.data.\*.EngineeringReqNumber\_\_c | string | | |
@@ -642,7 +648,6 @@ action_result.data.\*.SITracker_Handoff_Notes\_\_c | string | | |
 action_result.data.\*.SITracker_Include_in_Handoff\_\_c | boolean | | True False |
 action_result.data.\*.SLAViolation\_\_c | string | | |
 action_result.data.\*.Status | string | | |
-action_result.data.\*.Subject | string | | |
 action_result.data.\*.SuppliedCompany | string | | |
 action_result.data.\*.SuppliedEmail | string | | |
 action_result.data.\*.SuppliedName | string | | |
@@ -712,6 +717,9 @@ action_result.parameter.view_name | string | `salesforce listview name` | |
 action_result.parameter.limit | numeric | | |
 action_result.parameter.offset | numeric | | |
 action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
+action_result.data.\*.columns.Subject.value | string | | |
+action_result.data.\*.columns.Status.value | string | | New |
+action_result.data.\*.columns.Priority.value | string | | High |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -739,6 +747,7 @@ action_result.message | string | | |
 action_result.parameter.id | string | `salesforce object id` | |
 action_result.parameter.title | string | | |
 action_result.parameter.body | string | | |
+action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 0D51I00000Jw1tnSAB |
 action_result.data.\*.success | boolean | | True False |
 summary.total_objects | numeric | | 1 |
@@ -757,8 +766,8 @@ To run a query that includes a wildcard character, use <code>%25</code> instead 
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**query** | required | SOQL Query | string | |
 **endpoint** | required | Which Query endpoint to use | string | |
+**query** | required | SOQL Query | string | |
 
 #### Action Output
 
@@ -766,8 +775,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.query | string | | |
 action_result.parameter.endpoint | string | | |
+action_result.parameter.query | string | | |
 action_result.data.\*.records.\* | string | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
@@ -796,6 +805,7 @@ action_result.message | string | | |
 action_result.parameter.sobject | string | `salesforce object name` | |
 action_result.parameter.id | string | `salesforce object id` | |
 action_result.parameter.field_values | string | | |
+action_result.data.\*.status | string | | success |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -831,6 +841,7 @@ action_result.parameter.priority | string | | |
 action_result.parameter.description | string | | |
 action_result.parameter.status | string | | |
 action_result.parameter.field_values | string | | |
+action_result.data.\*.status | string | | success |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
