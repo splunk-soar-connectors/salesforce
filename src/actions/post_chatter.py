@@ -31,7 +31,9 @@ class PostChatterParams(Params):
 
 class PostChatterOutput(ActionOutput):
     id: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0D51I00000Jw1tnSAB"]
+        column_name="ID",
+        cef_types=["salesforce object id"],
+        example_values=["0D51I00000Jw1tnSAB"],
     )
     success: bool
 

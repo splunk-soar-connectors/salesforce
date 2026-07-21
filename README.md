@@ -602,7 +602,7 @@ action_result.data.\*.ContactFax | string | | |
 action_result.data.\*.ContactId | string | | |
 action_result.data.\*.ContactMobile | string | | |
 action_result.data.\*.ContactPhone | string | | |
-action_result.data.\*.CreatedById | string | | |
+action_result.data.\*.CreatedById | string | `salesforce object id` | |
 action_result.data.\*.Customer_Impacting\_\_c | string | | |
 action_result.data.\*.Date_Reviewed\_\_c | string | | |
 action_result.data.\*.Days_Open\_\_c | numeric | | |

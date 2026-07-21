@@ -35,7 +35,9 @@ class CreateObjectParams(Params):
 
 class CreateObjectOutput(ActionOutput):
     id: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+        column_name="ID",
+        cef_types=["salesforce object id"],
+        example_values=["5001I000002SfMMQA0"],
     )
     success: bool
 

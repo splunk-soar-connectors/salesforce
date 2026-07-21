@@ -13,7 +13,6 @@
 # limitations under the License.
 from soar_sdk.app import App
 
-from .. import views
 from .create_object import create_object
 from .create_ticket import create_ticket
 from .delete_object import delete_object
@@ -37,76 +36,84 @@ def register_actions(app: App) -> App:
         description="Create a new Salesforce object",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
     app.register_action(
         action=create_ticket,
         description="Create a new Case",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
     app.register_action(
         action=delete_object,
         description="Delete an object",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
     app.register_action(
         action=delete_ticket,
         description="Delete a Case",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
     app.register_action(
         action=get_object,
         description="Get info about a Salesforce object",
         action_type="investigate",
         verbose="If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
-        view_handler=views.get_object_view,
+        render_as="table",
     )
     app.register_action(
         action=get_ticket,
         description="Get info about a Case",
         action_type="investigate",
         verbose="If you have custom fields added to a Case, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
-        view_handler=views.get_ticket_view,
+        render_as="table",
     )
     app.register_action(
         action=list_objects,
         description="Get a list of objects",
         action_type="investigate",
         verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
-        view_handler=views.list_objects_view,
+        render_as="table",
     )
     app.register_action(
         action=list_tickets,
         description="Get a list of Cases",
         action_type="investigate",
         verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.",
+        render_as="table",
     )
     app.register_action(
         action=post_chatter,
         description="Post on the Chatter feed for a specified case",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
     app.register_action(
         action=run_query,
         description="Run a query using the Salesforce Object Query Language (SOQL)",
         action_type="investigate",
         verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
-        view_handler=views.run_query_view,
+        render_as="table",
     )
     app.register_action(
         action=update_object,
         description="Update an object",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
     app.register_action(
         action=update_ticket,
         description="Update a Case",
         action_type="generic",
         read_only=False,
+        render_as="table",
     )
 
     return app
