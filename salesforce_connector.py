@@ -1312,10 +1312,10 @@ class SalesforceConnector(BaseConnector):
 
         try:
             artifact["source_data_identifier"] = hashlib.sha256(json.dumps(artifact)).hexdigest()
-            container["source_data_identifier"] = hashlib.sha256("{}{}".format(sobject, response["Id"])).hexdigest()
+            container["source_data_identifier"] = self._get_container_source_data_identifier(sobject, response["Id"])
         except:
             artifact["source_data_identifier"] = hashlib.sha256(json.dumps(artifact).encode()).hexdigest()
-            container["source_data_identifier"] = hashlib.sha256("{}{}".format(sobject, response["Id"]).encode()).hexdigest()
+            container["source_data_identifier"] = self._get_container_source_data_identifier(sobject, response["Id"])
 
         severity = response.get("Incident_Severity__c")
         if severity:
@@ -1326,6 +1326,13 @@ class SalesforceConnector(BaseConnector):
             container["sensitivity"] = sensitivity_mapping.get(sensitivity.lower(), "amber")
 
         return container
+
+    def _get_container_source_data_identifier(self, sobject, record_id):
+        salt = self._state.get("container_source_data_identifier_salt")
+        if not isinstance(salt, str) or not salt:
+            salt = secrets.token_urlsafe(32)
+            self._state["container_source_data_identifier_salt"] = salt
+        return hashlib.sha256(f"{salt}:{sobject}:{record_id}".encode()).hexdigest()
 
     def _batch_response_to_containers(self, response, sobject, start_index=0):
         containers = []
