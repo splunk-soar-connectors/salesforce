@@ -25,6 +25,7 @@ import os
 import secrets
 import sys
 import time
+import unicodedata
 from urllib.parse import urlparse
 
 import encryption_helper
@@ -70,6 +71,12 @@ def _trusted_instance_origin(instance_url):
 class RetVal(tuple):
     def __new__(cls, val1, val2=None):
         return tuple.__new__(RetVal, (val1, val2))
+
+
+def _strip_format_controls(value):
+    if not isinstance(value, str):
+        return value
+    return "".join(character for character in value if unicodedata.category(character) != "Cf")
 
 
 def _delete_app_state(asset_id, app_connector=None):
@@ -1278,12 +1285,12 @@ class SalesforceConnector(BaseConnector):
             if k in skip_field_names:
                 continue
             name = self._cef_name_map.get(k, k)
-            cef[name] = v
+            cef[name] = _strip_format_controls(v)
             if k.endswith("Id") and v is not None:
                 cef_types[name] = ["salesforce object id"]
 
             if name == "Subject":
-                container_name = v
+                container_name = cef[name]
 
         if container_name is None:
             number = response.get("CaseNumber") or response.get("Id", "")
