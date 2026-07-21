@@ -25,6 +25,7 @@ import os
 import secrets
 import sys
 import time
+import unicodedata
 from urllib.parse import urlparse
 
 import encryption_helper
@@ -70,6 +71,12 @@ def _trusted_instance_origin(instance_url):
 class RetVal(tuple):
     def __new__(cls, val1, val2=None):
         return tuple.__new__(RetVal, (val1, val2))
+
+
+def _strip_format_controls(value):
+    if not isinstance(value, str):
+        return value
+    return "".join(character for character in value if unicodedata.category(character) != "Cf")
 
 
 def _delete_app_state(asset_id, app_connector=None):
@@ -1278,12 +1285,12 @@ class SalesforceConnector(BaseConnector):
             if k in skip_field_names:
                 continue
             name = self._cef_name_map.get(k, k)
-            cef[name] = v
+            cef[name] = _strip_format_controls(v)
             if k.endswith("Id") and v is not None:
                 cef_types[name] = ["salesforce object id"]
 
             if name == "Subject":
-                container_name = v
+                container_name = cef[name]
 
         if container_name is None:
             number = response.get("CaseNumber") or response.get("Id", "")
@@ -1305,10 +1312,10 @@ class SalesforceConnector(BaseConnector):
 
         try:
             artifact["source_data_identifier"] = hashlib.sha256(json.dumps(artifact)).hexdigest()
-            container["source_data_identifier"] = hashlib.sha256("{}{}".format(sobject, response["Id"])).hexdigest()
+            container["source_data_identifier"] = self._get_container_source_data_identifier(sobject, response["Id"])
         except:
             artifact["source_data_identifier"] = hashlib.sha256(json.dumps(artifact).encode()).hexdigest()
-            container["source_data_identifier"] = hashlib.sha256("{}{}".format(sobject, response["Id"]).encode()).hexdigest()
+            container["source_data_identifier"] = self._get_container_source_data_identifier(sobject, response["Id"])
 
         severity = response.get("Incident_Severity__c")
         if severity:
@@ -1319,6 +1326,13 @@ class SalesforceConnector(BaseConnector):
             container["sensitivity"] = sensitivity_mapping.get(sensitivity.lower(), "amber")
 
         return container
+
+    def _get_container_source_data_identifier(self, sobject, record_id):
+        salt = self._state.get("container_source_data_identifier_salt")
+        if not isinstance(salt, str) or not salt:
+            salt = secrets.token_urlsafe(32)
+            self._state["container_source_data_identifier_salt"] = salt
+        return hashlib.sha256(f"{salt}:{sobject}:{record_id}".encode()).hexdigest()
 
     def _batch_response_to_containers(self, response, sobject, start_index=0):
         containers = []
