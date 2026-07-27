@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
@@ -33,13 +33,17 @@ class RunQuerySummary(ActionOutput):
     num_objects: int = OutputField(example_values=[5])
 
 
-class RunQueryOutput(ActionOutput):
-    records: list[str]
+class RunQueryOutput(PermissiveActionOutput):
+    Id: str | None = OutputField(
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+    )
 
 
-def run_query(params: RunQueryParams, soar: SOARClient, asset: Asset) -> RunQueryOutput:
+def run_query(
+    params: RunQueryParams, soar: SOARClient, asset: Asset
+) -> list[RunQueryOutput]:
     client = SalesforceClient(asset)
     records = client.query(params.query, endpoint=params.endpoint)
     soar.set_summary(RunQuerySummary(num_objects=len(records)))
     soar.set_message(f"Successfully retrieved {len(records)} record(s)")
-    return RunQueryOutput(records=[str(r) for r in records])
+    return [RunQueryOutput.model_validate(r) for r in records]

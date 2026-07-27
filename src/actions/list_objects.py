@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.action_results import PermissiveActionOutput
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import ListSummary, ListObjectsColumnsOutput, ListObjectsColumnIdValue
+from .shared import ListSummary, ListObjectsColumnsOutput
 
 
 class ListObjectsParams(Params):
@@ -33,12 +33,24 @@ class ListObjectsParams(Params):
         primary=True,
         cef_types=["salesforce listview name"],
     )
-    limit: float | None = Param(description="Paging limit")
-    offset: float | None = Param(description="Paging offset")
+    limit: int | None = Param(description="Paging limit")
+    offset: int | None = Param(description="Paging offset")
 
 
-class ListObjectsOutput(ActionOutput):
+class ListObjectsOutput(PermissiveActionOutput):
     columns: ListObjectsColumnsOutput
+
+
+def _mogrify_record(record: dict) -> dict:
+    """Convert the columns list into a dict keyed by field name, matching legacy behaviour."""
+    columns = record.get("columns", [])
+    columns_dict = {
+        col["fieldNameOrPath"].replace(".", "_"): {
+            k: v for k, v in col.items() if k != "fieldNameOrPath"
+        }
+        for col in columns
+    }
+    return {**record, "columns": columns_dict}
 
 
 def _extract_id_from_record(r: dict) -> str:
@@ -48,18 +60,18 @@ def _extract_id_from_record(r: dict) -> str:
     return r.get("fields", {}).get("Id", {}).get("value", "")
 
 
-def _validate_list_params(limit, offset) -> tuple[int | None, int | None]:
-    if limit is not None:
-        lim = int(limit)
-        if lim <= 0:
-            raise ActionFailure("limit must be a positive integer.")
-        return lim, int(offset) if offset is not None else None
-    if offset is not None:
-        off = int(offset)
-        if off < 0:
-            raise ActionFailure("offset must be a non-negative integer.")
-        return None, off
-    return None, None
+def _validate_list_params(
+    limit: int | None, offset: int | None
+) -> tuple[int | None, int | None]:
+    if limit is not None and limit <= 0:
+        raise ActionFailure(
+            "Please provide a valid integer value in the 'limit' parameter"
+        )
+    if offset is not None and offset < 0:
+        raise ActionFailure(
+            "Please provide a valid non-negative integer value in the 'offset' parameter"
+        )
+    return limit, offset
 
 
 def list_objects(
@@ -80,11 +92,4 @@ def list_objects(
     records = data.get("records", [])
     soar.set_summary(ListSummary(num_objects=len(records), view_names=None))
     soar.set_message(f"Successfully fetched a list of {params.sobject} objects")
-    return [
-        ListObjectsOutput(
-            columns=ListObjectsColumnsOutput(
-                Id=ListObjectsColumnIdValue(value=_extract_id_from_record(r))
-            )
-        )
-        for r in records
-    ]
+    return [ListObjectsOutput.model_validate(_mogrify_record(r)) for r in records]

@@ -79,6 +79,7 @@ def make_request(
 
     timeout = params.timeout or SALESFORCE_DEFAULT_TIMEOUT
 
+    verify_ssl = bool(params.verify_ssl) if params.verify_ssl is not None else False
     try:
         resp = httpx.request(
             method=params.http_method,
@@ -88,7 +89,7 @@ def make_request(
             data=body,
             json=json_body,
             timeout=timeout,
-            verify=False,  # noqa: S501
+            verify=verify_ssl,
         )
     except Exception as e:
         raise ActionFailure(f"Request failed: {e}") from e

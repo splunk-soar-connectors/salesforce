@@ -13,6 +13,8 @@
 # limitations under the License.
 import hashlib
 import json
+import secrets
+import unicodedata
 from collections.abc import Iterator
 
 import httpx
@@ -53,6 +55,12 @@ SENSITIVITY_MAP = {
     "sensitive": "red",
     "not sensitive": "white",
 }
+
+
+def _strip_format_controls(value):
+    if not isinstance(value, str):
+        return value
+    return "".join(c for c in value if unicodedata.category(c) != "Cf")
 
 
 def _extract_id_from_record(r: dict) -> str:
@@ -133,24 +141,37 @@ def create_salesforce_soar_connector_app() -> App:
             f"Fetched {len(list_records)} list-view records from '{view_name}' (offset={offset}, max={max_records}); container_label={container_label!r}"
         )
 
-        if not list_records:
+        # Prepend any IDs that failed in the previous scheduled poll so they are retried first.
+        pending_retry: list[str] = (
+            [] if is_manual else list(asset.ingest_state.get("failed_record_ids") or [])
+        )
+
+        if not list_records and not pending_retry:
             logger.info("No new records found.")
             if not is_manual:
                 asset.ingest_state["cur_offset"] = new_offset
             return
-
-        record_ids = [
+        record_ids = pending_retry + [
             _id for row in list_records if (_id := _extract_id_from_record(row))
         ]
 
-        logger.info(f"Extracted {len(record_ids)} record IDs from list-view rows")
+        logger.info(
+            f"Extracted {len(record_ids)} record IDs from list-view rows ({len(pending_retry)} retried from previous poll)"
+        )
 
         full_records: list[dict] = []
+        all_failed_ids: list[str] = []
         for i in range(0, len(record_ids), 25):
-            batch = client.batch_get(sobject, record_ids[i : i + 25])
-            full_records.extend(batch)
+            batch_records, failed_ids = client.batch_get(
+                sobject, record_ids[i : i + 25]
+            )
+            full_records.extend(batch_records)
+            all_failed_ids.extend(failed_ids)
 
-        logger.info(f"Fetched {len(full_records)} full {sobject} records")
+        logger.info(
+            f"Fetched {len(full_records)} full {sobject} records; "
+            f"{len(all_failed_ids)} failed and will be retried next poll"
+        )
 
         for record in full_records:
             cef: dict = {}
@@ -160,7 +181,7 @@ def create_salesforce_soar_connector_app() -> App:
                 if k == "attributes":
                     continue
                 cef_key = cef_name_map.get(k, k)
-                cef[cef_key] = v
+                cef[cef_key] = _strip_format_controls(v)
                 if k.endswith("Id") and v is not None:
                     cef_types[cef_key] = ["salesforce object id"]
 
@@ -169,12 +190,18 @@ def create_salesforce_soar_connector_app() -> App:
                 cef.pop("LastReferencedDate", None)
 
             container_name = (
-                record.get("Subject")
+                cef.get("Subject")
                 or f"Salesforce {sobject} # {record.get('CaseNumber') or record.get('Id', '')}"
             )
 
             record_id = record.get("Id", "")
-            container_sdi = hashlib.sha256(f"{sobject}{record_id}".encode()).hexdigest()
+            salt = asset.ingest_state.get("container_sdi_salt")
+            if not isinstance(salt, str) or not salt:
+                salt = secrets.token_urlsafe(32)
+                asset.ingest_state["container_sdi_salt"] = salt
+            container_sdi = hashlib.sha256(
+                f"{salt}:{sobject}:{record_id}".encode()
+            ).hexdigest()
             artifact_sdi = hashlib.sha256(
                 json.dumps(cef, sort_keys=True).encode()
             ).hexdigest()
@@ -202,13 +229,17 @@ def create_salesforce_soar_connector_app() -> App:
 
         if not is_manual:
             asset.ingest_state["cur_offset"] = new_offset
-            logger.info(f"Saved poll offset: {new_offset}")
+            asset.ingest_state["failed_record_ids"] = all_failed_ids
+            logger.info(
+                f"Saved poll offset: {new_offset}; "
+                f"{len(all_failed_ids)} record(s) queued for retry"
+            )
 
     def _test_connectivity_oauth(asset: Asset) -> None:
         """Browser-based OAuth with PKCE flow via the SDK AuthorizationCodeFlow."""
         redirect_uri = app.get_webhook_url("start_oauth")
         auth_url = start_oauth_flow(asset, redirect_uri)
-        logger.info(f"To continue, open this link in a new tab: {auth_url}")
+        logger.info(f"To continue, open this link in a new tab:\n {auth_url}")
         wait_for_oauth_and_finalize(asset, redirect_uri)
 
     @app.test_connectivity()
@@ -227,13 +258,23 @@ def create_salesforce_soar_connector_app() -> App:
                 get_instance_url(asset) + "/services/data/",
                 headers={"Authorization": f"Bearer {get_access_token(asset)}"},
                 timeout=SALESFORCE_DEFAULT_TIMEOUT,
-                verify=False,  # noqa: S501
+                verify=bool(asset.verify_ssl),
             )
             resp.raise_for_status()
             versions = resp.json()
-            latest = versions[-1]["url"]
+            if not isinstance(versions, list) or not versions:
+                raise ActionFailure(
+                    "Salesforce returned an empty or unexpected response for API versions."
+                )
+            latest = versions[-1].get("url")
+            if not latest:
+                raise ActionFailure(
+                    "Salesforce API version response is missing the 'url' field."
+                )
             asset.cache_state["latest_version"] = latest
             logger.info(f"Latest Salesforce API version: {latest}")
+        except ActionFailure:
+            raise
         except Exception as e:
             raise ActionFailure(
                 f"Connected but failed to fetch API version: {e}"

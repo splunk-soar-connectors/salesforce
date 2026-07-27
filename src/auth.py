@@ -102,6 +102,7 @@ def authenticate_username_password(asset: Asset) -> None:
     get_access_token/get_instance_url can read it uniformly.
     """
     token_url = URL_GET_TOKEN_TEST if asset.is_test_environment else URL_GET_TOKEN
+    verify_ssl = bool(asset.verify_ssl)
     try:
         resp = httpx.post(
             token_url,
@@ -114,7 +115,7 @@ def authenticate_username_password(asset: Asset) -> None:
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
-            verify=False,  # noqa: S501
+            verify=verify_ssl,
         )
         resp_json = resp.json()
     except Exception as e:

@@ -46,6 +46,7 @@ class CreateTicketOutput(StatusOutput):
         example_values=["5001I000002SfMMQA0"],
     )
     success: bool
+    errors: list[str] | None = None
 
 
 def create_ticket(
@@ -72,5 +73,8 @@ def create_ticket(
     soar.set_summary(CreateSummary(obj_id=obj_id))
     soar.set_message("Successfully created a new Case")
     return CreateTicketOutput(
-        status="success", id=obj_id, success=result.get("success", True)
+        status="success",
+        id=obj_id,
+        success=result.get("success", True),
+        errors=result.get("errors"),
     )

@@ -12,20 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.action_results import PermissiveActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import (
-    ListSummary,
-    ListTicketsColumnsOutput,
-    ListTicketsColumnIdValue,
-    ListTicketsColumnSubjectValue,
-    ListTicketsColumnStatusValue,
-    ListTicketsColumnPriorityValue,
-)
-from .list_objects import _extract_id_from_record, _validate_list_params
+from .shared import ListSummary, ListTicketsColumnsOutput
+from .list_objects import _mogrify_record, _validate_list_params
 
 
 class ListTicketsParams(Params):
@@ -34,11 +27,11 @@ class ListTicketsParams(Params):
         primary=True,
         cef_types=["salesforce listview name"],
     )
-    limit: float | None = Param(description="Paging limit")
-    offset: float | None = Param(description="Paging offset")
+    limit: int | None = Param(description="Paging limit")
+    offset: int | None = Param(description="Paging offset")
 
 
-class ListTicketsOutput(ActionOutput):
+class ListTicketsOutput(PermissiveActionOutput):
     columns: ListTicketsColumnsOutput
 
 
@@ -60,21 +53,4 @@ def list_tickets(
     records = data.get("records", [])
     soar.set_summary(ListSummary(num_objects=len(records), view_names=None))
     soar.set_message(f"Successfully fetched {len(records)} Cases")
-
-    def _col(r: dict, field: str) -> str:
-        for col in r.get("columns", []):
-            if col.get("fieldNameOrPath") == field:
-                return col.get("value", "") or ""
-        return r.get("fields", {}).get(field, {}).get("value", "") or ""
-
-    return [
-        ListTicketsOutput(
-            columns=ListTicketsColumnsOutput(
-                Id=ListTicketsColumnIdValue(value=_extract_id_from_record(r)),
-                Subject=ListTicketsColumnSubjectValue(value=_col(r, "Subject")),
-                Status=ListTicketsColumnStatusValue(value=_col(r, "Status")),
-                Priority=ListTicketsColumnPriorityValue(value=_col(r, "Priority")),
-            )
-        )
-        for r in records
-    ]
+    return [ListTicketsOutput.model_validate(_mogrify_record(r)) for r in records]

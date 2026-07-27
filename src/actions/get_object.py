@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import OutputField
+from soar_sdk.action_results import OutputField, PermissiveActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..salesforce_client import SalesforceClient
-from .shared import StatusOutput
 
 
 class GetObjectParams(Params):
@@ -34,8 +33,8 @@ class GetObjectParams(Params):
     )
 
 
-class GetObjectOutput(StatusOutput):
-    id: str = OutputField(
+class GetObjectOutput(PermissiveActionOutput):
+    Id: str = OutputField(
         cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
     )
 
@@ -45,4 +44,4 @@ def get_object(
 ) -> GetObjectOutput:
     record = SalesforceClient(asset).get(params.sobject, params.id)
     soar.set_message(f"Successfully retrieved {params.sobject}")
-    return GetObjectOutput(status="success", id=record.get("Id", params.id))
+    return GetObjectOutput.model_validate(record)

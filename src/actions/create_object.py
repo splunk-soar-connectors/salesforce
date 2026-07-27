@@ -40,6 +40,7 @@ class CreateObjectOutput(StatusOutput):
         example_values=["5001I000002SfMMQA0"],
     )
     success: bool
+    errors: list[str] | None = None
 
 
 def create_object(
@@ -55,5 +56,8 @@ def create_object(
     soar.set_summary(CreateSummary(obj_id=obj_id))
     soar.set_message(f"Successfully created a new {params.sobject}")
     return CreateObjectOutput(
-        status="success", id=obj_id, success=result.get("success", True)
+        status="success",
+        id=obj_id,
+        success=result.get("success", True),
+        errors=result.get("errors"),
     )

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import OutputField, PermissiveActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
@@ -27,14 +27,7 @@ class GetTicketParams(Params):
     )
 
 
-class AttributesOutput(ActionOutput):
-    type: str = OutputField(example_values=["Case"])
-    url: str = OutputField(
-        example_values=["/services/data/v41.0/sobjects/Case/5001I000002SfMMQA0"]
-    )
-
-
-class GetTicketOutput(ActionOutput):
+class GetTicketOutput(PermissiveActionOutput):
     # Always-present fields on an existing Case
     Id: str = OutputField(
         cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
@@ -110,7 +103,6 @@ class GetTicketOutput(ActionOutput):
     SuppliedName: str | None = None
     SuppliedPhone: str | None = None
     Type: str | None = None
-    attributes: AttributesOutput | None = None
 
 
 def get_ticket(
@@ -118,4 +110,4 @@ def get_ticket(
 ) -> GetTicketOutput:
     record = SalesforceClient(asset).get("Case", params.id)
     soar.set_message("Successfully retrieved Case")
-    return GetTicketOutput(**{k: v for k, v in record.items() if v is not None})
+    return GetTicketOutput.model_validate(record)

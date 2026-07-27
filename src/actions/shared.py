@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
 
 
 class StatusOutput(ActionOutput):
@@ -33,7 +33,7 @@ class ListSummary(ActionOutput):
     )
 
 
-class ListObjectsColumnIdValue(ActionOutput):
+class ListObjectsColumnIdValue(PermissiveActionOutput):
     value: str = OutputField(
         column_name="OBJECT ID",
         cef_types=["salesforce object id"],
@@ -41,7 +41,7 @@ class ListObjectsColumnIdValue(ActionOutput):
     )
 
 
-class ListTicketsColumnIdValue(ActionOutput):
+class ListTicketsColumnIdValue(PermissiveActionOutput):
     value: str = OutputField(
         column_name="ID",
         cef_types=["salesforce object id"],
@@ -49,27 +49,27 @@ class ListTicketsColumnIdValue(ActionOutput):
     )
 
 
-class ListTicketsColumnStringValue(ActionOutput):
+class ListTicketsColumnStringValue(PermissiveActionOutput):
     value: str = OutputField(example_values=[""])
 
 
-class ListTicketsColumnSubjectValue(ActionOutput):
+class ListTicketsColumnSubjectValue(PermissiveActionOutput):
     value: str = OutputField(column_name="Subject", example_values=[""])
 
 
-class ListTicketsColumnStatusValue(ActionOutput):
+class ListTicketsColumnStatusValue(PermissiveActionOutput):
     value: str = OutputField(column_name="Status", example_values=["New"])
 
 
-class ListTicketsColumnPriorityValue(ActionOutput):
+class ListTicketsColumnPriorityValue(PermissiveActionOutput):
     value: str = OutputField(column_name="Priority", example_values=["High"])
 
 
-class ListObjectsColumnsOutput(ActionOutput):
+class ListObjectsColumnsOutput(PermissiveActionOutput):
     Id: ListObjectsColumnIdValue
 
 
-class ListTicketsColumnsOutput(ActionOutput):
+class ListTicketsColumnsOutput(PermissiveActionOutput):
     Id: ListTicketsColumnIdValue
     Subject: ListTicketsColumnSubjectValue
     Status: ListTicketsColumnStatusValue

@@ -81,3 +81,9 @@ class Asset(BaseAsset):
         default=True,
         category=FieldCategory.INGEST,
     )
+    verify_ssl: bool | None = AssetField(
+        description="Verify SSL/TLS certificates for Salesforce API calls.",
+        default=False,
+        required=False,
+        category=FieldCategory.CONNECTIVITY,
+    )

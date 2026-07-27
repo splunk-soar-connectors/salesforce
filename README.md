@@ -1,7 +1,7 @@
 # Salesforce
 
 Publisher: Splunk <br>
-Connector Version: 2.3.0 <br>
+Connector Version: 4.0.0 <br>
 Product Vendor: Salesforce <br>
 Product Name: Salesforce <br>
 Minimum Product Version: 7.0.0
@@ -322,6 +322,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 **first_ingestion_max** | optional | numeric | Get this many results on first ingestion |
 **cef_name_map** | optional | file | Mapping of Salesforce to CEF fields (JSON file) |
 **last_view_date** | optional | boolean | Include view date in artifact |
+**verify_ssl** | optional | boolean | Verify SSL/TLS certificates for Salesforce API calls. |
 
 ### Supported Actions
 
@@ -450,6 +451,7 @@ action_result.parameter.field_values | string | | |
 action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 action_result.data.\*.success | boolean | | True False |
+action_result.data.\*.errors.\* | string | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -484,6 +486,7 @@ action_result.parameter.field_values | string | | |
 action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 action_result.data.\*.success | boolean | | True False |
+action_result.data.\*.errors.\* | string | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -561,8 +564,7 @@ action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.sobject | string | `salesforce object name` | |
 action_result.parameter.id | string | `salesforce object id` | |
-action_result.data.\*.status | string | | success |
-action_result.data.\*.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
+action_result.data.\*.Id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -653,8 +655,6 @@ action_result.data.\*.SuppliedEmail | string | | |
 action_result.data.\*.SuppliedName | string | | |
 action_result.data.\*.SuppliedPhone | string | | |
 action_result.data.\*.Type | string | | |
-action_result.data.\*.attributes.type | string | | Case |
-action_result.data.\*.attributes.url | string | | /services/data/v41.0/sobjects/Case/5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -747,9 +747,28 @@ action_result.message | string | | |
 action_result.parameter.id | string | `salesforce object id` | |
 action_result.parameter.title | string | | |
 action_result.parameter.body | string | | |
-action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 0D51I00000Jw1tnSAB |
 action_result.data.\*.success | boolean | | True False |
+action_result.data.\*.url | string | | /services/data/v59.0/chatter/feed-elements/0D51I00000Jw1tnSAB |
+action_result.data.\*.feedElementType | string | | FeedItem |
+action_result.data.\*.type | string | | TextPost |
+action_result.data.\*.createdDate | string | | 2017-12-01T21:32:33.000Z |
+action_result.data.\*.modifiedDate | string | | 2017-12-01T21:32:33.000Z |
+action_result.data.\*.relativeCreatedDate | string | | Just now |
+action_result.data.\*.visibility | string | | AllUsers |
+action_result.data.\*.event | boolean | | True False |
+action_result.data.\*.isDeleteRestricted | boolean | | True False |
+action_result.data.\*.isSharable | boolean | | True False |
+action_result.data.\*.actor.id | string | `salesforce object id` | 005D00000016Qxp |
+action_result.data.\*.actor.name | string | | Jane Doe |
+action_result.data.\*.actor.type | string | | User |
+action_result.data.\*.actor.url | string | | |
+action_result.data.\*.body.text | string | | When should we meet for release planning? |
+action_result.data.\*.body.messageSegments.\* | string | | |
+action_result.data.\*.parent.id | string | `salesforce object id` | 5001I000002SfMMQA0 |
+action_result.data.\*.parent.name | string | | |
+action_result.data.\*.parent.type | string | | |
+action_result.data.\*.parent.url | string | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -777,7 +796,7 @@ action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.endpoint | string | | |
 action_result.parameter.query | string | | |
-action_result.data.\*.records.\* | string | | |
+action_result.data.\*.Id | string | `salesforce object id` | 5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 

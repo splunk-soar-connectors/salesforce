@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from urllib.parse import quote
 
 import httpx
 
@@ -44,6 +45,21 @@ class SalesforceClient:
     def _base_url(self) -> str:
         return f"{self._instance_url()}{self._api_version()}"
 
+    def _verify_ssl(self) -> bool:
+        return bool(self._asset.verify_ssl)
+
+    @staticmethod
+    def _validate_path_segment(value: str, key: str) -> None:
+        """Raise ActionFailure if value contains characters that can escape a URL path segment."""
+        if (
+            not isinstance(value, str)
+            or any(c in value for c in ("/", "\\", "?", "#"))
+            or ".." in value
+        ):
+            raise ActionFailure(
+                f"Invalid value for '{key}': must be a single Salesforce path segment"
+            )
+
     def _headers(self) -> dict:
         return {"Authorization": f"Bearer {self._access_token()}"}
 
@@ -54,7 +70,7 @@ class SalesforceClient:
             url,
             headers=self._headers(),
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
-            verify=False,  # noqa: S501
+            verify=self._verify_ssl(),
             **kwargs,
         )
         if not resp.is_success:
@@ -70,6 +86,28 @@ class SalesforceClient:
             raise ActionFailure(f"Salesforce API error {resp.status_code}: {msg}")
         return {} if resp.status_code == 204 else resp.json()
 
+    def _request_absolute(self, path: str) -> dict:
+        """Issue a GET to an absolute instance-relative path (e.g. nextRecordsUrl)."""
+        url = f"{self._instance_url()}{path}"
+        resp = httpx.get(
+            url,
+            headers=self._headers(),
+            timeout=SALESFORCE_DEFAULT_TIMEOUT,
+            verify=self._verify_ssl(),
+        )
+        if not resp.is_success:
+            try:
+                errors = resp.json()
+                msg = (
+                    errors[0].get("message", resp.text)
+                    if isinstance(errors, list)
+                    else resp.text
+                )
+            except Exception:
+                msg = resp.text
+            raise ActionFailure(f"Salesforce API error {resp.status_code}: {msg}")
+        return resp.json()
+
     def query(self, soql: str, endpoint: str = "query") -> list[dict]:
         """Execute a SOQL query and return all records (auto-paginates)."""
         data = self._request("GET", f"/{endpoint}", params={"q": soql})
@@ -77,49 +115,76 @@ class SalesforceClient:
         next_url = data.get("nextRecordsUrl")
         while next_url:
             # nextRecordsUrl is an absolute path like /services/data/vXX.0/query/...
-            resp = httpx.get(
-                f"{self._instance_url()}{next_url}",
-                headers=self._headers(),
-                timeout=SALESFORCE_DEFAULT_TIMEOUT,
-                verify=False,  # noqa: S501
-            )
-            resp.raise_for_status()
-            page = resp.json()
+            page = self._request_absolute(next_url)
             records.extend(page.get("records", []))
             next_url = page.get("nextRecordsUrl")
         return records
 
     def create(self, sobject: str, fields: dict) -> dict:
         """Create a new sObject record. Returns {id, success}."""
-        return self._request("POST", f"/sobjects/{sobject}", json=fields)
+        self._validate_path_segment(sobject, "sobject")
+        return self._request(
+            "POST", f"/sobjects/{quote(sobject, safe='')}", json=fields
+        )
 
     def get(self, sobject: str, record_id: str) -> dict:
         """Fetch a single sObject record by ID."""
-        return self._request("GET", f"/sobjects/{sobject}/{record_id}")
+        self._validate_path_segment(sobject, "sobject")
+        self._validate_path_segment(record_id, "id")
+        return self._request(
+            "GET", f"/sobjects/{quote(sobject, safe='')}/{quote(record_id, safe='')}"
+        )
 
     def update(self, sobject: str, record_id: str, fields: dict) -> None:
         """Patch an existing sObject record (returns nothing on 204)."""
-        self._request("PATCH", f"/sobjects/{sobject}/{record_id}", json=fields)
+        self._validate_path_segment(sobject, "sobject")
+        self._validate_path_segment(record_id, "id")
+        self._request(
+            "PATCH",
+            f"/sobjects/{quote(sobject, safe='')}/{quote(record_id, safe='')}",
+            json=fields,
+        )
 
     def delete(self, sobject: str, record_id: str) -> None:
         """Delete a sObject record (returns nothing on 204)."""
-        self._request("DELETE", f"/sobjects/{sobject}/{record_id}")
+        self._validate_path_segment(sobject, "sobject")
+        self._validate_path_segment(record_id, "id")
+        self._request(
+            "DELETE", f"/sobjects/{quote(sobject, safe='')}/{quote(record_id, safe='')}"
+        )
 
-    def batch_get(self, sobject: str, record_ids: list[str]) -> list[dict]:
-        """Fetch up to 25 sObject records in a single batch request."""
+    def batch_get(
+        self, sobject: str, record_ids: list[str]
+    ) -> tuple[list[dict], list[str]]:
+        """Fetch up to 25 sObject records in a single batch request.
+
+        Returns (records, failed_ids) — failed_ids are IDs whose per-item status was not 200.
+        """
+        self._validate_path_segment(sobject, "sobject")
+        for rid in record_ids:
+            self._validate_path_segment(rid, "id")
         version = self._api_version()
-        requests = [
-            {"method": "GET", "url": f"{version}/sobjects/{sobject}/{rid}"}
-            for rid in record_ids
+        s = quote(sobject, safe="")
+        id_list = list(record_ids)
+        batch_requests = [
+            {"method": "GET", "url": f"{version}/sobjects/{s}/{quote(rid, safe='')}"}
+            for rid in id_list
         ]
         data = self._request(
-            "POST", "/composite/batch", json={"batchRequests": requests}
+            "POST", "/composite/batch", json={"batchRequests": batch_requests}
         )
-        results = []
-        for item in data.get("results", []):
+        records = []
+        failed_ids = []
+        for rid, item in zip(id_list, data.get("results", []), strict=False):
             if item.get("statusCode") == 200:
-                results.append(item["result"])
-        return results
+                records.append(item["result"])
+            else:
+                logger.warning(
+                    f"Batch fetch failed for {sobject}/{rid}: "
+                    f"status={item.get('statusCode')} result={item.get('result')}"
+                )
+                failed_ids.append(rid)
+        return records, failed_ids
 
     def list_view_records_paged(
         self,
@@ -144,7 +209,9 @@ class SalesforceClient:
 
             params: dict = {"limit": page_size, "offset": offset}
             data = self._request(
-                "GET", f"/sobjects/{sobject}/listviews/{view_id}/results", params=params
+                "GET",
+                f"/sobjects/{quote(sobject, safe='')}/listviews/{quote(view_id, safe='')}/results",
+                params=params,
             )
             page = data.get("records", [])
             records.extend(page)
@@ -161,7 +228,8 @@ class SalesforceClient:
 
     def list_views(self, sobject: str) -> list[dict]:
         """Return all list views for a given sObject."""
-        data = self._request("GET", f"/sobjects/{sobject}/listviews")
+        self._validate_path_segment(sobject, "sobject")
+        data = self._request("GET", f"/sobjects/{quote(sobject, safe='')}/listviews")
         return data.get("listviews", [])
 
     def list_view_results(
@@ -172,6 +240,8 @@ class SalesforceClient:
         offset: int | None = None,
     ) -> dict:
         """Return the results of a specific list view."""
+        self._validate_path_segment(sobject, "sobject")
+        self._validate_path_segment(list_view_id, "list_view_id")
         params = {}
         if limit is not None:
             params["limit"] = limit
@@ -179,7 +249,7 @@ class SalesforceClient:
             params["offset"] = offset
         return self._request(
             "GET",
-            f"/sobjects/{sobject}/listviews/{list_view_id}/results",
+            f"/sobjects/{quote(sobject, safe='')}/listviews/{quote(list_view_id, safe='')}/results",
             params=params,
         )
 
@@ -211,7 +281,7 @@ class SalesforceClient:
             headers={**self._headers(), "Content-Type": "application/json"},
             content=json.dumps(payload),
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
-            verify=False,  # noqa: S501
+            verify=self._verify_ssl(),
         )
         if not resp.is_success:
             try:
@@ -224,5 +294,4 @@ class SalesforceClient:
             except Exception:
                 msg = resp.text
             raise ActionFailure(f"Chatter post failed {resp.status_code}: {msg}")
-        data = resp.json()
-        return {"id": data.get("id", ""), "success": True}
+        return resp.json()
