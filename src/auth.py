@@ -36,6 +36,50 @@ URL_GET_CODE_TEST = "https://test.salesforce.com/services/oauth2/authorize"
 URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"  # noqa: S105
 
 SALESFORCE_DEFAULT_TIMEOUT = 30
+SALESFORCE_INSTANCE_DOMAIN = ".salesforce.com"
+SALESFORCE_MY_DOMAIN = ".my.salesforce.com"
+
+
+def _trusted_instance_origin(instance_url: object) -> str | None:
+    """Return a normalized Salesforce origin, or None when the URL is untrusted."""
+    if not isinstance(instance_url, str):
+        return None
+
+    try:
+        parsed = urlparse(instance_url)
+        port = parsed.port
+    except ValueError:
+        return None
+
+    host = (parsed.hostname or "").lower()
+    if (
+        parsed.scheme != "https"
+        or not host.endswith(SALESFORCE_INSTANCE_DOMAIN)
+        or parsed.username is not None
+        or parsed.password is not None
+        or port not in (None, 443)
+    ):
+        return None
+
+    return f"https://{host}"
+
+
+def _configured_my_domain_origin(domain_url: str | None) -> str:
+    """Validate and normalize the My Domain URL used by client credentials."""
+    candidate = (domain_url or "").strip()
+    if not candidate:
+        raise ActionFailure(
+            "My Domain URL must be set when using Client Credentials flow."
+        )
+    if "://" not in candidate:
+        candidate = f"https://{candidate}"
+
+    origin = _trusted_instance_origin(candidate)
+    if not origin or not urlparse(origin).hostname.endswith(SALESFORCE_MY_DOMAIN):
+        raise ActionFailure(
+            "My Domain URL must be a full HTTPS URL ending in .my.salesforce.com."
+        )
+    return origin
 
 
 def get_oauth_client(asset: Asset) -> SOARAssetOAuthClient:
@@ -72,24 +116,8 @@ def _build_authorization_code_flow(
 
 
 def _build_client_credentials_flow(asset: Asset) -> ClientCredentialsFlow:
-    domain_url = (asset.domain_url or "").strip()
-    if not domain_url:
-        raise ActionFailure(
-            "My Domain URL must be set when using Client Credentials flow."
-        )
-    if "://" not in domain_url:
-        domain_url = f"https://{domain_url}"
-    parsed = urlparse(domain_url)
-    if parsed.scheme != "https" or not parsed.netloc:
-        raise ActionFailure(
-            "My Domain URL must be a full HTTPS URL, e.g. https://example.my.salesforce.com"
-        )
-    if not parsed.netloc.lower().endswith(".my.salesforce.com"):
-        raise ActionFailure(
-            "My Domain URL must end in .my.salesforce.com. Do not use login.salesforce.com or test.salesforce.com."
-        )
-
-    token_endpoint = f"{parsed.scheme}://{parsed.netloc}/services/oauth2/token"
+    origin = _configured_my_domain_origin(asset.domain_url)
+    token_endpoint = f"{origin}/services/oauth2/token"
     return ClientCredentialsFlow(
         auth_state=asset.auth_state,
         client_id=asset.client_id,
@@ -201,14 +229,21 @@ def get_access_token(asset: Asset) -> str:
 
 
 def get_instance_url(asset: Asset) -> str:
-    """Return the Salesforce instance URL from the stored token."""
+    """Return a normalized, trusted Salesforce instance origin."""
     token = _load_token(asset)
     if not token:
         raise ActionFailure("No instance URL found. Re-run test connectivity.")
     instance_url = token.model_extra.get("instance_url") if token.model_extra else None
+    if not instance_url and asset.use_client_credentials:
+        instance_url = _configured_my_domain_origin(asset.domain_url)
     if not instance_url:
         raise ActionFailure("No instance URL found. Re-run test connectivity.")
-    return instance_url
+    origin = _trusted_instance_origin(instance_url)
+    if not origin:
+        raise ActionFailure(
+            "OAuth token response returned an untrusted Salesforce instance URL."
+        )
+    return origin
 
 
 def _store_token(asset: Asset, token: OAuthToken) -> None:
