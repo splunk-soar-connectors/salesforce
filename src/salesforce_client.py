@@ -25,6 +25,8 @@ logger = getLogger()
 
 SALESFORCE_DEFAULT_TIMEOUT = 30
 SALESFORCE_API_FALLBACK_VERSION = "/services/data/v59.0"
+MAX_OBJECTS_PER_POLL_PAGE = 2000
+MAX_PAGES_PER_POLL = 100
 
 
 class SalesforceClient:
@@ -193,15 +195,16 @@ class SalesforceClient:
 
         Returns (new_offset, records) where records are the raw list-view row dicts.
         """
-        MAX_PER_PAGE = 2000
         view_id = self.resolve_list_view_id(sobject, view_name)
         records: list[dict] = []
 
-        while True:
-            page_size = MAX_PER_PAGE
+        for _page_number in range(MAX_PAGES_PER_POLL):
+            page_size = MAX_OBJECTS_PER_POLL_PAGE
             if max_records is not None:
                 remaining = max_records - len(records)
-                page_size = min(MAX_PER_PAGE, remaining)
+                if remaining <= 0:
+                    break
+                page_size = min(MAX_OBJECTS_PER_POLL_PAGE, remaining)
 
             params: dict = {"limit": page_size, "offset": offset}
             data = self._request(
@@ -219,6 +222,10 @@ class SalesforceClient:
 
             if len(page) < page_size:
                 break
+        else:
+            logger.info(
+                f"Reached the maximum of {MAX_PAGES_PER_POLL} pages in one poll cycle"
+            )
 
         return offset, records
 
