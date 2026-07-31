@@ -17,8 +17,6 @@ import secrets
 import unicodedata
 from collections.abc import Iterator
 
-import httpx
-
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.exceptions import ActionFailure
@@ -29,20 +27,11 @@ from soar_sdk.params import OnPollParams
 
 from .actions import register_actions
 from .asset import Asset
-from .auth import (
-    authenticate_client_credentials,
-    authenticate_username_password,
-    get_instance_url,
-    get_request_auth,
-    start_oauth_flow,
-    wait_for_oauth_and_finalize,
-)
 from .salesforce_client import SalesforceClient
+from .test_connectivity import run_test_connectivity
 from .webhooks import register_webhooks
 
 logger = getLogger()
-
-SALESFORCE_DEFAULT_TIMEOUT = 30
 
 SEVERITY_MAP = {
     "severity 1 (high impact)": "high",
@@ -230,50 +219,13 @@ def create_salesforce_soar_connector_app() -> App:
                 f"{len(all_failed_ids)} record(s) queued for retry"
             )
 
-    def _test_connectivity_oauth(asset: Asset) -> None:
-        """Browser-based OAuth with PKCE flow via the SDK AuthorizationCodeFlow."""
-        redirect_uri = app.get_webhook_url("start_oauth")
-        auth_url = start_oauth_flow(asset, redirect_uri)
-        logger.info(f"To continue, open this link in a new tab:\n {auth_url}")
-        wait_for_oauth_and_finalize(asset, redirect_uri)
-
     @app.test_connectivity()
     def test_connectivity(soar: SOARClient, asset: Asset) -> None:
         """Validate connection using the configured credentials"""
-        if asset.use_client_credentials:
-            authenticate_client_credentials(asset)
-        elif asset.username and asset.password:
-            authenticate_username_password(asset)
-        else:
-            _test_connectivity_oauth(asset)
-
-        logger.info("Obtaining Salesforce API version")
-        try:
-            resp = httpx.get(
-                get_instance_url(asset) + "/services/data/",
-                auth=get_request_auth(asset),
-                timeout=SALESFORCE_DEFAULT_TIMEOUT,
-                verify=bool(asset.verify_ssl),
-            )
-            resp.raise_for_status()
-            versions = resp.json()
-            if not isinstance(versions, list) or not versions:
-                raise ActionFailure(
-                    "Salesforce returned an empty or unexpected response for API versions."
-                )
-            latest = versions[-1].get("url")
-            if not latest:
-                raise ActionFailure(
-                    "Salesforce API version response is missing the 'url' field."
-                )
-            asset.cache_state["latest_version"] = latest
-            logger.info(f"Latest Salesforce API version: {latest}")
-        except ActionFailure:
-            raise
-        except Exception as e:
-            raise ActionFailure(
-                f"Connected but failed to fetch API version: {e}"
-            ) from e
+        run_test_connectivity(
+            asset,
+            oauth_callback_url=app.get_webhook_url("start_oauth"),
+        )
 
     return register_actions(app)
 

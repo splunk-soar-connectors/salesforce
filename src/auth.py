@@ -167,30 +167,8 @@ def authenticate_username_password(asset: Asset) -> None:
             f"Salesforce rejected credentials: {resp_json.get('error_description') or resp_json['error']}"
         )
 
-    _store_token(asset, OAuthToken.model_validate(resp_json))
+    store_token(asset, OAuthToken.model_validate(resp_json))
     logger.info("Successfully obtained access token via username-password flow")
-
-
-def start_oauth_flow(asset: Asset, redirect_uri: str) -> str:
-    """Begin the Authorization Code (PKCE) flow. Returns the URL the user must visit."""
-    flow = get_authorization_code_flow(asset, redirect_uri)
-    return flow.get_authorization_url()
-
-
-def wait_for_oauth_and_finalize(asset: Asset, redirect_uri: str) -> None:
-    """Poll until the user completes browser auth, then exchange the code for a token.
-
-    The SDK's fetch_token_with_authorization_code saves the token and then overwrites
-    auth_state with the old session-cleanup state, losing the token. We re-store the
-    returned token to fix that.
-    """
-    flow = get_authorization_code_flow(asset, redirect_uri)
-    try:
-        token = flow.wait_for_authorization()
-    except OAuthClientError as e:
-        raise ActionFailure(str(e)) from e
-    _store_token(asset, token)
-    logger.info("Successfully obtained tokens via authorization code flow")
 
 
 def get_request_auth(asset: Asset) -> httpx.Auth:
@@ -224,8 +202,8 @@ def get_instance_url(asset: Asset) -> str:
     return origin
 
 
-def _store_token(asset: Asset, token: OAuthToken) -> None:
-    """Write an OAuthToken into the SDK's OAuthState structure."""
+def store_token(asset: Asset, token: OAuthToken) -> None:
+    """Persist a token while preserving other SDK-managed auth state."""
     state = OAuthState(token=token, client_id=asset.client_id)
     current = asset.auth_state.get_all()
     current["oauth"] = state.model_dump(mode="json", exclude_none=True)

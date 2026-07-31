@@ -15,6 +15,7 @@ import pytest
 from soar_sdk.exceptions import ActionFailure
 
 from src.auth import _configured_my_domain_origin, _trusted_instance_origin
+from src.test_connectivity import _latest_api_version
 
 
 @pytest.mark.parametrize(
@@ -73,3 +74,18 @@ def test_configured_my_domain_origin_adds_https() -> None:
 def test_configured_my_domain_origin_requires_my_domain(value: str | None) -> None:
     with pytest.raises(ActionFailure):
         _configured_my_domain_origin(value)
+
+
+def test_latest_api_version_returns_last_url() -> None:
+    assert (
+        _latest_api_version(
+            [{"url": "/services/data/v60.0"}, {"url": "/services/data/v61.0"}]
+        )
+        == "/services/data/v61.0"
+    )
+
+
+@pytest.mark.parametrize("versions", [None, {}, [], [{}], [{"url": ""}]])
+def test_latest_api_version_rejects_invalid_payloads(versions: object) -> None:
+    with pytest.raises(ActionFailure):
+        _latest_api_version(versions)
