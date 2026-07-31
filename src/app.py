@@ -32,8 +32,8 @@ from .asset import Asset
 from .auth import (
     authenticate_client_credentials,
     authenticate_username_password,
-    get_access_token,
     get_instance_url,
+    get_request_auth,
     start_oauth_flow,
     wait_for_oauth_and_finalize,
 )
@@ -251,7 +251,7 @@ def create_salesforce_soar_connector_app() -> App:
         try:
             resp = httpx.get(
                 get_instance_url(asset) + "/services/data/",
-                headers={"Authorization": f"Bearer {get_access_token(asset)}"},
+                auth=get_request_auth(asset),
                 timeout=SALESFORCE_DEFAULT_TIMEOUT,
                 verify=bool(asset.verify_ssl),
             )

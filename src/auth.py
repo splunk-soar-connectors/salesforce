@@ -18,8 +18,10 @@ import httpx
 from soar_sdk.auth import (
     AuthorizationCodeFlow,
     ClientCredentialsFlow,
+    OAuthBearerAuth,
     OAuthConfig,
     OAuthToken,
+    StaticTokenAuth,
 )
 from soar_sdk.auth.client import OAuthClientError, SOARAssetOAuthClient
 from soar_sdk.auth.models import OAuthState
@@ -93,7 +95,7 @@ def get_oauth_client(asset: Asset) -> SOARAssetOAuthClient:
     return SOARAssetOAuthClient(config, asset.auth_state)
 
 
-def _build_authorization_code_flow(
+def get_authorization_code_flow(
     asset: Asset, redirect_uri: str
 ) -> AuthorizationCodeFlow:
     if asset.is_test_environment:
@@ -115,7 +117,7 @@ def _build_authorization_code_flow(
     )
 
 
-def _build_client_credentials_flow(asset: Asset) -> ClientCredentialsFlow:
+def get_client_credentials_flow(asset: Asset) -> ClientCredentialsFlow:
     origin = _configured_my_domain_origin(asset.domain_url)
     token_endpoint = f"{origin}/services/oauth2/token"
     return ClientCredentialsFlow(
@@ -128,7 +130,7 @@ def _build_client_credentials_flow(asset: Asset) -> ClientCredentialsFlow:
 
 def authenticate_client_credentials(asset: Asset) -> None:
     """Obtain and store an access token via the Client Credentials flow."""
-    flow = _build_client_credentials_flow(asset)
+    flow = get_client_credentials_flow(asset)
     flow.authenticate()
     logger.info("Successfully obtained access token via client credentials flow")
 
@@ -171,7 +173,7 @@ def authenticate_username_password(asset: Asset) -> None:
 
 def start_oauth_flow(asset: Asset, redirect_uri: str) -> str:
     """Begin the Authorization Code (PKCE) flow. Returns the URL the user must visit."""
-    flow = _build_authorization_code_flow(asset, redirect_uri)
+    flow = get_authorization_code_flow(asset, redirect_uri)
     return flow.get_authorization_url()
 
 
@@ -182,7 +184,7 @@ def wait_for_oauth_and_finalize(asset: Asset, redirect_uri: str) -> None:
     auth_state with the old session-cleanup state, losing the token. We re-store the
     returned token to fix that.
     """
-    flow = _build_authorization_code_flow(asset, redirect_uri)
+    flow = get_authorization_code_flow(asset, redirect_uri)
     try:
         token = flow.wait_for_authorization()
     except OAuthClientError as e:
@@ -191,41 +193,17 @@ def wait_for_oauth_and_finalize(asset: Asset, redirect_uri: str) -> None:
     logger.info("Successfully obtained tokens via authorization code flow")
 
 
-def get_access_token(asset: Asset) -> str:
-    """Return a valid access token, refreshing via SDK flows when possible."""
+def get_request_auth(asset: Asset) -> httpx.Auth:
+    """Return SDK-backed HTTP authentication for the configured grant type."""
     if asset.use_client_credentials:
         try:
-            flow = _build_client_credentials_flow(asset)
+            flow = get_client_credentials_flow(asset)
             token = flow.get_token()
-            return token.access_token
+            return StaticTokenAuth(token)
         except OAuthClientError as e:
             raise ActionFailure(str(e)) from e
 
-    # For auth-code and username-password flows, read from OAuthState
-    token = _load_token(asset)
-    if not token:
-        raise ActionFailure("No access token found. Re-run test connectivity.")
-
-    if token.is_expired():
-        if token.refresh_token:
-            try:
-                token_url = (
-                    URL_GET_TOKEN_TEST if asset.is_test_environment else URL_GET_TOKEN
-                )
-                config = OAuthConfig(
-                    client_id=asset.client_id,
-                    client_secret=asset.client_secret,
-                    token_endpoint=token_url,
-                )
-                token = SOARAssetOAuthClient(config, asset.auth_state).refresh_token(
-                    token.refresh_token
-                )
-            except OAuthClientError as e:
-                raise ActionFailure(f"Token refresh failed: {e}") from e
-        else:
-            raise ActionFailure("Access token has expired. Re-run test connectivity.")
-
-    return token.access_token
+    return OAuthBearerAuth(get_oauth_client(asset))
 
 
 def get_instance_url(asset: Asset) -> str:

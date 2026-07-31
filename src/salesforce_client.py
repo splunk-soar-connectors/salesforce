@@ -19,7 +19,7 @@ import httpx
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 
-from .auth import get_access_token, get_instance_url
+from .auth import get_instance_url, get_request_auth
 
 logger = getLogger()
 
@@ -30,9 +30,6 @@ SALESFORCE_API_FALLBACK_VERSION = "/services/data/v59.0"
 class SalesforceClient:
     def __init__(self, asset) -> None:
         self._asset = asset
-
-    def _access_token(self) -> str:
-        return get_access_token(self._asset)
 
     def _instance_url(self) -> str:
         return get_instance_url(self._asset)
@@ -60,15 +57,13 @@ class SalesforceClient:
                 f"Invalid value for '{key}': must be a single Salesforce path segment"
             )
 
-    def _headers(self) -> dict:
-        return {"Authorization": f"Bearer {self._access_token()}"}
-
     def _request(self, method: str, path: str, **kwargs) -> dict:
+        auth = get_request_auth(self._asset)
         url = f"{self._base_url()}{path}"
         resp = httpx.request(
             method,
             url,
-            headers=self._headers(),
+            auth=auth,
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
             verify=self._verify_ssl(),
             **kwargs,
@@ -88,10 +83,11 @@ class SalesforceClient:
 
     def _request_absolute(self, path: str) -> dict:
         """Issue a GET to an absolute instance-relative path (e.g. nextRecordsUrl)."""
+        auth = get_request_auth(self._asset)
         url = f"{self._instance_url()}{path}"
         resp = httpx.get(
             url,
-            headers=self._headers(),
+            auth=auth,
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
             verify=self._verify_ssl(),
         )
@@ -278,7 +274,8 @@ class SalesforceClient:
         url = f"{self._instance_url()}{self._api_version()}/chatter/feed-elements"
         resp = httpx.post(
             url,
-            headers={**self._headers(), "Content-Type": "application/json"},
+            auth=get_request_auth(self._asset),
+            headers={"Content-Type": "application/json"},
             content=json.dumps(payload),
             timeout=SALESFORCE_DEFAULT_TIMEOUT,
             verify=self._verify_ssl(),

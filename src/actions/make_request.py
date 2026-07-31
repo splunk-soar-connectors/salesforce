@@ -21,6 +21,7 @@ from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import MakeRequestParams, Param
 
 from ..asset import Asset
+from ..auth import get_request_auth
 from ..salesforce_client import SalesforceClient
 
 SALESFORCE_DEFAULT_TIMEOUT = 30
@@ -51,7 +52,7 @@ def make_request(
     )
     url = f"{client._base_url()}{endpoint}"
 
-    headers: dict = {**client._headers(), "Content-Type": "application/json"}
+    headers: dict = {"Content-Type": "application/json"}
     if params.headers:
         try:
             headers.update(json.loads(params.headers))
@@ -84,6 +85,7 @@ def make_request(
         resp = httpx.request(
             method=params.http_method,
             url=url,
+            auth=get_request_auth(asset),
             headers=headers,
             params=query_params,
             data=body,
