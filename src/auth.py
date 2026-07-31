@@ -25,7 +25,6 @@ from soar_sdk.auth.client import OAuthClientError, SOARAssetOAuthClient
 from soar_sdk.auth.models import OAuthState
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
-from soar_sdk.webhooks.models import WebhookResponse
 
 from .asset import Asset
 
@@ -37,6 +36,17 @@ URL_GET_CODE_TEST = "https://test.salesforce.com/services/oauth2/authorize"
 URL_GET_TOKEN_TEST = "https://test.salesforce.com/services/oauth2/token"  # noqa: S105
 
 SALESFORCE_DEFAULT_TIMEOUT = 30
+
+
+def get_oauth_client(asset: Asset) -> SOARAssetOAuthClient:
+    """Return the SDK OAuth client used for callbacks and token refresh."""
+    token_endpoint = URL_GET_TOKEN_TEST if asset.is_test_environment else URL_GET_TOKEN
+    config = OAuthConfig(
+        client_id=asset.client_id,
+        client_secret=asset.client_secret,
+        token_endpoint=token_endpoint,
+    )
+    return SOARAssetOAuthClient(config, asset.auth_state)
 
 
 def _build_authorization_code_flow(
@@ -151,41 +161,6 @@ def wait_for_oauth_and_finalize(asset: Asset, redirect_uri: str) -> None:
         raise ActionFailure(str(e)) from e
     _store_token(asset, token)
     logger.info("Successfully obtained tokens via authorization code flow")
-
-
-def handle_oauth_callback(asset: Asset, query: dict) -> WebhookResponse:
-    """Process the Salesforce OAuth callback: store the code so the polling loop picks it up.
-
-    We only need a bare SOARAssetOAuthClient here — no redirect_uri or token exchange.
-    The actual exchange happens in wait_for_oauth_and_finalize once the code is stored.
-    """
-    if "error" in query:
-        reason = (
-            query.get("error_description") or query.get("error") or ["Unknown error"]
-        )[0]
-        return WebhookResponse.text_response(
-            f"Authentication failed: {reason}", status_code=401
-        )
-
-    code_list = query.get("code")
-    if not code_list:
-        return WebhookResponse.text_response(
-            "Missing authorization code in callback.", status_code=400
-        )
-    code = code_list[0] if isinstance(code_list, list) else code_list
-
-    token_url = URL_GET_TOKEN_TEST if asset.is_test_environment else URL_GET_TOKEN
-    config = OAuthConfig(
-        client_id=asset.client_id,
-        client_secret=asset.client_secret,
-        token_endpoint=token_url,
-    )
-    client = SOARAssetOAuthClient(config, asset.auth_state)
-    client.set_authorization_code(code)
-
-    return WebhookResponse.text_response(
-        "Authorization successful! You can now close this tab."
-    )
 
 
 def get_access_token(asset: Asset) -> str:

@@ -26,7 +26,6 @@ from soar_sdk.logging import getLogger
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.models.container import Container
 from soar_sdk.params import OnPollParams
-from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 from .actions import register_actions
 from .asset import Asset
@@ -35,11 +34,11 @@ from .auth import (
     authenticate_username_password,
     get_access_token,
     get_instance_url,
-    handle_oauth_callback,
     start_oauth_flow,
     wait_for_oauth_and_finalize,
 )
 from .salesforce_client import SalesforceClient
+from .webhooks import register_webhooks
 
 logger = getLogger()
 
@@ -82,12 +81,8 @@ def create_salesforce_soar_connector_app() -> App:
         appid="6c1316b0-88a7-4864-b684-3170f6c455be",
         fips_compliant=True,
         asset_cls=Asset,
-    ).enable_webhooks(default_requires_auth=False)
-
-    @app.webhook("/start_oauth", allowed_methods=["GET"])
-    def handle_start_oauth(request: WebhookRequest) -> WebhookResponse:
-        """Receives the Salesforce OAuth callback and stores the authorization code."""
-        return handle_oauth_callback(request.asset, request.query)
+    )
+    register_webhooks(app)
 
     @app.on_poll()
     def on_poll(
