@@ -29,6 +29,35 @@ MAX_OBJECTS_PER_POLL_PAGE = 2000
 MAX_PAGES_PER_POLL = 100
 
 
+def _partition_batch_results(
+    sobject: str, record_ids: list[str], results: object
+) -> tuple[list[dict], list[str]]:
+    """Separate successful batch records from every ID that needs a retry."""
+    result_items = results if isinstance(results, list) else []
+    records: list[dict] = []
+    failed_ids: list[str] = []
+
+    for index, record_id in enumerate(record_ids):
+        item = result_items[index] if index < len(result_items) else None
+        result = item.get("result") if isinstance(item, dict) else None
+        if (
+            isinstance(item, dict)
+            and item.get("statusCode") == 200
+            and isinstance(result, dict)
+        ):
+            records.append(result)
+            continue
+
+        logger.warning(
+            f"Batch fetch failed for {sobject}/{record_id}: "
+            f"status={item.get('statusCode') if isinstance(item, dict) else None} "
+            f"result={result}"
+        )
+        failed_ids.append(record_id)
+
+    return records, failed_ids
+
+
 class SalesforceClient:
     def __init__(self, asset) -> None:
         self._asset = asset
@@ -171,18 +200,7 @@ class SalesforceClient:
         data = self._request(
             "POST", "/composite/batch", json={"batchRequests": batch_requests}
         )
-        records = []
-        failed_ids = []
-        for rid, item in zip(id_list, data.get("results", []), strict=False):
-            if item.get("statusCode") == 200:
-                records.append(item["result"])
-            else:
-                logger.warning(
-                    f"Batch fetch failed for {sobject}/{rid}: "
-                    f"status={item.get('statusCode')} result={item.get('result')}"
-                )
-                failed_ids.append(rid)
-        return records, failed_ids
+        return _partition_batch_results(sobject, id_list, data.get("results"))
 
     def list_view_records_paged(
         self,

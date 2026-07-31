@@ -58,6 +58,19 @@ def _extract_id_from_record(r: dict) -> str:
     return r.get("fields", {}).get("Id", {}).get("value", "")
 
 
+def _extract_record_ids(records: list[dict]) -> tuple[list[str], int | None]:
+    """Return usable IDs and the first row whose ID could not be extracted."""
+    record_ids: list[str] = []
+    first_missing_index: int | None = None
+    for index, record in enumerate(records):
+        record_id = _extract_id_from_record(record)
+        if record_id:
+            record_ids.append(record_id)
+        elif first_missing_index is None:
+            first_missing_index = index
+    return record_ids, first_missing_index
+
+
 def create_salesforce_soar_connector_app() -> App:
     app = App(
         name="Salesforce",
@@ -135,9 +148,8 @@ def create_salesforce_soar_connector_app() -> App:
             if not is_manual:
                 asset.ingest_state["cur_offset"] = new_offset
             return
-        record_ids = pending_retry + [
-            _id for row in list_records if (_id := _extract_id_from_record(row))
-        ]
+        new_record_ids, first_missing_id_index = _extract_record_ids(list_records)
+        record_ids = list(dict.fromkeys([*pending_retry, *new_record_ids]))
 
         logger.info(
             f"Extracted {len(record_ids)} record IDs from list-view rows ({len(pending_retry)} retried from previous poll)"
@@ -212,12 +224,30 @@ def create_salesforce_soar_connector_app() -> App:
             )
 
         if not is_manual:
-            asset.ingest_state["cur_offset"] = new_offset
+            checkpoint_offset = (
+                offset + first_missing_id_index
+                if first_missing_id_index is not None
+                else new_offset
+            )
+            asset.ingest_state["cur_offset"] = checkpoint_offset
             asset.ingest_state["failed_record_ids"] = all_failed_ids
             logger.info(
-                f"Saved poll offset: {new_offset}; "
+                f"Saved poll offset: {checkpoint_offset}; "
                 f"{len(all_failed_ids)} record(s) queued for retry"
             )
+
+        if all_failed_ids or first_missing_id_index is not None:
+            retry_message = (
+                " and queued for the next scheduled poll" if not is_manual else ""
+            )
+            failure_reasons = []
+            if all_failed_ids:
+                failure_reasons.append(
+                    f"{len(all_failed_ids)} Salesforce record(s) failed to retrieve"
+                )
+            if first_missing_id_index is not None:
+                failure_reasons.append("at least one list-view row had no record ID")
+            raise ActionFailure(f"{'; '.join(failure_reasons)}{retry_message}")
 
     @app.test_connectivity()
     def test_connectivity(soar: SOARClient, asset: Asset) -> None:
