@@ -22,6 +22,7 @@ from soar_sdk.auth import (
     OAuthToken,
 )
 from soar_sdk.auth.client import OAuthClientError, SOARAssetOAuthClient
+from soar_sdk.auth.models import OAuthState
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.webhooks.models import WebhookResponse
@@ -237,8 +238,6 @@ def get_instance_url(asset: Asset) -> str:
 
 def _store_token(asset: Asset, token: OAuthToken) -> None:
     """Write an OAuthToken into the SDK's OAuthState structure."""
-    from soar_sdk.auth.models import OAuthState
-
     state = OAuthState(token=token, client_id=asset.client_id)
     current = asset.auth_state.get_all()
     current["oauth"] = state.model_dump(mode="json", exclude_none=True)
@@ -247,8 +246,6 @@ def _store_token(asset: Asset, token: OAuthToken) -> None:
 
 def _load_token(asset: Asset) -> OAuthToken | None:
     """Read the OAuthToken from the SDK's OAuthState structure."""
-    from soar_sdk.auth.models import OAuthState
-
     state_data = asset.auth_state.get_all()
     oauth_data = state_data.get("oauth")
     if not oauth_data:
