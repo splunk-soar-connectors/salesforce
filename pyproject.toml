@@ -23,6 +23,8 @@ dev = [
     "pytest>=7.4.2,<8",
     "pytest-mock>=3.14.0,<4",
     "pytest-watch>=4.2.0,<5",
+    "python-dotenv>=1.1.0,<2",
+    "requests>=2.32.0,<3",
     "ruff>=0.11.6,<1",
 ]
 
@@ -43,6 +45,11 @@ environments = [
 required-environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.14'",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "live: tests that require credentials and access to the live provider API",
 ]
 
 [tool.ruff]
