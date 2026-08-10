@@ -21,25 +21,37 @@ from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 
 from .asset import Asset
+from .actions import register_actions
 
 logger = getLogger()
 
 
-app = App(
-    name="Salesforce",
-    app_type="ticketing",
-    logo="logo_salesforce.svg",
-    logo_dark="logo_salesforce_dark.svg",
-    product_vendor="Salesforce",
-    product_name="Salesforce",
-    publisher="Splunk",
-    appid="6c1316b0-88a7-4864-b684-3170f6c455be",
-    fips_compliant=True,
-    encrypt_cache_state=True,
-    encrypt_ingest_state=True,
-    asset_cls=Asset,
-)
+def create_salesforce_connector_app() -> App:
 
+    app = App(
+        name="Salesforce",
+        app_type="ticketing",
+        logo="logo_salesforce.svg",
+        logo_dark="logo_salesforce_dark.svg",
+        product_vendor="Salesforce",
+        product_name="Salesforce",
+        publisher="Splunk",
+        appid="6c1316b0-88a7-4864-b684-3170f6c455be",
+        fips_compliant=True,
+        encrypt_cache_state=True,
+        encrypt_ingest_state=True,
+        asset_cls=Asset,
+    )
+
+    @app.test_connectivity()
+    def test_connectivity(soar: SOARClient, asset: Asset) -> None:
+        raise NotImplementedError()
+    
+    app = register_actions()
+
+    return app
+
+app = create_salesforce_connector_app()
 
 @app.on_poll()
 def on_poll(
@@ -48,9 +60,7 @@ def on_poll(
     raise NotImplementedError()
 
 
-@app.test_connectivity()
-def test_connectivity(soar: SOARClient, asset: Asset) -> None:
-    raise NotImplementedError()
+
 
 
 class RunQueryParams(Params):
