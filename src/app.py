@@ -401,37 +401,6 @@ def list_tickets(
     raise NotImplementedError()
 
 
-class GetObjectParams(Params):
-    sobject: str = Param(
-        description="Name of object",
-        primary=True,
-        default="Case",
-        cef_types=["salesforce object name"],
-    )
-    id: str = Param(
-        description="Salesforce Object ID",
-        primary=True,
-        cef_types=["salesforce object id"],
-    )
-
-
-class GetObjectOutput(ActionOutput):
-    id: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
-    )
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Get info about a Salesforce object",
-    action_type="investigate",
-    verbose="If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
-)
-def get_object(
-    params: GetObjectParams, soar: SOARClient, asset: Asset
-) -> GetObjectOutput:
-    raise NotImplementedError()
-
-
 class GetTicketParams(Params):
     id: str = Param(
         description="Object ID of the Case",

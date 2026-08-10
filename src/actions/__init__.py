@@ -13,6 +13,8 @@
 # limitations under the License.
 from soar_sdk.app import App
 
+from .get_object import get_object
+
 
 def register_actions(app: App) -> App:
     """
@@ -24,5 +26,13 @@ def register_actions(app: App) -> App:
     Returns:
         App: app with registered salesforce actions.
     """
+
+    app.register_action(
+        action=get_object,  # type: ignore[arg-type]
+        description="Get info about a Salesforce object",
+        action_type="investigate",
+        verbose="If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
+        render_as="table",
+    )
 
     return app
