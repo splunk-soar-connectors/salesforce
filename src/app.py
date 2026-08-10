@@ -68,28 +68,6 @@ def on_poll(
     raise NotImplementedError()
 
 
-class RunQueryParams(Params):
-    query: str = Param(description="SOQL Query")
-    endpoint: str = Param(
-        description="Which Query endpoint to use",
-        default="query",
-        value_list=["query", "queryAll"],
-    )
-
-
-class RunQueryOutput(ActionOutput):
-    records: list[str]
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Run a query using the Salesforce Object Query Language (SOQL)",
-    action_type="investigate",
-    verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
-)
-def run_query(params: RunQueryParams, soar: SOARClient, asset: Asset) -> RunQueryOutput:
-    raise NotImplementedError()
-
-
 class CreateObjectParams(Params):
     sobject: str = Param(
         description="Name of object",

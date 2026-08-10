@@ -14,6 +14,7 @@
 from soar_sdk.app import App
 
 from .get_object import get_object
+from .run_query import run_query
 
 
 def register_actions(app: App) -> App:
@@ -33,6 +34,13 @@ def register_actions(app: App) -> App:
         action_type="investigate",
         verbose="If you have custom fields added to an object, then they might not show up in the playbook editor, so you will need to manually type the datapath to use it.",
         render_as="table",
+    )
+
+    app.register_action(
+        action=run_query,  # type: ignore[arg-type]
+        description="Run a query using the Salesforce Object Query Language (SOQL)",
+        action_type="investigate",
+        verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
     )
 
     return app
