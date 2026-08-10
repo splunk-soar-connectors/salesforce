@@ -21,7 +21,12 @@ ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 REQUIRED_ENV_KEYS = ("client_id", "client_secret", "domain_url")
 
 
-def load_test_config() -> dict[str, str]:
+class RedactedTestConfig(dict[str, str]):
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(<redacted>)"
+
+
+def load_test_config() -> RedactedTestConfig:
     """Load and validate the complete Salesforce live-test configuration."""
     load_dotenv(ENV_FILE, override=False)
     missing = [name for name in REQUIRED_ENV_KEYS if not os.environ.get(name)]
@@ -30,8 +35,10 @@ def load_test_config() -> dict[str, str]:
             "Missing required live test environment variables: " + ", ".join(missing)
         )
 
-    return {
-        name: os.environ[name]
-        for name in (*REQUIRED_ENV_KEYS, "SOAR_ASSET_ID")
-        if name in os.environ
-    }
+    return RedactedTestConfig(
+        {
+            name: os.environ[name]
+            for name in (*REQUIRED_ENV_KEYS, "SOAR_ASSET_ID")
+            if name in os.environ
+        }
+    )

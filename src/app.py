@@ -22,12 +22,13 @@ from soar_sdk.models.artifact import Artifact
 
 from .asset import Asset
 from .actions import register_actions
+from .test_connectivity import run_test_connectivity
+from .webhooks import OAUTH_CALLBACK_ROUTE, register_webhooks
 
 logger = getLogger()
 
 
 def create_salesforce_connector_app() -> App:
-
     app = App(
         name="Salesforce",
         app_type="ticketing",
@@ -43,24 +44,28 @@ def create_salesforce_connector_app() -> App:
         asset_cls=Asset,
     )
 
+    register_webhooks(app)
+
     @app.test_connectivity()
     def test_connectivity(soar: SOARClient, asset: Asset) -> None:
-        raise NotImplementedError()
-    
+        run_test_connectivity(
+            asset,
+            oauth_callback_url=app.get_webhook_url(OAUTH_CALLBACK_ROUTE),
+        )
+
     app = register_actions(app)
 
     return app
 
+
 app = create_salesforce_connector_app()
+
 
 @app.on_poll()
 def on_poll(
     soar: SOARClient, asset: Asset, params: OnPollParams
 ) -> Iterator[Container | Artifact]:
     raise NotImplementedError()
-
-
-
 
 
 class RunQueryParams(Params):

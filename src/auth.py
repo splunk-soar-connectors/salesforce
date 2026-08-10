@@ -14,7 +14,14 @@
 from enum import StrEnum
 from urllib.parse import urlparse
 
-from soar_sdk.auth import AuthorizationCodeFlow, ClientCredentialsFlow, OAuthToken
+from soar_sdk.auth import (
+    AuthorizationCodeFlow,
+    ClientCredentialsFlow,
+    OAuthConfig,
+    OAuthToken,
+)
+from soar_sdk.auth.client import SOARAssetOAuthClient
+from soar_sdk.auth.models import OAuthState
 
 from .asset import Asset
 
@@ -74,6 +81,17 @@ def get_authorization_endpoint(asset: Asset) -> str:
 
 def get_token_endpoint(asset: Asset) -> str:
     return f"{get_login_origin(asset)}{SALESFORCE_TOKEN_PATH}"
+
+
+def get_oauth_client(asset: Asset) -> SOARAssetOAuthClient:
+    return SOARAssetOAuthClient(
+        OAuthConfig(
+            client_id=asset.client_id,
+            client_secret=asset.client_secret,
+            token_endpoint=get_token_endpoint(asset),
+        ),
+        asset.auth_state,
+    )
 
 
 def normalize_my_domain_url(value: str | None) -> str:
@@ -145,6 +163,25 @@ def get_token_instance_origin(
     if instance_origin is None:
         raise ValueError(UNTRUSTED_INSTANCE_ERROR)
     return instance_origin
+
+
+def get_instance_origin(asset: Asset, token: OAuthToken) -> str:
+    fallback_url = (
+        normalize_my_domain_url(asset.domain_url)
+        if asset.use_client_credentials
+        else None
+    )
+    return get_token_instance_origin(token, fallback_url=fallback_url)
+
+
+def store_token(asset: Asset, token: OAuthToken) -> None:
+    """Persist a token while preserving the SDK-managed OAuth state."""
+    current = asset.auth_state.get_all()
+    oauth_state = OAuthState.model_validate(current.get("oauth") or {})
+    oauth_state.token = token
+    oauth_state.client_id = asset.client_id
+    current["oauth"] = oauth_state.model_dump(mode="json", exclude_none=True)
+    asset.auth_state.put_all(current)
 
 
 def get_auth_code_flow(
