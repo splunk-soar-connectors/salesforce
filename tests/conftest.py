@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
+from soar_sdk.app import App
 from soar_sdk.asset_state import AssetState
 
 from src.app import create_salesforce_connector_app
@@ -34,8 +35,12 @@ def test_config() -> RedactedTestConfig:
 
 
 @pytest.fixture
-def asset(test_config: RedactedTestConfig) -> Asset:
-    app = create_salesforce_connector_app()
+def app() -> App:
+    return create_salesforce_connector_app()
+
+
+@pytest.fixture
+def asset(test_config: RedactedTestConfig, app: App) -> Asset:
     asset_id = test_config.get("SOAR_ASSET_ID", "123")
     salesforce_asset = LiveTestAsset.model_validate(
         {

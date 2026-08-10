@@ -252,3 +252,10 @@ def get_auth_flow(
     if auth_mode is AuthMode.CLIENT_CREDENTIALS:
         return get_client_credentials_flow(asset)
     return get_username_password_flow(asset)
+
+
+def get_access_token(asset: Asset) -> OAuthToken:
+    """Return a token appropriate for the asset's configured authentication mode."""
+    if get_auth_mode(asset) is AuthMode.AUTHORIZATION_CODE:
+        return get_oauth_client(asset).get_valid_token(auto_refresh=True)
+    return get_auth_flow(asset).authenticate()
