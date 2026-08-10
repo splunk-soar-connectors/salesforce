@@ -13,7 +13,7 @@
 # limitations under the License.
 from soar_sdk.app import App
 
-from .create_object import create_object
+from .create_object import CreateObjectSummary, create_object
 from .get_object import get_object
 from .run_query import RunQuerySummary, run_query
 
@@ -51,6 +51,7 @@ def register_actions(app: App) -> App:
         description="Create a new Salesforce object",
         action_type="generic",
         read_only=False,
+        summary_type=CreateObjectSummary,
     )
 
     return app
