@@ -65,12 +65,63 @@ class ListTicketsColumnPriorityValue(PermissiveActionOutput):
     value: str = OutputField(column_name="Priority", example_values=["High"])
 
 
+class ListTicketsColumnCaseNumberValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["00001028"])
+
+
+class ListTicketsColumnContactIdValue(PermissiveActionOutput):
+    value: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["0033t000035qrSWABZ"]
+    )
+
+
+class ListTicketsColumnContactNameValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["Abcd"])
+
+
+class ListTicketsColumnCreatedDateValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["Thu Nov 30 23:50:55 GMT 2017"])
+
+
+class ListTicketsColumnLastModifiedDateValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["Fri Dec 01 00:17:47 GMT 2017"])
+
+
+class ListTicketsColumnOwnerIdValue(PermissiveActionOutput):
+    value: str = OutputField(
+        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    )
+
+
+class ListTicketsColumnOwnerNameOrAliasValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["testuser"])
+
+
+class ListTicketsColumnRecordTypeIdValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["0121I000000F7aZQAS"])
+
+
+class ListTicketsColumnSystemModstampValue(PermissiveActionOutput):
+    value: str = OutputField(example_values=["Sat Dec 02 11:18:29 GMT 2017"])
+
+
 class ListObjectsColumnsOutput(PermissiveActionOutput):
     Id: ListObjectsColumnIdValue
 
 
 class ListTicketsColumnsOutput(PermissiveActionOutput):
+    CaseNumber: ListTicketsColumnCaseNumberValue
+    ContactId: ListTicketsColumnContactIdValue
+    Contact_Id: ListTicketsColumnContactIdValue
+    Contact_Name: ListTicketsColumnContactNameValue
+    CreatedDate: ListTicketsColumnCreatedDateValue
     Id: ListTicketsColumnIdValue
+    LastModifiedDate: ListTicketsColumnLastModifiedDateValue
+    OwnerId: ListTicketsColumnOwnerIdValue
+    Owner_Id: ListTicketsColumnOwnerIdValue
+    Owner_NameOrAlias: ListTicketsColumnOwnerNameOrAliasValue
     Subject: ListTicketsColumnSubjectValue
     Status: ListTicketsColumnStatusValue
     Priority: ListTicketsColumnPriorityValue
+    RecordTypeId: ListTicketsColumnRecordTypeIdValue
+    SystemModstamp: ListTicketsColumnSystemModstampValue

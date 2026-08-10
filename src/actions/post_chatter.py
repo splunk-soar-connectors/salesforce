@@ -55,12 +55,13 @@ class PostChatterParentOutput(PermissiveActionOutput):
 
 
 class PostChatterOutput(PermissiveActionOutput):
+    status: str = OutputField(column_name="STATUS", example_values=["success"])
     id: str | None = OutputField(
         column_name="ID",
         cef_types=["salesforce object id"],
         example_values=["0D51I00000Jw1tnSAB"],
     )
-    success: bool | None = OutputField(column_name="SUCCESS", example_values=[True])
+    success: bool | None = OutputField(example_values=[True])
     url: str | None = OutputField(
         example_values=["/services/data/v59.0/chatter/feed-elements/0D51I00000Jw1tnSAB"]
     )
@@ -86,4 +87,6 @@ def post_chatter(
         params.id, params.body, title=params.title
     )
     soar.set_message("Successfully posted to chatter")
-    return PostChatterOutput.model_validate({**result, "success": True})
+    return PostChatterOutput.model_validate(
+        {**result, "status": "success", "success": True}
+    )

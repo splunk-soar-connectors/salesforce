@@ -35,9 +35,7 @@ class GetObjectParams(Params):
 
 class GetObjectOutput(PermissiveActionOutput):
     Id: str = OutputField(
-        column_name="OBJECT ID",
-        cef_types=["salesforce object id"],
-        example_values=["5001I000002SfMMQA0"],
+        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
     )
 
 

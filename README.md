@@ -598,26 +598,26 @@ action_result.data.\*.SystemModstamp | string | | 2017-12-02T11:18:29.000+0000 |
 action_result.data.\*.IsClosed | boolean | | True False |
 action_result.data.\*.IsDeleted | boolean | | True False |
 action_result.data.\*.IsEscalated | boolean | | True False |
-action_result.data.\*.Subject | string | | |
-action_result.data.\*.Description | string | | |
+action_result.data.\*.Subject | string | | Case Subject |
+action_result.data.\*.Description | string | | Case Description |
 action_result.data.\*.LastModifiedDate | string | | 2017-12-01T21:32:33.000+0000 |
-action_result.data.\*.CreatedById | string | `salesforce object id` | |
-action_result.data.\*.AccountId | string | | |
+action_result.data.\*.CreatedById | string | `salesforce object id` | 0051I000000PRsCQAW |
+action_result.data.\*.AccountId | string | `salesforce object id` | 0013t00001ZyVVTAB4 |
 action_result.data.\*.AssetId | string | | |
-action_result.data.\*.Case_Open_minutes\_\_c | numeric | | |
-action_result.data.\*.ClosedDate | string | | |
+action_result.data.\*.Case_Open_minutes\_\_c | numeric | | 4218 |
+action_result.data.\*.ClosedDate | string | | 2019-06-25T18:59:51.000+0000 |
 action_result.data.\*.Closed_Time_Days\_\_c | string | | |
-action_result.data.\*.ContactEmail | string | | |
-action_result.data.\*.ContactFax | string | | |
-action_result.data.\*.ContactId | string | | |
-action_result.data.\*.ContactMobile | string | | |
-action_result.data.\*.ContactPhone | string | | |
+action_result.data.\*.ContactEmail | string | | test@example.com |
+action_result.data.\*.ContactFax | string | | (1) 234 567 |
+action_result.data.\*.ContactId | string | `salesforce object id` | 0033t000035qrSWABZ |
+action_result.data.\*.ContactMobile | string | | (1) 222 333 |
+action_result.data.\*.ContactPhone | string | | (1) 33 444 |
 action_result.data.\*.Customer_Impacting\_\_c | string | | |
 action_result.data.\*.Date_Reviewed\_\_c | string | | |
-action_result.data.\*.Days_Open\_\_c | numeric | | |
+action_result.data.\*.Days_Open\_\_c | numeric | | 3 |
 action_result.data.\*.Discovery_Method\_\_c | string | | |
 action_result.data.\*.Discovery_Time_Hours\_\_c | string | | |
-action_result.data.\*.EngineeringReqNumber\_\_c | string | | |
+action_result.data.\*.EngineeringReqNumber\_\_c | string | | 765810 |
 action_result.data.\*.Executive_Summary\_\_c | string | | |
 action_result.data.\*.Impact_Summary\_\_c | string | | |
 action_result.data.\*.Impacted_Environment\_\_c | string | | |
@@ -631,30 +631,32 @@ action_result.data.\*.Investigation_Category\_\_c | string | | |
 action_result.data.\*.Investigation_Date\_\_c | string | | |
 action_result.data.\*.Investigation_Summary\_\_c | string | | |
 action_result.data.\*.Investigation_Type\_\_c | string | | |
-action_result.data.\*.LastModifiedById | string | | |
-action_result.data.\*.LastReferencedDate | string | | |
-action_result.data.\*.LastViewedDate | string | | |
+action_result.data.\*.LastModifiedById | string | `salesforce object id` | 0051I000000PRsCQAW |
+action_result.data.\*.LastReferencedDate | string | | 2017-12-01T21:33:05.000+0000 |
+action_result.data.\*.LastViewedDate | string | | 2017-12-01T21:33:05.000+0000 |
 action_result.data.\*.Origin | string | | |
-action_result.data.\*.ParentId | string | | |
-action_result.data.\*.PotentialLiability\_\_c | string | | |
-action_result.data.\*.Priority | string | | |
-action_result.data.\*.Product\_\_c | string | | |
-action_result.data.\*.Reason | string | | |
-action_result.data.\*.RecordTypeId | string | | |
+action_result.data.\*.ParentId | string | `salesforce object id` | 0061I000000PRsCABC |
+action_result.data.\*.PotentialLiability\_\_c | string | | No |
+action_result.data.\*.Priority | string | | High |
+action_result.data.\*.Product\_\_c | string | | GC5555 |
+action_result.data.\*.Reason | string | | Test Complexity |
+action_result.data.\*.RecordTypeId | string | | 0121I000000F7aZQAS |
 action_result.data.\*.Resolution_Date\_\_c | string | | |
 action_result.data.\*.Resolution_Time_Hours\_\_c | string | | |
 action_result.data.\*.Response_Time_Hours\_\_c | string | | |
-action_result.data.\*.Response_Time_Minutes\_\_c | numeric | | |
+action_result.data.\*.Response_Time_Minutes\_\_c | numeric | | 4218 |
 action_result.data.\*.SITrack_Response_Task\_\_c | string | | |
 action_result.data.\*.SITracker_Handoff_Notes\_\_c | string | | |
 action_result.data.\*.SITracker_Include_in_Handoff\_\_c | boolean | | True False |
 action_result.data.\*.SLAViolation\_\_c | string | | |
-action_result.data.\*.Status | string | | |
+action_result.data.\*.Status | string | | New |
 action_result.data.\*.SuppliedCompany | string | | |
 action_result.data.\*.SuppliedEmail | string | | |
 action_result.data.\*.SuppliedName | string | | |
 action_result.data.\*.SuppliedPhone | string | | |
-action_result.data.\*.Type | string | | |
+action_result.data.\*.Type | string | | Electrical |
+action_result.data.\*.attributes.type | string | | Case |
+action_result.data.\*.attributes.url | string | | /services/data/v41.0/sobjects/Case/5001I000002SfMMQA0 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -716,10 +718,21 @@ action_result.message | string | | |
 action_result.parameter.view_name | string | `salesforce listview name` | |
 action_result.parameter.limit | numeric | | |
 action_result.parameter.offset | numeric | | |
+action_result.data.\*.columns.CaseNumber.value | string | | 00001028 |
+action_result.data.\*.columns.ContactId.value | string | `salesforce object id` | 0033t000035qrSWABZ |
+action_result.data.\*.columns.Contact_Id.value | string | `salesforce object id` | 0033t000035qrSWABZ |
+action_result.data.\*.columns.Contact_Name.value | string | | Abcd |
+action_result.data.\*.columns.CreatedDate.value | string | | Thu Nov 30 23:50:55 GMT 2017 |
 action_result.data.\*.columns.Id.value | string | `salesforce object id` | 5001I000002SfMMQA0 |
+action_result.data.\*.columns.LastModifiedDate.value | string | | Fri Dec 01 00:17:47 GMT 2017 |
+action_result.data.\*.columns.OwnerId.value | string | `salesforce object id` | 0051I000000PRsCQAW |
+action_result.data.\*.columns.Owner_Id.value | string | `salesforce object id` | 0051I000000PRsCQAW |
+action_result.data.\*.columns.Owner_NameOrAlias.value | string | | testuser |
 action_result.data.\*.columns.Subject.value | string | | |
 action_result.data.\*.columns.Status.value | string | | New |
 action_result.data.\*.columns.Priority.value | string | | High |
+action_result.data.\*.columns.RecordTypeId.value | string | | 0121I000000F7aZQAS |
+action_result.data.\*.columns.SystemModstamp.value | string | | Sat Dec 02 11:18:29 GMT 2017 |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -747,6 +760,7 @@ action_result.message | string | | |
 action_result.parameter.id | string | `salesforce object id` | |
 action_result.parameter.title | string | | |
 action_result.parameter.body | string | | |
+action_result.data.\*.status | string | | success |
 action_result.data.\*.id | string | `salesforce object id` | 0D51I00000Jw1tnSAB |
 action_result.data.\*.success | boolean | | True False |
 action_result.data.\*.url | string | | /services/data/v59.0/chatter/feed-elements/0D51I00000Jw1tnSAB |
