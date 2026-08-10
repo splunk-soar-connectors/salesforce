@@ -14,9 +14,8 @@
 from urllib.parse import quote
 
 import httpx
-from pydantic import ConfigDict
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import OutputField, PermissiveActionOutput
 from soar_sdk.auth import StaticTokenAuth
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
@@ -67,9 +66,7 @@ class GetObjectParams(Params):
     )
 
 
-class GetObjectOutput(ActionOutput):
-    model_config = ConfigDict(extra="allow")
-
+class GetObjectOutput(PermissiveActionOutput):
     Id: str = OutputField(
         cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
     )
