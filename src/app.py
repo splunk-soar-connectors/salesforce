@@ -16,60 +16,13 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.params import Param, Params, OnPollParams
 from soar_sdk.action_results import ActionOutput, OutputField
-from soar_sdk.asset import AssetField, BaseAsset, FieldCategory
 from soar_sdk.logging import getLogger
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 
+from .asset import Asset
+
 logger = getLogger()
-
-
-class Asset(BaseAsset):
-    client_id: str = AssetField(
-        description="Salesforce OAuth client identifier, also called the consumer key."
-    )
-    client_secret: str = AssetField(
-        description="Salesforce OAuth client secret, also called the consumer secret.",
-        sensitive=True,
-    )
-    use_client_credentials: bool | None = AssetField(
-        description="Use Salesforce Client Credentials OAuth flow."
-    )
-    domain_url: str | None = AssetField(
-        description="Salesforce Current My Domain URL used for Client Credentials flow."
-    )
-    username: str | None = AssetField(
-        description="(Legacy) Username for username-password OAuth flow. Not required for External Client App setup."
-    )
-    password: str | None = AssetField(
-        description="(Legacy) Password with security token appended. Not required for External Client App setup.",
-        sensitive=True,
-    )
-    is_test_environment: bool | None = AssetField(
-        description="Use a Salesforce test environment for browser OAuth and legacy username-password flows"
-    )
-    poll_sobject: str | None = AssetField(
-        description="Poll for this Salesforce Object",
-        default="Case",
-        category=FieldCategory.INGEST,
-    )
-    poll_view_name: str | None = AssetField(
-        description="Poll this List View", category=FieldCategory.INGEST
-    )
-    first_ingestion_max: float | None = AssetField(
-        description="Get this many results on first ingestion",
-        default=10.0,
-        category=FieldCategory.INGEST,
-    )
-    cef_name_map: str | None = AssetField(
-        description="Mapping of Salesforce to CEF fields (JSON file)",
-        category=FieldCategory.INGEST,
-    )
-    last_view_date: bool | None = AssetField(
-        description="Include view date in artifact",
-        default=True,
-        category=FieldCategory.INGEST,
-    )
 
 
 app = App(
