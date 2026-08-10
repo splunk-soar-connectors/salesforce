@@ -14,7 +14,7 @@
 from soar_sdk.app import App
 
 from .get_object import get_object
-from .run_query import run_query
+from .run_query import RunQuerySummary, run_query
 
 
 def register_actions(app: App) -> App:
@@ -41,6 +41,8 @@ def register_actions(app: App) -> App:
         description="Run a query using the Salesforce Object Query Language (SOQL)",
         action_type="investigate",
         verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
+        render_as="table",
+        summary_type=RunQuerySummary,
     )
 
     return app
