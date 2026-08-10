@@ -47,7 +47,7 @@ def create_salesforce_connector_app() -> App:
     def test_connectivity(soar: SOARClient, asset: Asset) -> None:
         raise NotImplementedError()
     
-    app = register_actions()
+    app = register_actions(app)
 
     return app
 
