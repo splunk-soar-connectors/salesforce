@@ -22,6 +22,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_access_token, get_instance_origin
+from .utils import _salesforce_error_detail
 
 
 SALESFORCE_DEFAULT_TIMEOUT = 30.0
@@ -29,27 +30,6 @@ MISSING_API_VERSION_ERROR = (
     "Unable to retrieve API version. Has test connectivity been run?"
 )
 INVALID_RESPONSE_ERROR = "Salesforce returned an unexpected object response"
-MAX_ERROR_DETAIL_LENGTH = 1_000
-
-
-def _salesforce_error_detail(response: httpx.Response) -> str:
-    try:
-        response_data = response.json()
-    except ValueError:
-        response_data = None
-
-    if (
-        isinstance(response_data, list)
-        and response_data
-        and isinstance(response_data[0], dict)
-    ):
-        detail = response_data[0].get("message") or response.text
-    elif isinstance(response_data, dict):
-        detail = response_data.get("message") or response.text
-    else:
-        detail = response.text
-
-    return " ".join(str(detail).split())[:MAX_ERROR_DETAIL_LENGTH]
 
 
 class GetObjectParams(Params):
