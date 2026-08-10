@@ -68,32 +68,6 @@ def on_poll(
     raise NotImplementedError()
 
 
-class CreateObjectParams(Params):
-    sobject: str = Param(
-        description="Name of object",
-        primary=True,
-        default="Case",
-        cef_types=["salesforce object name"],
-    )
-    field_values: str = Param(description="JSON Object of Key-Value pairs to update")
-
-
-class CreateObjectOutput(ActionOutput):
-    id: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
-    )
-    success: bool
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Create a new Salesforce object", action_type="generic", read_only=False
-)
-def create_object(
-    params: CreateObjectParams, soar: SOARClient, asset: Asset
-) -> CreateObjectOutput:
-    raise NotImplementedError()
-
-
 class CreateTicketParams(Params):
     parent_case_id: str | None = Param(
         description="Object ID of Parent Case",

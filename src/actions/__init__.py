@@ -13,6 +13,7 @@
 # limitations under the License.
 from soar_sdk.app import App
 
+from .create_object import create_object
 from .get_object import get_object
 from .run_query import RunQuerySummary, run_query
 
@@ -43,6 +44,13 @@ def register_actions(app: App) -> App:
         verbose="To run a query that includes a wildcard character, use <code>%25</code> instead of <code>%</code>.",
         render_as="table",
         summary_type=RunQuerySummary,
+    )
+
+    app.register_action(
+        action=create_object,  # type: ignore[arg-type]
+        description="Create a new Salesforce object",
+        action_type="generic",
+        read_only=False,
     )
 
     return app
