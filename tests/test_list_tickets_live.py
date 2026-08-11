@@ -20,7 +20,7 @@ from soar_sdk.app import App
 from src.actions.create_ticket import CreateTicketParams, create_ticket
 from src.actions.delete_ticket import DeleteTicketParams, delete_ticket
 from src.actions.get_object import GetObjectParams, get_object
-from src.app import ListTicketsParams, list_tickets
+from src.actions.list_tickets import ListTicketsParams, list_tickets
 from src.asset import Asset
 from src.test_connectivity import run_test_connectivity
 
