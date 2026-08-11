@@ -23,7 +23,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_access_token, get_instance_origin
-from .utils import salesforce_error_detail
+from .utils import request_salesforce_json
 
 
 SALESFORCE_DEFAULT_TIMEOUT = 30.0
@@ -84,28 +84,18 @@ def create_object(
         f"{latest_version.rstrip('/')}/sobjects/{quote(params.sobject, safe='')}/"
     )
 
-    try:
-        with httpx.Client(
-            base_url=instance_origin,
-            auth=StaticTokenAuth(token),
-            timeout=SALESFORCE_DEFAULT_TIMEOUT,
-        ) as client:
-            response = client.post(endpoint, json=field_values)
-            response.raise_for_status()
-    except httpx.HTTPStatusError as error:
-        detail = salesforce_error_detail(error.response)
-        raise ActionFailure(
-            f"Salesforce API error {error.response.status_code}: {detail}"
-        ) from error
-    except httpx.RequestError as error:
-        raise ActionFailure(f"Error connecting to Salesforce: {error}") from error
-
-    try:
-        response_data = response.json()
-    except ValueError as error:
-        raise ActionFailure(INVALID_RESPONSE_ERROR) from error
-    if not isinstance(response_data, dict):
-        raise ActionFailure(INVALID_RESPONSE_ERROR)
+    with httpx.Client(
+        base_url=instance_origin,
+        auth=StaticTokenAuth(token),
+        timeout=SALESFORCE_DEFAULT_TIMEOUT,
+    ) as client:
+        response_data = request_salesforce_json(
+            client,
+            "POST",
+            endpoint,
+            json=field_values,
+            invalid_response_error=INVALID_RESPONSE_ERROR,
+        )
 
     object_id = response_data.get("id")
     if not isinstance(object_id, str):

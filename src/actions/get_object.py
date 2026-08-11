@@ -22,7 +22,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_access_token, get_instance_origin
-from .utils import salesforce_error_detail
+from .utils import request_salesforce_json
 
 
 SALESFORCE_DEFAULT_TIMEOUT = 30.0
@@ -68,28 +68,17 @@ def get_object(
         f"{quote(params.sobject, safe='')}/{quote(params.id, safe='')}/"
     )
 
-    try:
-        with httpx.Client(
-            base_url=instance_origin,
-            auth=StaticTokenAuth(token),
-            timeout=SALESFORCE_DEFAULT_TIMEOUT,
-        ) as client:
-            response = client.get(endpoint)
-            response.raise_for_status()
-    except httpx.HTTPStatusError as error:
-        detail = salesforce_error_detail(error.response)
-        raise ActionFailure(
-            f"Salesforce API error {error.response.status_code}: {detail}"
-        ) from error
-    except httpx.RequestError as error:
-        raise ActionFailure(f"Error connecting to Salesforce: {error}") from error
-
-    try:
-        record = response.json()
-    except ValueError as error:
-        raise ActionFailure(INVALID_RESPONSE_ERROR) from error
-    if not isinstance(record, dict):
-        raise ActionFailure(INVALID_RESPONSE_ERROR)
+    with httpx.Client(
+        base_url=instance_origin,
+        auth=StaticTokenAuth(token),
+        timeout=SALESFORCE_DEFAULT_TIMEOUT,
+    ) as client:
+        record = request_salesforce_json(
+            client,
+            "GET",
+            endpoint,
+            invalid_response_error=INVALID_RESPONSE_ERROR,
+        )
 
     soar.set_message(f"Successfully retrieved {params.sobject}")
     return GetObjectOutput.model_validate(record)

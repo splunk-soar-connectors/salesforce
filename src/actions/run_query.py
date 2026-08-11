@@ -22,7 +22,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_access_token, get_instance_origin
-from .utils import salesforce_error_detail
+from .utils import request_salesforce_json
 
 
 SALESFORCE_DEFAULT_TIMEOUT = 30.0
@@ -55,31 +55,6 @@ class RunQuerySummary(ActionOutput):
     num_objects: int = OutputField(example_values=[20])
 
 
-def _get_query_page(
-    client: httpx.Client,
-    endpoint: str,
-    params: str | None,
-) -> dict[str, object]:
-    try:
-        response = client.get(endpoint, params=params)
-        response.raise_for_status()
-    except httpx.HTTPStatusError as error:
-        detail = salesforce_error_detail(error.response)
-        raise ActionFailure(
-            f"Salesforce API error {error.response.status_code}: {detail}"
-        ) from error
-    except httpx.RequestError as error:
-        raise ActionFailure(f"Error connecting to Salesforce: {error}") from error
-
-    try:
-        page = response.json()
-    except ValueError as error:
-        raise ActionFailure(INVALID_RESPONSE_ERROR) from error
-    if not isinstance(page, dict):
-        raise ActionFailure(INVALID_RESPONSE_ERROR)
-    return page
-
-
 def run_query(
     params: RunQueryParams, soar: SOARClient, asset: Asset
 ) -> list[RunQueryOutput]:
@@ -102,7 +77,13 @@ def run_query(
         timeout=SALESFORCE_DEFAULT_TIMEOUT,
     ) as client:
         while True:
-            page = _get_query_page(client, endpoint, query_params)
+            page = request_salesforce_json(
+                client,
+                "GET",
+                endpoint,
+                params=query_params,
+                invalid_response_error=INVALID_RESPONSE_ERROR,
+            )
             page_records = page.get("records")
             done = page.get("done")
             if not isinstance(page_records, list) or not isinstance(done, bool):

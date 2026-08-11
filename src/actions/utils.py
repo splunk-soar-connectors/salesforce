@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import httpx
+from soar_sdk.exceptions import ActionFailure
 
 
 def salesforce_error_detail(response: httpx.Response) -> str:
@@ -32,3 +33,32 @@ def salesforce_error_detail(response: httpx.Response) -> str:
         detail = response.text
 
     return " ".join(str(detail).split())
+
+
+def request_salesforce_json(
+    client: httpx.Client,
+    method: str,
+    endpoint: str,
+    *,
+    invalid_response_error: str,
+    params: str | dict[str, str] | None = None,
+    json: object | None = None,
+) -> dict[str, object]:
+    try:
+        response = client.request(method, endpoint, params=params, json=json)
+        response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        detail = salesforce_error_detail(error.response)
+        raise ActionFailure(
+            f"Salesforce API error {error.response.status_code}: {detail}"
+        ) from error
+    except httpx.RequestError as error:
+        raise ActionFailure(f"Error connecting to Salesforce: {error}") from error
+
+    try:
+        response_data = response.json()
+    except ValueError as error:
+        raise ActionFailure(invalid_response_error) from error
+    if not isinstance(response_data, dict):
+        raise ActionFailure(invalid_response_error)
+    return response_data
