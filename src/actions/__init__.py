@@ -14,6 +14,7 @@
 from soar_sdk.app import App
 
 from .create_object import CreateObjectSummary, create_object
+from .create_ticket import create_ticket
 from .get_object import get_object
 from .run_query import RunQuerySummary, run_query
 
@@ -52,6 +53,13 @@ def register_actions(app: App) -> App:
         action_type="generic",
         read_only=False,
         summary_type=CreateObjectSummary,
+    )
+
+    app.register_action(
+        action=create_ticket,  # type: ignore[arg-type]
+        description="Create a new Case",
+        action_type="generic",
+        read_only=False,
     )
 
     return app

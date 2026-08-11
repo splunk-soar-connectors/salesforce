@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from collections.abc import Callable
-from typing import cast
 from uuid import uuid4
 
 import httpx
 import pytest
 from soar_sdk.app import App
-from soar_sdk.abstract import SOARClient
 from soar_sdk.auth import StaticTokenAuth
 from soar_sdk.exceptions import ActionFailure
 
+from src.actions.create_ticket import CreateTicketParams, create_ticket
 from src.actions.get_object import GetObjectParams, get_object
-from src.app import CreateTicketOutput, CreateTicketParams, create_ticket
 from src.asset import Asset
 from src.auth import get_access_token, get_instance_origin
 from src.test_connectivity import run_test_connectivity
@@ -34,12 +31,8 @@ from src.test_connectivity import run_test_connectivity
 def test_create_ticket_live(app: App, asset: Asset) -> None:
     run_test_connectivity(asset)
     subject = f"SDK live test {uuid4()}"
-    create_ticket_handler = cast(
-        Callable[[CreateTicketParams, SOARClient, Asset], CreateTicketOutput],
-        create_ticket.__wrapped__,  # type: ignore[attr-defined]
-    )
 
-    result = create_ticket_handler(
+    result = create_ticket(
         CreateTicketParams(
             subject=subject,
             priority="High",
@@ -90,7 +83,7 @@ def test_create_ticket_live(app: App, asset: Asset) -> None:
             response.raise_for_status()
 
     with pytest.raises(ActionFailure, match="Error reading 'field_values'"):
-        create_ticket_handler(
+        create_ticket(
             CreateTicketParams(field_values="not JSON"),
             app.soar_client,
             asset,
