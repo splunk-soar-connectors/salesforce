@@ -94,6 +94,7 @@ def register_actions(app: App) -> App:
         description="Update a Case",
         action_type="generic",
         read_only=False,
+        summary_type=UpdateObjectSummary,
     )
 
     return app
