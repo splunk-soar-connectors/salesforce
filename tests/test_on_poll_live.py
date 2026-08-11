@@ -24,7 +24,7 @@ from soar_sdk.params import OnPollParams
 from src.actions.create_ticket import CreateTicketParams, create_ticket
 from src.actions.delete_ticket import DeleteTicketParams, delete_ticket
 from src.actions.get_object import GetObjectParams, get_object
-from src.app import on_poll
+from src.actions.on_poll import on_poll
 from src.asset import Asset
 from src.test_connectivity import run_test_connectivity
 
