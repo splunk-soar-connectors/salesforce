@@ -45,7 +45,7 @@ def test_get_ticket_live(app: App, asset: Asset) -> None:
         assert result.Subject == subject
         assert result.attributes.type == "Case"
         assert result.attributes.url.endswith(f"/sobjects/Case/{created.id}")
-        assert result.model_extra is not None
+        assert result.model_dump()["Id"] == created.id
         assert app.soar_client.get_message() == "Successfully retrieved Case"
     finally:
         delete_ticket(
