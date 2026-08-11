@@ -109,7 +109,7 @@ def test_make_request_live(app: App, asset: Asset) -> None:
     assert "MALFORMED_QUERY" in error_result.response_body
     assert app.soar_client.get_message() == "Request completed with status 400"
 
-    with pytest.raises(ActionFailure, match="^Invalid JSON in headers:"):
+    with pytest.raises(ActionFailure, match=r"^Invalid JSON in headers:"):
         action(
             SalesforceMakeRequestParams(
                 http_method="GET",
@@ -120,7 +120,7 @@ def test_make_request_live(app: App, asset: Asset) -> None:
             asset,
         )
 
-    with pytest.raises(ActionFailure, match="^Invalid JSON in body:"):
+    with pytest.raises(ActionFailure, match=r"^Invalid JSON in body:"):
         action(
             SalesforceMakeRequestParams(
                 http_method="POST",
