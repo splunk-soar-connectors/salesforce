@@ -60,6 +60,7 @@ def register_actions(app: App) -> App:
         description="Create a new Case",
         action_type="generic",
         read_only=False,
+        summary_type=CreateObjectSummary,
     )
 
     return app
