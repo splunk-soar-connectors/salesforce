@@ -14,8 +14,7 @@
 from collections.abc import Iterator
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
-from soar_sdk.params import Param, Params, OnPollParams
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.params import OnPollParams
 from soar_sdk.logging import getLogger
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
@@ -65,34 +64,6 @@ app = create_salesforce_connector_app()
 def on_poll(
     soar: SOARClient, asset: Asset, params: OnPollParams
 ) -> Iterator[Container | Artifact]:
-    raise NotImplementedError()
-
-
-class PostChatterParams(Params):
-    id: str = Param(
-        description="Object ID of the Case",
-        primary=True,
-        cef_types=["salesforce object id"],
-    )
-    title: str | None = Param(description="Title of the post")
-    body: str = Param(description="Body of the post")
-
-
-class PostChatterOutput(ActionOutput):
-    id: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0D51I00000Jw1tnSAB"]
-    )
-    success: bool
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Post on the Chatter feed for a specified case",
-    action_type="generic",
-    read_only=False,
-)
-def post_chatter(
-    params: PostChatterParams, soar: SOARClient, asset: Asset
-) -> PostChatterOutput:
     raise NotImplementedError()
 
 
