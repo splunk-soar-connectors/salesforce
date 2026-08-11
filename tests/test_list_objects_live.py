@@ -33,9 +33,7 @@ def test_list_objects_live(app: App, asset: Asset) -> None:
     created = create_object(
         CreateObjectParams(
             sobject="Account",
-            field_values=json.dumps(
-                {"Name": f"SDK list objects live test {uuid4()}"}
-            ),
+            field_values=json.dumps({"Name": f"SDK list objects live test {uuid4()}"}),
         ),
         app.soar_client,
         asset,
