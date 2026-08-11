@@ -21,7 +21,7 @@ from .get_object import get_object
 from .get_ticket import get_ticket
 from .list_objects import ListObjectsSummary, list_objects
 from .list_tickets import list_tickets
-from .post_chatter import post_chatter
+from .post_chatter import PostChatterSummary, post_chatter
 from .run_query import RunQuerySummary, run_query
 from .update_object import UpdateObjectSummary, update_object
 from .update_ticket import update_ticket
@@ -132,6 +132,7 @@ def register_actions(app: App) -> App:
         description="Post on the Chatter feed for a specified case",
         action_type="generic",
         read_only=False,
+        summary_type=PostChatterSummary,
     )
 
     return app
