@@ -11,14 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections.abc import Iterator
+from contextlib import contextmanager
 from enum import StrEnum
 from urllib.parse import urlparse
 
+import httpx
 from soar_sdk.auth import (
     AuthorizationCodeFlow,
     ClientCredentialsFlow,
     OAuthConfig,
     OAuthToken,
+    create_oauth_client,
 )
 from soar_sdk.auth.client import SOARAssetOAuthClient
 from soar_sdk.auth.models import OAuthState
@@ -34,6 +38,7 @@ SALESFORCE_INSTANCE_DOMAIN = ".salesforce.com"
 SALESFORCE_MY_DOMAIN = ".my.salesforce.com"
 AUTHORIZATION_POLL_TIMEOUT_SECONDS = 300
 AUTHORIZATION_POLL_INTERVAL_SECONDS = 5
+SALESFORCE_DEFAULT_TIMEOUT = 30.0
 
 MISSING_PASSWORD_ERROR = "Password must be specified with a username"  # noqa: S105  # pragma: allowlist secret
 MISSING_USERNAME_ERROR = "Username must be specified for Username Password flow"
@@ -259,3 +264,26 @@ def get_access_token(asset: Asset) -> OAuthToken:
     if get_auth_mode(asset) is AuthMode.AUTHORIZATION_CODE:
         return get_oauth_client(asset).get_valid_token(auto_refresh=True)
     return get_auth_flow(asset).authenticate()
+
+
+def _get_action_token_endpoint(asset: Asset) -> str:
+    if get_auth_mode(asset) is AuthMode.CLIENT_CREDENTIALS:
+        return get_client_credentials_token_endpoint(asset)
+    return get_token_endpoint(asset)
+
+
+@contextmanager
+def get_salesforce_client(asset: Asset) -> Iterator[httpx.Client]:
+    """Return an SDK-authenticated client for Salesforce action requests."""
+    token = get_access_token(asset)
+    instance_origin = get_instance_origin(asset, token)
+
+    with create_oauth_client(
+        asset,
+        client_id=asset.client_id,
+        client_secret=asset.client_secret,
+        token_endpoint=_get_action_token_endpoint(asset),
+        base_url=instance_origin,
+        timeout=SALESFORCE_DEFAULT_TIMEOUT,
+    ) as client:
+        yield client

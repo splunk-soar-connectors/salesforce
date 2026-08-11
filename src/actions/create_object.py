@@ -14,19 +14,16 @@
 import json
 from urllib.parse import quote
 
-import httpx
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
-from soar_sdk.auth import StaticTokenAuth
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
-from ..auth import get_access_token, get_instance_origin
+from ..auth import get_salesforce_client
 from .utils import request_salesforce_json
 
 
-SALESFORCE_DEFAULT_TIMEOUT = 30.0
 MISSING_API_VERSION_ERROR = (
     "Unable to retrieve API version. Has test connectivity been run?"
 )
@@ -78,17 +75,11 @@ def create_object(
     ):
         raise ActionFailure(MISSING_API_VERSION_ERROR)
 
-    token = get_access_token(asset)
-    instance_origin = get_instance_origin(asset, token)
     endpoint = (
         f"{latest_version.rstrip('/')}/sobjects/{quote(params.sobject, safe='')}/"
     )
 
-    with httpx.Client(
-        base_url=instance_origin,
-        auth=StaticTokenAuth(token),
-        timeout=SALESFORCE_DEFAULT_TIMEOUT,
-    ) as client:
+    with get_salesforce_client(asset) as client:
         response_data = request_salesforce_json(
             client,
             "POST",
