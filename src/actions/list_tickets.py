@@ -134,6 +134,4 @@ def list_tickets(
         soar,
         asset,
     )
-    return [
-        ListTicketsOutput.model_validate(record.model_dump()) for record in records
-    ]
+    return [ListTicketsOutput.model_validate(record.model_dump()) for record in records]
