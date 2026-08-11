@@ -11,11 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Annotated
+
+from pydantic import ConfigDict, model_serializer
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
+from .get_object import GetObjectParams, get_object
 
 
 class GetTicketParams(Params):
@@ -34,91 +38,152 @@ class AttributesOutput(ActionOutput):
 
 
 class GetTicketOutput(ActionOutput):
-    AccountId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0013t00001ZyVVTAB4"]
+    model_config = ConfigDict(extra="allow")
+
+    @model_serializer
+    def serialize_provider_fields(self) -> dict[str, object]:
+        return {field: getattr(self, field) for field in self.model_fields_set}
+
+    AccountId: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"], example_values=["0013t00001ZyVVTAB4"]
+        ),
+    ] = None
+    AssetId: str | None = None
+    CaseNumber: Annotated[str | None, OutputField(example_values=["00001030"])] = None
+    Case_Open_minutes__c: Annotated[
+        float | None, OutputField(example_values=[4218])
+    ] = None
+    ClosedDate: Annotated[
+        str | None, OutputField(example_values=["2019-06-25T18:59:51.000+0000"])
+    ] = None
+    Closed_Time_Days__c: str | None = None
+    ContactEmail: Annotated[
+        str | None, OutputField(example_values=["test@example.com"])
+    ] = None
+    ContactFax: Annotated[str | None, OutputField(example_values=["(1) 234 567"])] = (
+        None
     )
-    AssetId: str
-    CaseNumber: str = OutputField(example_values=["00001030"])
-    Case_Open_minutes__c: float = OutputField(example_values=[4218])
-    ClosedDate: str = OutputField(example_values=["2019-06-25T18:59:51.000+0000"])
-    Closed_Time_Days__c: str
-    ContactEmail: str = OutputField(example_values=["test@example.com"])
-    ContactFax: str = OutputField(example_values=["(1) 234 567"])
-    ContactId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0033t000035qrSWABZ"]
+    ContactId: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"], example_values=["0033t000035qrSWABZ"]
+        ),
+    ] = None
+    ContactMobile: Annotated[
+        str | None, OutputField(example_values=["(1) 222 333"])
+    ] = None
+    ContactPhone: Annotated[str | None, OutputField(example_values=["(1) 33 444"])] = (
+        None
     )
-    ContactMobile: str = OutputField(example_values=["(1) 222 333"])
-    ContactPhone: str = OutputField(example_values=["(1) 33 444"])
-    CreatedById: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
-    )
-    CreatedDate: str = OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
-    Customer_Impacting__c: str
-    Date_Reviewed__c: str
-    Days_Open__c: float = OutputField(example_values=[3])
-    Description: str = OutputField(example_values=["Case Description"])
-    Discovery_Method__c: str
-    Discovery_Time_Hours__c: str
-    EngineeringReqNumber__c: str = OutputField(example_values=["765810"])
-    Executive_Summary__c: str
+    CreatedById: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+        ),
+    ] = None
+    CreatedDate: Annotated[
+        str | None, OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
+    ] = None
+    Customer_Impacting__c: str | None = None
+    Date_Reviewed__c: str | None = None
+    Days_Open__c: Annotated[float | None, OutputField(example_values=[3])] = None
+    Description: Annotated[
+        str | None, OutputField(example_values=["Case Description"])
+    ] = None
+    Discovery_Method__c: str | None = None
+    Discovery_Time_Hours__c: str | None = None
+    EngineeringReqNumber__c: Annotated[
+        str | None, OutputField(example_values=["765810"])
+    ] = None
+    Executive_Summary__c: str | None = None
     Id: str = OutputField(
         cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
     )
-    Impact_Summary__c: str
-    Impacted_Environment__c: str
-    Incident_Category__c: str
-    Incident_Date__c: str
-    Incident_Root_Cause__c: str
-    Incident_Sensitivity__c: str
-    Incident_Severity__c: str
-    Incident_Type__c: str
-    Investigation_Category__c: str
-    Investigation_Date__c: str
-    Investigation_Summary__c: str
-    Investigation_Type__c: str
-    IsClosed: bool
-    IsDeleted: bool
-    IsEscalated: bool
-    LastModifiedById: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    Impact_Summary__c: str | None = None
+    Impacted_Environment__c: str | None = None
+    Incident_Category__c: str | None = None
+    Incident_Date__c: str | None = None
+    Incident_Root_Cause__c: str | None = None
+    Incident_Sensitivity__c: str | None = None
+    Incident_Severity__c: str | None = None
+    Incident_Type__c: str | None = None
+    Investigation_Category__c: str | None = None
+    Investigation_Date__c: str | None = None
+    Investigation_Summary__c: str | None = None
+    Investigation_Type__c: str | None = None
+    IsClosed: bool | None = None
+    IsDeleted: bool | None = None
+    IsEscalated: bool | None = None
+    LastModifiedById: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+        ),
+    ] = None
+    LastModifiedDate: Annotated[
+        str | None, OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
+    ] = None
+    LastReferencedDate: Annotated[
+        str | None, OutputField(example_values=["2017-12-01T21:33:05.000+0000"])
+    ] = None
+    LastViewedDate: Annotated[
+        str | None, OutputField(example_values=["2017-12-01T21:33:05.000+0000"])
+    ] = None
+    Origin: str | None = None
+    OwnerId: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+        ),
+    ] = None
+    ParentId: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"], example_values=["0061I000000PRsCABC"]
+        ),
+    ] = None
+    PotentialLiability__c: Annotated[str | None, OutputField(example_values=["No"])] = (
+        None
     )
-    LastModifiedDate: str = OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
-    LastReferencedDate: str = OutputField(
-        example_values=["2017-12-01T21:33:05.000+0000"]
+    Priority: Annotated[str | None, OutputField(example_values=["High"])] = None
+    Product__c: Annotated[str | None, OutputField(example_values=["GC5555"])] = None
+    Reason: Annotated[str | None, OutputField(example_values=["Test Complexity"])] = (
+        None
     )
-    LastViewedDate: str = OutputField(example_values=["2017-12-01T21:33:05.000+0000"])
-    Origin: str
-    OwnerId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
-    )
-    ParentId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0061I000000PRsCABC"]
-    )
-    PotentialLiability__c: str = OutputField(example_values=["No"])
-    Priority: str = OutputField(example_values=["High"])
-    Product__c: str = OutputField(example_values=["GC5555"])
-    Reason: str = OutputField(example_values=["Test Complexity"])
-    RecordTypeId: str = OutputField(example_values=["0121I000000F7aZQAS"])
-    Resolution_Date__c: str
-    Resolution_Time_Hours__c: str
-    Response_Time_Hours__c: str
-    Response_Time_Minutes__c: float = OutputField(example_values=[4218])
-    SITrack_Response_Task__c: str
-    SITracker_Handoff_Notes__c: str
-    SITracker_Include_in_Handoff__c: bool
-    SLAViolation__c: str
-    Status: str = OutputField(example_values=["New"])
-    Subject: str = OutputField(example_values=["Case Subject"])
-    SuppliedCompany: str
-    SuppliedEmail: str
-    SuppliedName: str
-    SuppliedPhone: str
-    SystemModstamp: str = OutputField(example_values=["2017-12-02T11:18:29.000+0000"])
-    Type: str = OutputField(example_values=["Electrical"])
+    RecordTypeId: Annotated[
+        str | None, OutputField(example_values=["0121I000000F7aZQAS"])
+    ] = None
+    Resolution_Date__c: str | None = None
+    Resolution_Time_Hours__c: str | None = None
+    Response_Time_Hours__c: str | None = None
+    Response_Time_Minutes__c: Annotated[
+        float | None, OutputField(example_values=[4218])
+    ] = None
+    SITrack_Response_Task__c: str | None = None
+    SITracker_Handoff_Notes__c: str | None = None
+    SITracker_Include_in_Handoff__c: bool | None = None
+    SLAViolation__c: str | None = None
+    Status: Annotated[str | None, OutputField(example_values=["New"])] = None
+    Subject: Annotated[str | None, OutputField(example_values=["Case Subject"])] = None
+    SuppliedCompany: str | None = None
+    SuppliedEmail: str | None = None
+    SuppliedName: str | None = None
+    SuppliedPhone: str | None = None
+    SystemModstamp: Annotated[
+        str | None, OutputField(example_values=["2017-12-02T11:18:29.000+0000"])
+    ] = None
+    Type: Annotated[str | None, OutputField(example_values=["Electrical"])] = None
     attributes: AttributesOutput
 
 
 def get_ticket(
     params: GetTicketParams, soar: SOARClient, asset: Asset
 ) -> GetTicketOutput:
-    raise NotImplementedError()
+    record = get_object(
+        GetObjectParams(sobject="Case", id=params.id),
+        soar,
+        asset,
+    )
+    return GetTicketOutput.model_validate(record.model_dump())
