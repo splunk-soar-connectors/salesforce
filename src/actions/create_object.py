@@ -49,7 +49,9 @@ class CreateObjectOutput(PermissiveActionOutput):
 
 class CreateObjectSummary(ActionOutput):
     obj_id: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
+        cef_types=["salesforce object id"],
+        example_values=["5001I000002SfMMQA0"],
+        column_name="ID",
     )
 
 
