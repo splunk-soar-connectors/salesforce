@@ -68,32 +68,6 @@ def on_poll(
     raise NotImplementedError()
 
 
-class UpdateObjectParams(Params):
-    sobject: str = Param(
-        description="Name of object",
-        primary=True,
-        default="Case",
-        cef_types=["salesforce object name"],
-    )
-    id: str = Param(
-        description="Salesforce Object ID",
-        primary=True,
-        cef_types=["salesforce object id"],
-    )
-    field_values: str | None = Param(
-        description="JSON Object of Key-Value pairs to update"
-    )
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Update an object", action_type="generic", read_only=False
-)
-def update_object(
-    params: UpdateObjectParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
-    raise NotImplementedError()
-
-
 class UpdateTicketParams(Params):
     id: str = Param(
         description="Object ID of the Case",
