@@ -19,7 +19,7 @@ from .delete_object import delete_object
 from .delete_ticket import delete_ticket
 from .get_object import get_object
 from .run_query import RunQuerySummary, run_query
-from .update_object import update_object
+from .update_object import UpdateObjectSummary, update_object
 
 
 def register_actions(app: App) -> App:
@@ -85,6 +85,7 @@ def register_actions(app: App) -> App:
         description="Update an object",
         action_type="generic",
         read_only=False,
+        summary_type=UpdateObjectSummary,
     )
 
     return app
