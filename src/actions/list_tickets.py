@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
+from .list_objects import ListObjectsParams, list_objects
 
 
 class ListTicketsParams(Params):
@@ -98,7 +99,7 @@ class SystemmodstampOutput(ActionOutput):
     value: str = OutputField(example_values=["Sat Dec 02 11:18:29 GMT 2017"])
 
 
-class ListTicketsColumnsOutput(ActionOutput):
+class ListTicketsColumnsOutput(PermissiveActionOutput):
     CaseNumber: CasenumberOutput
     ContactId: ContactidOutput
     Contact_Id: ContactIdOutput
@@ -116,11 +117,23 @@ class ListTicketsColumnsOutput(ActionOutput):
     SystemModstamp: SystemmodstampOutput
 
 
-class ListTicketsOutput(ActionOutput):
+class ListTicketsOutput(PermissiveActionOutput):
     columns: ListTicketsColumnsOutput
 
 
 def list_tickets(
     params: ListTicketsParams, soar: SOARClient, asset: Asset
-) -> ListTicketsOutput:
-    raise NotImplementedError()
+) -> list[ListTicketsOutput]:
+    records = list_objects(
+        ListObjectsParams(
+            sobject="Case",
+            view_name=params.view_name,
+            limit=params.limit,
+            offset=params.offset,
+        ),
+        soar,
+        asset,
+    )
+    return [
+        ListTicketsOutput.model_validate(record.model_dump()) for record in records
+    ]

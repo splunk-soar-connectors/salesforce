@@ -113,6 +113,8 @@ def register_actions(app: App) -> App:
         description="Get a list of Cases",
         action_type="investigate",
         verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary.",
+        render_as="table",
+        summary_type=ListObjectsSummary,
     )
 
     return app
