@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import AbstractContextManager
 from enum import StrEnum
 from urllib.parse import urlparse
 
@@ -272,18 +271,16 @@ def _get_action_token_endpoint(asset: Asset) -> str:
     return get_token_endpoint(asset)
 
 
-@contextmanager
-def get_salesforce_client(asset: Asset) -> Iterator[httpx.Client]:
+def get_salesforce_client(asset: Asset) -> AbstractContextManager[httpx.Client]:
     """Return an SDK-authenticated client for Salesforce action requests."""
     token = get_access_token(asset)
     instance_origin = get_instance_origin(asset, token)
 
-    with create_oauth_client(
+    return create_oauth_client(
         asset,
         client_id=asset.client_id,
         client_secret=asset.client_secret,
         token_endpoint=_get_action_token_endpoint(asset),
         base_url=instance_origin,
         timeout=SALESFORCE_DEFAULT_TIMEOUT,
-    ) as client:
-        yield client
+    )
