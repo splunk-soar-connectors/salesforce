@@ -40,8 +40,10 @@ def test_on_poll_live(app: App, asset: Asset) -> None:
 
     asset.poll_sobject = "Case"
     asset.poll_view_name = "RecentlyViewedCases"
+    asset.first_ingestion_max = 1
     asset.last_view_date = False
     asset.cef_name_map = json.dumps({"Subject": "eventName"})
+    asset.ingest_state["cur_offset"] = 0
 
     try:
         get_object(
@@ -74,6 +76,17 @@ def test_on_poll_live(app: App, asset: Asset) -> None:
         assert "LastReferencedDate" not in artifact.cef
         assert artifact.cef_types is not None
         assert artifact.cef_types["Id"] == ["salesforce object id"]
+        assert asset.ingest_state["cur_offset"] == 0
+
+        scheduled_items = list(
+            unwrap(on_poll)(
+                app.soar_client,
+                asset,
+                OnPollParams(),
+            )
+        )
+        assert len(scheduled_items) == 2
+        assert asset.ingest_state["cur_offset"] == 1
     finally:
         delete_ticket(
             DeleteTicketParams(id=created.id),
