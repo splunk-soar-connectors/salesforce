@@ -14,7 +14,7 @@
 import httpx
 
 
-def _salesforce_error_detail(response: httpx.Response) -> str:
+def salesforce_error_detail(response: httpx.Response) -> str:
     try:
         response_data = response.json()
     except ValueError:

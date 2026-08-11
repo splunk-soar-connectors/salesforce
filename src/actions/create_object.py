@@ -23,7 +23,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_access_token, get_instance_origin
-from .utils import _salesforce_error_detail
+from .utils import salesforce_error_detail
 
 
 SALESFORCE_DEFAULT_TIMEOUT = 30.0
@@ -93,7 +93,7 @@ def create_object(
             response = client.post(endpoint, json=field_values)
             response.raise_for_status()
     except httpx.HTTPStatusError as error:
-        detail = _salesforce_error_detail(error.response)
+        detail = salesforce_error_detail(error.response)
         raise ActionFailure(
             f"Salesforce API error {error.response.status_code}: {detail}"
         ) from error
