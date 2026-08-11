@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from collections.abc import Callable
-from typing import cast
 from uuid import uuid4
 
 import pytest
-from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.exceptions import ActionFailure
 
 from src.actions.create_object import CreateObjectParams, create_object
+from src.actions.delete_object import DeleteObjectParams, delete_object
 from src.actions.get_object import GetObjectParams, get_object
-from src.app import DeleteObjectParams, delete_object
 from src.asset import Asset
 from src.auth import get_salesforce_client
 from src.test_connectivity import run_test_connectivity
@@ -41,13 +37,8 @@ def test_delete_object_live(app: App, asset: Asset) -> None:
         app.soar_client,
         asset,
     )
-    delete_object_handler = cast(
-        Callable[[DeleteObjectParams, SOARClient, Asset], ActionOutput],
-        delete_object.__wrapped__,  # type: ignore[attr-defined]
-    )
-
     try:
-        result = delete_object_handler(
+        result = delete_object(
             DeleteObjectParams(sobject="Account", id=created.id),
             app.soar_client,
             asset,
@@ -71,14 +62,14 @@ def test_delete_object_live(app: App, asset: Asset) -> None:
                 cleanup_response.raise_for_status()
 
     with pytest.raises(ActionFailure, match="Invalid value for 'sobject'"):
-        delete_object_handler(
+        delete_object(
             DeleteObjectParams(sobject="../Account", id=created.id),
             app.soar_client,
             asset,
         )
 
     with pytest.raises(ActionFailure, match="Invalid value for 'id'"):
-        delete_object_handler(
+        delete_object(
             DeleteObjectParams(sobject="Account", id="../record"),
             app.soar_client,
             asset,

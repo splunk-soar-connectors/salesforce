@@ -68,29 +68,6 @@ def on_poll(
     raise NotImplementedError()
 
 
-class DeleteObjectParams(Params):
-    sobject: str = Param(
-        description="Name of object",
-        primary=True,
-        default="Case",
-        cef_types=["salesforce object name"],
-    )
-    id: str = Param(
-        description="Salesforce Object ID",
-        primary=True,
-        cef_types=["salesforce object id"],
-    )
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Delete an object", action_type="generic", read_only=False
-)
-def delete_object(
-    params: DeleteObjectParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
-    raise NotImplementedError()
-
-
 class DeleteTicketParams(Params):
     id: str = Param(
         description="Object ID of the Case",
