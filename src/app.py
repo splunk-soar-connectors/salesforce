@@ -68,47 +68,6 @@ def on_poll(
     raise NotImplementedError()
 
 
-class ListObjectsParams(Params):
-    sobject: str = Param(
-        description="Name of object",
-        primary=True,
-        default="Case",
-        cef_types=["salesforce object name"],
-    )
-    view_name: str | None = Param(
-        description="Unique name of a list view",
-        primary=True,
-        cef_types=["salesforce listview name"],
-    )
-    limit: float | None = Param(description="Paging limit")
-    offset: float | None = Param(description="Paging offset")
-
-
-class ListObjectsIdOutput(ActionOutput):
-    value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0033t000035qrSYAAY"]
-    )
-
-
-class ListObjectsColumnsOutput(ActionOutput):
-    Id: ListObjectsIdOutput
-
-
-class ListObjectsOutput(ActionOutput):
-    columns: ListObjectsColumnsOutput
-
-
-@app.action(  # type: ignore[arg-type]
-    description="Get a list of objects",
-    action_type="investigate",
-    verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
-)
-def list_objects(
-    params: ListObjectsParams, soar: SOARClient, asset: Asset
-) -> ListObjectsOutput:
-    raise NotImplementedError()
-
-
 class ListTicketsParams(Params):
     view_name: str | None = Param(
         description="Unique name of a list view",

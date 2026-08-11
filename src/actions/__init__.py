@@ -18,6 +18,7 @@ from .create_ticket import create_ticket
 from .delete_object import delete_object
 from .delete_ticket import delete_ticket
 from .get_object import get_object
+from .list_objects import list_objects
 from .run_query import RunQuerySummary, run_query
 from .update_object import UpdateObjectSummary, update_object
 from .update_ticket import update_ticket
@@ -95,6 +96,13 @@ def register_actions(app: App) -> App:
         action_type="generic",
         read_only=False,
         summary_type=UpdateObjectSummary,
+    )
+
+    app.register_action(
+        action=list_objects,  # type: ignore[arg-type]
+        description="Get a list of objects",
+        action_type="investigate",
+        verbose="To get a list of objects, you must specify the name of a list view. By leaving the <b>view_name</b> blank, this action will instead return a list of valid names in the summary. Also, this action will only work if the specified object has a list view. If it does not, you could use the <b>run query</b> action instead.",
     )
 
     return app

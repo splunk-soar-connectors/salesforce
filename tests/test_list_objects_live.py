@@ -22,7 +22,7 @@ from soar_sdk.exceptions import ActionFailure
 from src.actions.create_object import CreateObjectParams, create_object
 from src.actions.delete_object import DeleteObjectParams, delete_object
 from src.actions.get_object import GetObjectParams, get_object
-from src.app import ListObjectsParams, list_objects
+from src.actions.list_objects import ListObjectsParams, list_objects
 from src.asset import Asset
 from src.test_connectivity import run_test_connectivity
 
