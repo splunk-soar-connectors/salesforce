@@ -16,6 +16,7 @@ from soar_sdk.app import App
 from .create_object import CreateObjectSummary, create_object
 from .create_ticket import create_ticket
 from .delete_object import delete_object
+from .delete_ticket import delete_ticket
 from .get_object import get_object
 from .run_query import RunQuerySummary, run_query
 
@@ -67,6 +68,13 @@ def register_actions(app: App) -> App:
     app.register_action(
         action=delete_object,  # type: ignore[arg-type]
         description="Delete an object",
+        action_type="generic",
+        read_only=False,
+    )
+
+    app.register_action(
+        action=delete_ticket,  # type: ignore[arg-type]
+        description="Delete a Case",
         action_type="generic",
         read_only=False,
     )
