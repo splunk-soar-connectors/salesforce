@@ -16,6 +16,7 @@ from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Param, Params
 
 from ..asset import Asset
+from .delete_object import DeleteObjectParams, delete_object
 
 
 class DeleteTicketParams(Params):
@@ -29,4 +30,8 @@ class DeleteTicketParams(Params):
 def delete_ticket(
     params: DeleteTicketParams, soar: SOARClient, asset: Asset
 ) -> ActionOutput:
-    raise NotImplementedError()
+    return delete_object(
+        DeleteObjectParams(sobject="Case", id=params.id),
+        soar,
+        asset,
+    )
