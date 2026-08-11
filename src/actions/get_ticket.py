@@ -44,6 +44,29 @@ class GetTicketOutput(ActionOutput):
     def serialize_provider_fields(self) -> dict[str, object]:
         return {field: getattr(self, field) for field in self.model_fields_set}
 
+    Subject: Annotated[
+        str | None,
+        OutputField(example_values=["Case Subject"], column_name="Subject"),
+    ] = None
+    Description: Annotated[
+        str | None,
+        OutputField(example_values=["Case Description"], column_name="Description"),
+    ] = None
+    LastModifiedDate: Annotated[
+        str | None,
+        OutputField(
+            example_values=["2017-12-01T21:32:33.000+0000"],
+            column_name="Last Modified",
+        ),
+    ] = None
+    CreatedById: Annotated[
+        str | None,
+        OutputField(
+            cef_types=["salesforce object id"],
+            example_values=["0051I000000PRsCQAW"],
+            column_name="Created By ID",
+        ),
+    ] = None
     AccountId: Annotated[
         str | None,
         OutputField(
@@ -77,21 +100,12 @@ class GetTicketOutput(ActionOutput):
     ContactPhone: Annotated[str | None, OutputField(example_values=["(1) 33 444"])] = (
         None
     )
-    CreatedById: Annotated[
-        str | None,
-        OutputField(
-            cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
-        ),
-    ] = None
     CreatedDate: Annotated[
         str | None, OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
     ] = None
     Customer_Impacting__c: str | None = None
     Date_Reviewed__c: str | None = None
     Days_Open__c: Annotated[float | None, OutputField(example_values=[3])] = None
-    Description: Annotated[
-        str | None, OutputField(example_values=["Case Description"])
-    ] = None
     Discovery_Method__c: str | None = None
     Discovery_Time_Hours__c: str | None = None
     EngineeringReqNumber__c: Annotated[
@@ -121,9 +135,6 @@ class GetTicketOutput(ActionOutput):
         OutputField(
             cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
         ),
-    ] = None
-    LastModifiedDate: Annotated[
-        str | None, OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
     ] = None
     LastReferencedDate: Annotated[
         str | None, OutputField(example_values=["2017-12-01T21:33:05.000+0000"])
@@ -166,7 +177,6 @@ class GetTicketOutput(ActionOutput):
     SITracker_Include_in_Handoff__c: bool | None = None
     SLAViolation__c: str | None = None
     Status: Annotated[str | None, OutputField(example_values=["New"])] = None
-    Subject: Annotated[str | None, OutputField(example_values=["Case Subject"])] = None
     SuppliedCompany: str | None = None
     SuppliedEmail: str | None = None
     SuppliedName: str | None = None

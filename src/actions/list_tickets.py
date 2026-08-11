@@ -55,7 +55,9 @@ class CreateddateOutput(ActionOutput):
 
 class ListTicketsIdOutput(ActionOutput):
     value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["5001I000002Sd2hQAC"]
+        cef_types=["salesforce object id"],
+        example_values=["5001I000002Sd2hQAC"],
+        column_name="ID",
     )
 
 
@@ -80,7 +82,7 @@ class OwnerNameoraliasOutput(ActionOutput):
 
 
 class PriorityOutput(ActionOutput):
-    value: str = OutputField(example_values=["Medium"])
+    value: str = OutputField(example_values=["Medium"], column_name="Priority")
 
 
 class RecordtypeidOutput(ActionOutput):
@@ -88,11 +90,11 @@ class RecordtypeidOutput(ActionOutput):
 
 
 class StatusOutput(ActionOutput):
-    value: str = OutputField(example_values=["In-Progress"])
+    value: str = OutputField(example_values=["In-Progress"], column_name="Status")
 
 
 class SubjectOutput(ActionOutput):
-    value: str = OutputField(example_values=["Panic"])
+    value: str = OutputField(example_values=["Panic"], column_name="Subject")
 
 
 class SystemmodstampOutput(ActionOutput):
@@ -100,20 +102,20 @@ class SystemmodstampOutput(ActionOutput):
 
 
 class ListTicketsColumnsOutput(PermissiveActionOutput):
+    Id: ListTicketsIdOutput
+    Subject: SubjectOutput
+    Status: StatusOutput
+    Priority: PriorityOutput
     CaseNumber: CasenumberOutput
     ContactId: ContactidOutput
     Contact_Id: ContactIdOutput
     Contact_Name: ContactNameOutput
     CreatedDate: CreateddateOutput
-    Id: ListTicketsIdOutput
     LastModifiedDate: LastmodifieddateOutput
     OwnerId: OwneridOutput
     Owner_Id: OwnerIdOutput
     Owner_NameOrAlias: OwnerNameoraliasOutput
-    Priority: PriorityOutput
     RecordTypeId: RecordtypeidOutput
-    Status: StatusOutput
-    Subject: SubjectOutput
     SystemModstamp: SystemmodstampOutput
 
 

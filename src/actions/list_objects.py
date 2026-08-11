@@ -53,7 +53,9 @@ class ListObjectsParams(Params):
 
 class ListObjectsIdOutput(ActionOutput):
     value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0033t000035qrSYAAY"]
+        cef_types=["salesforce object id"],
+        example_values=["0033t000035qrSYAAY"],
+        column_name="OBJECT ID",
     )
 
 
