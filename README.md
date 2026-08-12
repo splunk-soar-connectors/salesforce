@@ -466,8 +466,8 @@ To run a query that includes a wildcard character, use <code>%25</code> instead 
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**query** | required | SOQL Query | string | |
 **endpoint** | required | Which Query endpoint to use | string | |
+**query** | required | SOQL Query | string | |
 
 #### Action Output
 
@@ -475,8 +475,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.query | string | | |
 action_result.parameter.endpoint | string | | |
+action_result.parameter.query | string | | |
 action_result.data.\*.attributes.type | string | | |
 action_result.data.\*.attributes.url | string | | |
 action_result.summary.num_objects | numeric | | 20 |

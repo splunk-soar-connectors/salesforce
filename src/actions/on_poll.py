@@ -288,7 +288,7 @@ def _record_to_items(
 
 
 def on_poll(
-    soar: SOARClient, asset: Asset, params: OnPollParams
+    params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Container | Artifact]:
     del soar
     sobject = asset.poll_sobject or "Case"

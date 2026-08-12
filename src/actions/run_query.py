@@ -30,13 +30,13 @@ INVALID_RESPONSE_ERROR = "Salesforce returned an unexpected query response"
 
 
 class RunQueryParams(Params):
-    query: str = Param(description="SOQL Query", column_name="QUERY")
     endpoint: str = Param(
         description="Which Query endpoint to use",
         default="query",
         value_list=["query", "queryAll"],
         column_name="ENDPOINT",
     )
+    query: str = Param(description="SOQL Query", column_name="QUERY")
 
 
 class RunQueryRecordAttributes(ActionOutput):
