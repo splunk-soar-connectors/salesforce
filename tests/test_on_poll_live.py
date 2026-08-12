@@ -54,9 +54,9 @@ def test_on_poll_live(app: App, asset: Asset) -> None:
 
         items = list(
             unwrap(on_poll)(
+                OnPollParams(container_count=1),
                 app.soar_client,
                 asset,
-                OnPollParams(container_count=1),
             )
         )
 
@@ -80,9 +80,9 @@ def test_on_poll_live(app: App, asset: Asset) -> None:
 
         scheduled_items = list(
             unwrap(on_poll)(
+                OnPollParams(),
                 app.soar_client,
                 asset,
-                OnPollParams(),
             )
         )
         assert len(scheduled_items) == 2

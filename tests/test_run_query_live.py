@@ -28,6 +28,7 @@ from src.test_connectivity import run_test_connectivity
 @pytest.mark.live
 def test_run_query_live(app: App, asset: Asset) -> None:
     run_test_connectivity(asset)
+    assert list(RunQueryParams.model_fields) == ["endpoint", "query"]
 
     records = run_query(
         RunQueryParams(query="SELECT Id FROM User LIMIT 1", endpoint="queryAll"),
