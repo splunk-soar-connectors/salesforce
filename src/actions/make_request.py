@@ -37,6 +37,11 @@ class SalesforceMakeRequestParams(MakeRequestParams):
         ),
         required=True,
     )
+    verify_ssl: bool = Param(
+        description="Whether to verify the SSL certificate. Default is True.",
+        required=False,
+        default=True,
+    )
 
 
 def make_request(
@@ -102,12 +107,11 @@ def make_request(
             content = params.body
 
     timeout = float(params.timeout or SALESFORCE_DEFAULT_TIMEOUT)
-    verify_ssl = bool(params.verify_ssl)
     try:
         with get_salesforce_client(
             asset,
             timeout=timeout,
-            verify=verify_ssl,
+            verify=params.verify_ssl,
         ) as client:
             response = client.request(
                 params.http_method,
