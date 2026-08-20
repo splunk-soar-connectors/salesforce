@@ -17,7 +17,7 @@ from soar_sdk.auth import AuthorizationCodeFlow, OAuthToken, StaticTokenAuth
 
 from .asset import Asset
 from .auth import get_auth_flow, get_instance_origin, store_token
-from .state import migrate_legacy_poll_state
+from .state import migrate_legacy_state
 from .webhooks.oauth import AUTHORIZATION_ERROR_STATE_KEY
 
 
@@ -97,6 +97,7 @@ def run_test_connectivity(
     *,
     oauth_callback_url: str | None = None,
 ) -> None:
+    migrate_legacy_state(asset)
     logging.info("Testing connectivity. Connecting...")
     logging.info("Generating access token")
     flow = get_auth_flow(asset, redirect_uri=oauth_callback_url)
@@ -106,5 +107,4 @@ def run_test_connectivity(
         token = flow.authenticate()
 
     verify_salesforce_access(asset, token)
-    migrate_legacy_poll_state(asset)
     logging.info("Test Connectivity Passed")

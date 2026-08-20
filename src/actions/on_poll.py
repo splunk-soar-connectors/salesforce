@@ -26,7 +26,11 @@ from soar_sdk.params import OnPollParams
 
 from ..asset import Asset
 from ..auth import get_salesforce_client
-from ..state import CONTAINER_SDI_SALT_STATE_KEY, POLL_OFFSET_STATE_KEY
+from ..state import (
+    CONTAINER_SDI_SALT_STATE_KEY,
+    POLL_OFFSET_STATE_KEY,
+    migrate_legacy_state,
+)
 from .utils import request_salesforce_json
 
 
@@ -291,6 +295,7 @@ def on_poll(
     params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Container | Artifact]:
     del soar
+    migrate_legacy_state(asset)
     sobject = asset.poll_sobject or "Case"
     view_name = asset.poll_view_name
     if not view_name:

@@ -20,6 +20,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_salesforce_client
+from ..state import migrate_legacy_state
 from .utils import request_salesforce_json
 
 
@@ -55,6 +56,7 @@ class RunQuerySummary(ActionOutput):
 def run_query(
     params: RunQueryParams, soar: SOARClient, asset: Asset
 ) -> list[RunQueryOutput]:
+    migrate_legacy_state(asset)
     latest_version = asset.cache_state.get("latest_version")
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
