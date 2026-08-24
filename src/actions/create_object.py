@@ -21,7 +21,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_salesforce_client
-from ..state import migrate_legacy_state
+from ..state import get_latest_api_version
 from .utils import request_salesforce_json
 
 
@@ -72,8 +72,7 @@ def create_object(
             "Invalid value for 'sobject' parameter: must be a single Salesforce path segment"
         )
 
-    migrate_legacy_state(asset)
-    latest_version = asset.cache_state.get("latest_version")
+    latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
     ):

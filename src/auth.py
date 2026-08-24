@@ -27,7 +27,7 @@ from soar_sdk.auth.client import SOARAssetOAuthClient
 from soar_sdk.auth.models import OAuthState
 
 from .asset import Asset
-from .state import migrate_legacy_state
+from .state import migrate_legacy_oauth_state
 
 
 SALESFORCE_LOGIN_ORIGIN = "https://login.salesforce.com"
@@ -261,8 +261,9 @@ def get_auth_flow(
 
 def get_access_token(asset: Asset) -> OAuthToken:
     """Return a token appropriate for the asset's configured authentication mode."""
-    migrate_legacy_state(asset)
-    if get_auth_mode(asset) is AuthMode.AUTHORIZATION_CODE:
+    auth_mode = get_auth_mode(asset)
+    if auth_mode is AuthMode.AUTHORIZATION_CODE:
+        migrate_legacy_oauth_state(asset)
         return get_oauth_client(asset).get_valid_token(auto_refresh=True)
     return get_auth_flow(asset).authenticate()
 

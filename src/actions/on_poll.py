@@ -29,7 +29,8 @@ from ..auth import get_salesforce_client
 from ..state import (
     CONTAINER_SDI_SALT_STATE_KEY,
     POLL_OFFSET_STATE_KEY,
-    migrate_legacy_state,
+    get_latest_api_version,
+    migrate_legacy_ingest_state,
 )
 from .utils import request_salesforce_json
 
@@ -295,13 +296,13 @@ def on_poll(
     params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Container | Artifact]:
     del soar
-    migrate_legacy_state(asset)
+    migrate_legacy_ingest_state(asset)
     sobject = asset.poll_sobject or "Case"
     view_name = asset.poll_view_name
     if not view_name:
         raise ActionFailure("Error: Must specify poll_view_name")
 
-    latest_version = asset.cache_state.get("latest_version")
+    latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
     ):

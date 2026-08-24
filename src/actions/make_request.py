@@ -21,7 +21,7 @@ from soar_sdk.params import MakeRequestParams, Param
 
 from ..asset import Asset
 from ..auth import SALESFORCE_DEFAULT_TIMEOUT, get_salesforce_client
-from ..state import migrate_legacy_state
+from ..state import get_latest_api_version
 
 
 MISSING_API_VERSION_ERROR = (
@@ -48,8 +48,7 @@ class SalesforceMakeRequestParams(MakeRequestParams):
 def make_request(
     params: SalesforceMakeRequestParams, soar: SOARClient, asset: Asset
 ) -> MakeRequestOutput:
-    migrate_legacy_state(asset)
-    latest_version = asset.cache_state.get("latest_version")
+    latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
     ):
