@@ -17,7 +17,11 @@ from soar_sdk.auth.models import OAuthState
 from soar_sdk.crypto import encrypt
 
 from src.asset import Asset
-from src.state import migrate_legacy_state
+from src.state import (
+    get_latest_api_version,
+    migrate_legacy_ingest_state,
+    migrate_legacy_oauth_state,
+)
 from src.test_connectivity import API_VERSIONS_PATH, run_test_connectivity
 
 
@@ -31,7 +35,7 @@ def test_client_credentials_test_connectivity_live(asset: Asset) -> None:
 
 
 @pytest.mark.live
-def test_migrate_legacy_state_live(asset: Asset) -> None:
+def test_migrate_legacy_state_lazily_live(asset: Asset) -> None:
     backend = asset.ingest_state.backend
     original_state = backend.load_state() or {}
     legacy_refresh_token = "legacy-salesforce-refresh-token"
@@ -52,7 +56,7 @@ def test_migrate_legacy_state_live(asset: Asset) -> None:
         legacy_state["container_source_data_identifier_salt"] = legacy_salt
         backend.save_state(legacy_state)
 
-        migrate_legacy_state(asset)
+        migrate_legacy_oauth_state(asset)
 
         oauth_state = OAuthState.model_validate(asset.auth_state["oauth"])
         assert oauth_state.client_id == asset.client_id
@@ -60,7 +64,14 @@ def test_migrate_legacy_state_live(asset: Asset) -> None:
         assert oauth_state.token.access_token == ""
         assert oauth_state.token.refresh_token == legacy_refresh_token
         assert oauth_state.token.expires_at == 0
+        assert asset.cache_state.get_all() == {}
+        assert asset.ingest_state.get_all() == {}
+
+        assert get_latest_api_version(asset) == legacy_latest_version
         assert asset.cache_state["latest_version"] == legacy_latest_version
+        assert asset.ingest_state.get_all() == {}
+
+        migrate_legacy_ingest_state(asset)
         assert asset.ingest_state["cur_offset"] == legacy_offset
         assert (
             asset.ingest_state["container_source_data_identifier_salt"] == legacy_salt
@@ -72,10 +83,12 @@ def test_migrate_legacy_state_live(asset: Asset) -> None:
             "cur_offset",
             "container_source_data_identifier_salt",
         ):
-            assert key not in migrated_state
+            assert key in migrated_state
 
         state_after_migration = dict(migrated_state)
-        migrate_legacy_state(asset)
+        migrate_legacy_oauth_state(asset)
+        assert get_latest_api_version(asset) == legacy_latest_version
+        migrate_legacy_ingest_state(asset)
         assert backend.load_state() == state_after_migration
 
         sdk_token = OAuthToken(
@@ -104,21 +117,23 @@ def test_migrate_legacy_state_live(asset: Asset) -> None:
         stale_legacy_state["container_source_data_identifier_salt"] = "stale-salt"
         backend.save_state(stale_legacy_state)
 
-        migrate_legacy_state(asset)
+        migrate_legacy_oauth_state(asset)
+        assert get_latest_api_version(asset) == "/services/data/v66.0"
+        migrate_legacy_ingest_state(asset)
 
         current_oauth_state = OAuthState.model_validate(asset.auth_state["oauth"])
         assert current_oauth_state == sdk_oauth_state
         assert asset.cache_state["latest_version"] == "/services/data/v66.0"
         assert asset.ingest_state["cur_offset"] == 211
         assert asset.ingest_state["container_source_data_identifier_salt"] == "sdk-salt"
-        cleaned_state = backend.load_state() or {}
+        retained_legacy_state = backend.load_state() or {}
         for key in (
             "refresh_token",
             "latest_version",
             "cur_offset",
             "container_source_data_identifier_salt",
         ):
-            assert key not in cleaned_state
+            assert key in retained_legacy_state
     finally:
         backend.save_state(original_state)
 
@@ -138,7 +153,7 @@ def test_migrate_legacy_ingest_state_survives_transaction_rollback_live(
         backend.save_state(legacy_state)
 
         asset.ingest_state.begin_transaction()
-        migrate_legacy_state(asset)
+        migrate_legacy_ingest_state(asset)
         asset.ingest_state.rollback()
 
         assert asset.ingest_state["cur_offset"] == 137
@@ -146,8 +161,8 @@ def test_migrate_legacy_ingest_state_survives_transaction_rollback_live(
             asset.ingest_state["container_source_data_identifier_salt"] == "legacy-salt"
         )
         migrated_state = backend.load_state() or {}
-        assert "cur_offset" not in migrated_state
-        assert "container_source_data_identifier_salt" not in migrated_state
+        assert migrated_state["cur_offset"] == 137
+        assert migrated_state["container_source_data_identifier_salt"] == "legacy-salt"
     finally:
         if asset.ingest_state.in_transaction:
             asset.ingest_state.rollback()
