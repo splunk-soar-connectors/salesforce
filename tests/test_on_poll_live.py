@@ -26,6 +26,7 @@ from src.actions.delete_ticket import DeleteTicketParams, delete_ticket
 from src.actions.get_object import GetObjectParams, get_object
 from src.actions.on_poll import on_poll
 from src.asset import Asset
+from src.state import POLL_OFFSET_STATE_KEY, persist_poll_offset
 from src.test_connectivity import run_test_connectivity
 
 
@@ -93,3 +94,22 @@ def test_on_poll_live(app: App, asset: Asset) -> None:
             app.soar_client,
             asset,
         )
+
+
+@pytest.mark.live
+def test_failed_record_offset_survives_poll_rollback_live(asset: Asset) -> None:
+    backend = asset.ingest_state.backend
+    original_state = backend.load_state() or {}
+
+    try:
+        asset.ingest_state.put_all({POLL_OFFSET_STATE_KEY: 100})
+        asset.ingest_state.begin_transaction()
+
+        persist_poll_offset(asset, 107)
+        asset.ingest_state.rollback()
+
+        assert asset.ingest_state[POLL_OFFSET_STATE_KEY] == 107
+    finally:
+        if asset.ingest_state.in_transaction:
+            asset.ingest_state.rollback()
+        backend.save_state(original_state)
