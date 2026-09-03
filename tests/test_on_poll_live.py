@@ -17,6 +17,7 @@ from uuid import uuid4
 
 import pytest
 from soar_sdk.app import App
+from soar_sdk.exceptions import ActionFailure
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.models.container import Container
 from soar_sdk.params import OnPollParams
@@ -112,4 +113,29 @@ def test_failed_record_offset_survives_poll_rollback_live(asset: Asset) -> None:
     finally:
         if asset.ingest_state.in_transaction:
             asset.ingest_state.rollback()
+        backend.save_state(original_state)
+
+
+@pytest.mark.live
+def test_poll_offset_limit_includes_recovery_guidance_live(
+    app: App, asset: Asset
+) -> None:
+    backend = asset.ingest_state.backend
+    original_state = backend.load_state() or {}
+    offset = 10_000_000
+
+    try:
+        run_test_connectivity(asset)
+        asset.poll_sobject = "Case"
+        asset.poll_view_name = "RecentlyViewedCases"
+        asset.ingest_state[POLL_OFFSET_STATE_KEY] = offset
+
+        with pytest.raises(ActionFailure) as exc_info:
+            list(unwrap(on_poll)(OnPollParams(), app.soar_client, asset))
+
+        assert exc_info.value.message == (
+            f"Polling offset {offset} exceeds the Salesforce limit; "
+            "reset the asset polling state to resume ingestion"
+        )
+    finally:
         backend.save_state(original_state)
