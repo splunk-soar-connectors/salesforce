@@ -25,7 +25,7 @@ from soar_sdk.params import OnPollParams
 from src.actions.create_ticket import CreateTicketParams, create_ticket
 from src.actions.delete_ticket import DeleteTicketParams, delete_ticket
 from src.actions.get_object import GetObjectParams, get_object
-from src.actions.on_poll import on_poll
+from src.actions.on_poll import _batch_get_records, on_poll
 from src.asset import Asset
 from src.state import POLL_OFFSET_STATE_KEY, persist_poll_offset
 from src.test_connectivity import run_test_connectivity
@@ -139,3 +139,24 @@ def test_poll_offset_limit_includes_recovery_guidance_live(
         )
     finally:
         backend.save_state(original_state)
+
+
+@pytest.mark.live
+def test_empty_poll_skips_batch_authentication_live(asset: Asset) -> None:
+    original_use_client_credentials = asset.use_client_credentials
+    original_domain_url = asset.domain_url
+
+    try:
+        asset.use_client_credentials = True
+        asset.domain_url = None
+
+        assert _batch_get_records(
+            asset,
+            "/services/data/v65.0/composite/batch/",
+            latest_version="/services/data/v65.0",
+            sobject="Case",
+            indexed_ids=[],
+        ) == ([], [])
+    finally:
+        asset.use_client_credentials = original_use_client_credentials
+        asset.domain_url = original_domain_url
