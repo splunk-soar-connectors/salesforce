@@ -82,3 +82,21 @@ def test_update_object_live(app: App, asset: Asset) -> None:
             app.soar_client,
             asset,
         )
+
+
+@pytest.mark.live
+def test_update_object_rejects_omitted_optional_field_values_live(
+    app: App, asset: Asset
+) -> None:
+    assert UpdateObjectParams._to_json_schema()["field_values"]["required"] is False
+
+    with pytest.raises(ActionFailure) as exc_info:
+        unwrap(update_object)(
+            UpdateObjectParams(sobject="Account", id="unused"),
+            app.soar_client,
+            asset,
+        )
+
+    assert exc_info.value.message == (
+        "Error reading 'field_values': expected a JSON object"
+    )
