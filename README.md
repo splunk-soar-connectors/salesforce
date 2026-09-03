@@ -337,7 +337,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 **poll_sobject** | optional | string | Poll for this Salesforce Object |
 **poll_view_name** | optional | string | Poll this List View |
 **first_ingestion_max** | optional | numeric | Get this many results on first ingestion |
-**cef_name_map** | optional | string | Mapping of Salesforce to CEF fields (JSON file) |
+**cef_name_map** | optional | file | Mapping of Salesforce to CEF fields (JSON file) |
 **last_view_date** | optional | boolean | Include view date in artifact |
 
 ### Supported Actions

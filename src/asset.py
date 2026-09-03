@@ -53,6 +53,7 @@ class Asset(BaseAsset):
     )
     cef_name_map: str | None = AssetField(
         description="Mapping of Salesforce to CEF fields (JSON file)",
+        is_file=True,
         category=FieldCategory.INGEST,
     )
     last_view_date: bool | None = AssetField(
