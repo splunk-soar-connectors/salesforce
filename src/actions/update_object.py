@@ -72,8 +72,13 @@ class UpdateObjectSummary(ActionOutput):
 def update_object(
     params: UpdateObjectParams, soar: SOARClient, asset: Asset
 ) -> ActionOutput:
+    # The legacy manifest exposed this parameter as optional, but the action
+    # rejected omitted values when parsing the JSON payload.
+    if params.field_values is None:
+        raise ActionFailure("Error reading 'field_values': expected a JSON object")
+
     try:
-        field_values = json.loads(params.field_values)  # type: ignore[arg-type]
+        field_values = json.loads(params.field_values)
     except (TypeError, ValueError) as error:
         raise ActionFailure(f"Error reading 'field_values': {error}") from error
 
