@@ -25,7 +25,11 @@ from soar_sdk.params import OnPollParams
 from src.actions.create_ticket import CreateTicketParams, create_ticket
 from src.actions.delete_ticket import DeleteTicketParams, delete_ticket
 from src.actions.get_object import GetObjectParams, get_object
-from src.actions.on_poll import _batch_get_records, on_poll
+from src.actions.on_poll import (
+    _batch_get_records,
+    _get_first_ingestion_limit,
+    on_poll,
+)
 from src.asset import Asset
 from src.state import POLL_OFFSET_STATE_KEY, persist_poll_offset
 from src.test_connectivity import run_test_connectivity
@@ -160,3 +164,17 @@ def test_empty_poll_skips_batch_authentication_live(asset: Asset) -> None:
     finally:
         asset.use_client_credentials = original_use_client_credentials
         asset.domain_url = original_domain_url
+
+
+@pytest.mark.live
+def test_explicit_null_first_ingestion_max_is_unlimited_live(asset: Asset) -> None:
+    original_first_ingestion_max = asset.first_ingestion_max
+
+    try:
+        asset.first_ingestion_max = None
+        assert _get_first_ingestion_limit(asset) is None
+
+        asset.first_ingestion_max = 10
+        assert _get_first_ingestion_limit(asset) == 10
+    finally:
+        asset.first_ingestion_max = original_first_ingestion_max
