@@ -48,6 +48,10 @@ INVALID_BATCH_RESPONSE_ERROR = (
 MAX_OBJECTS_PER_PAGE = 2000
 MAX_PAGES_PER_POLL = 100
 BATCH_SIZE = 25
+OFFSET_LIMIT_ERROR_MARKERS = (
+    "Maximum SOQL offset allowed is",
+    "pageToken parameter must be between",
+)
 
 SEVERITY_MAP = {
     "severity 1 (high impact)": "high",
@@ -154,9 +158,17 @@ def _poll_list_view(
                     invalid_response_error=INVALID_LIST_RESPONSE_ERROR,
                 )
             except ActionFailure as error:
-                if "Maximum SOQL offset allowed is" in str(error) and records:
-                    return offset, records
-                if "The requested resource does not exist" in str(error):
+                error_message = str(error)
+                if any(
+                    marker in error_message for marker in OFFSET_LIMIT_ERROR_MARKERS
+                ):
+                    if records:
+                        return offset, records
+                    raise ActionFailure(
+                        f"Polling offset {offset} exceeds the Salesforce limit; "
+                        "reset the asset polling state to resume ingestion"
+                    ) from error
+                if "The requested resource does not exist" in error_message:
                     raise ActionFailure(
                         "No listview with that specified name was found"
                     ) from error
