@@ -84,6 +84,12 @@ def _validate_integer(value: float | int, key: str, *, allow_zero: bool = False)
     return integer
 
 
+def _get_first_ingestion_limit(asset: Asset) -> int | None:
+    if asset.first_ingestion_max is None:
+        return None
+    return _validate_integer(asset.first_ingestion_max, "first_ingestion_max")
+
+
 def _strip_format_controls(value: object) -> object:
     if not isinstance(value, str):
         return value
@@ -341,12 +347,7 @@ def on_poll(
         )
         max_records = None
         if offset == 0:
-            max_records = _validate_integer(
-                asset.first_ingestion_max
-                if asset.first_ingestion_max is not None
-                else 10,
-                "first_ingestion_max",
-            )
+            max_records = _get_first_ingestion_limit(asset)
 
     list_endpoint = (
         f"{latest_version.rstrip('/')}/ui-api/list-records/"
