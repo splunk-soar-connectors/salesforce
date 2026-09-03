@@ -197,6 +197,9 @@ def _batch_get_records(
     sobject: str,
     indexed_ids: list[tuple[int, str]],
 ) -> tuple[list[tuple[int, dict[str, object]]], list[int]]:
+    if not indexed_ids:
+        return [], []
+
     records: list[tuple[int, dict[str, object]]] = []
     failed_indices: list[int] = []
 
