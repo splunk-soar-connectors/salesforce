@@ -29,7 +29,7 @@ CONTAINER_SDI_SALT_STATE_KEY = "container_source_data_identifier_salt"
 
 
 def _put_state_durably(state: AssetState, value: dict[str, object]) -> None:
-    """Persist migration values even during an SDK-managed state transaction."""
+    """Persist values even during an SDK-managed state transaction."""
     if not state.in_transaction:
         state.put_all(value)
         return
@@ -43,6 +43,13 @@ def _put_state_durably(state: AssetState, value: dict[str, object]) -> None:
     )
     durable_state.put_all(value)
     state.put_all(value)
+
+
+def persist_poll_offset(asset: Asset, offset: int) -> None:
+    """Persist a retry offset even when the current poll transaction rolls back."""
+    ingest_state = asset.ingest_state.get_all()
+    ingest_state[POLL_OFFSET_STATE_KEY] = offset
+    _put_state_durably(asset.ingest_state, ingest_state)
 
 
 def _load_legacy_state(asset: Asset) -> dict[str, object]:

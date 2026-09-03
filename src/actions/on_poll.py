@@ -31,6 +31,7 @@ from ..state import (
     POLL_OFFSET_STATE_KEY,
     get_latest_api_version,
     migrate_legacy_ingest_state,
+    persist_poll_offset,
 )
 from .utils import request_salesforce_json
 
@@ -375,7 +376,7 @@ def on_poll(
 
     if not is_manual:
         if failed_indices:
-            asset.ingest_state[POLL_OFFSET_STATE_KEY] = offset + min(failed_indices)
+            persist_poll_offset(asset, offset + min(failed_indices))
         else:
             asset.ingest_state[POLL_OFFSET_STATE_KEY] = new_offset
 
