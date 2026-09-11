@@ -21,10 +21,12 @@ from soar_sdk.auth import (
     ClientCredentialsFlow,
     OAuthConfig,
     OAuthToken,
+    StaticTokenAuth,
     create_oauth_client,
 )
 from soar_sdk.auth.client import SOARAssetOAuthClient
 from soar_sdk.auth.models import OAuthState
+from soar_sdk.asset_state import AssetState
 
 from .asset import Asset
 from .state import migrate_legacy_oauth_state
@@ -209,9 +211,19 @@ def get_auth_code_flow(
     )
 
 
+def _get_non_browser_auth_state(asset: Asset, auth_mode: AuthMode) -> AssetState:
+    return AssetState(
+        asset.auth_state.backend,
+        f"auth_{auth_mode.value}",
+        asset.auth_state.asset_id,
+        app_id=asset.auth_state.app_id,
+        encrypted=asset.auth_state.encrypted,
+    )
+
+
 def get_client_credentials_flow(asset: Asset) -> ClientCredentialsFlow:
     return ClientCredentialsFlow(
-        asset.auth_state,
+        _get_non_browser_auth_state(asset, AuthMode.CLIENT_CREDENTIALS),
         client_id=asset.client_id,
         client_secret=asset.client_secret,
         token_endpoint=get_client_credentials_token_endpoint(asset),
@@ -228,7 +240,7 @@ def get_username_password_flow(asset: Asset) -> ClientCredentialsFlow:
         raise ValueError(MISSING_PASSWORD_ERROR)
 
     return ClientCredentialsFlow(
-        asset.auth_state,
+        _get_non_browser_auth_state(asset, AuthMode.USERNAME_PASSWORD),
         client_id=asset.client_id,
         client_secret=asset.client_secret,
         token_endpoint=get_token_endpoint(asset),
@@ -268,12 +280,6 @@ def get_access_token(asset: Asset) -> OAuthToken:
     return get_auth_flow(asset).authenticate()
 
 
-def _get_action_token_endpoint(asset: Asset) -> str:
-    if get_auth_mode(asset) is AuthMode.CLIENT_CREDENTIALS:
-        return get_client_credentials_token_endpoint(asset)
-    return get_token_endpoint(asset)
-
-
 def get_salesforce_client(
     asset: Asset,
     *,
@@ -281,14 +287,23 @@ def get_salesforce_client(
     verify: bool = True,
 ) -> AbstractContextManager[httpx.Client]:
     """Return an SDK-authenticated client for Salesforce action requests."""
+    auth_mode = get_auth_mode(asset)
     token = get_access_token(asset)
     instance_origin = get_instance_origin(asset, token)
+
+    if auth_mode is not AuthMode.AUTHORIZATION_CODE:
+        return httpx.Client(
+            auth=StaticTokenAuth(token),
+            base_url=instance_origin,
+            timeout=timeout,
+            verify=verify,
+        )
 
     return create_oauth_client(
         asset,
         client_id=asset.client_id,
         client_secret=asset.client_secret,
-        token_endpoint=_get_action_token_endpoint(asset),
+        token_endpoint=get_token_endpoint(asset),
         base_url=instance_origin,
         timeout=timeout,
         verify=verify,
