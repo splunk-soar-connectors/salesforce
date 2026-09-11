@@ -17,6 +17,7 @@ from soar_sdk.auth.models import OAuthState
 from soar_sdk.crypto import encrypt
 
 from src.asset import Asset
+from src.auth import get_salesforce_client
 from src.state import (
     get_latest_api_version,
     migrate_legacy_ingest_state,
@@ -47,6 +48,31 @@ def test_client_credentials_test_connectivity_live(asset: Asset) -> None:
     latest_version = asset.cache_state["latest_version"]
     assert isinstance(latest_version, str)
     assert latest_version.startswith(API_VERSIONS_PATH)
+
+
+@pytest.mark.live
+def test_client_credentials_preserves_browser_oauth_state_live(asset: Asset) -> None:
+    backend = asset.auth_state.backend
+    original_state = backend.load_state() or {}
+    browser_oauth_state = OAuthState(
+        token=OAuthToken(
+            access_token="browser-access-token",
+            refresh_token="browser-refresh-token",
+            expires_at=4_102_444_800,
+        ),
+        client_id=asset.client_id,
+    ).model_dump(mode="json", exclude_none=True)
+
+    try:
+        asset.auth_state.put_all({"oauth": browser_oauth_state})
+
+        with get_salesforce_client(asset) as client:
+            response = client.get(API_VERSIONS_PATH)
+            response.raise_for_status()
+
+        assert asset.auth_state.get_all() == {"oauth": browser_oauth_state}
+    finally:
+        backend.save_state(original_state)
 
 
 @pytest.mark.live
