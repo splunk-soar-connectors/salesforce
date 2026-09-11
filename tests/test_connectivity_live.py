@@ -22,7 +22,22 @@ from src.state import (
     migrate_legacy_ingest_state,
     migrate_legacy_oauth_state,
 )
-from src.test_connectivity import API_VERSIONS_PATH, run_test_connectivity
+from src.test_connectivity import (
+    API_VERSIONS_PATH,
+    require_browser_refresh_token,
+    run_test_connectivity,
+)
+
+
+@pytest.mark.live
+def test_browser_oauth_requires_refresh_token() -> None:
+    token = OAuthToken(
+        access_token="access-token",
+        instance_url="https://example.my.salesforce.com",
+    )
+
+    with pytest.raises(ValueError, match="Unable to retrieve refresh token"):
+        require_browser_refresh_token(token)
 
 
 @pytest.mark.live
