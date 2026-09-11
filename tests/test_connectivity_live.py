@@ -154,6 +154,44 @@ def test_migrate_legacy_state_lazily_live(asset: Asset) -> None:
 
 
 @pytest.mark.live
+def test_legacy_refresh_token_augments_access_only_sdk_state_live(
+    asset: Asset,
+) -> None:
+    backend = asset.auth_state.backend
+    original_state = backend.load_state() or {}
+
+    try:
+        legacy_state = dict(original_state)
+        legacy_state["refresh_token"] = encrypt(
+            "legacy-refresh-token", asset.auth_state.asset_id
+        )
+        backend.save_state(legacy_state)
+
+        access_only_token = OAuthToken(
+            access_token="sdk-access-token",
+            expires_at=4_102_444_800,
+        )
+        asset.auth_state.put_all(
+            {
+                "oauth": OAuthState(
+                    token=access_only_token,
+                    client_id=asset.client_id,
+                ).model_dump(mode="json", exclude_none=True)
+            }
+        )
+
+        migrate_legacy_oauth_state(asset)
+
+        migrated_oauth_state = OAuthState.model_validate(asset.auth_state["oauth"])
+        assert migrated_oauth_state.token is not None
+        assert migrated_oauth_state.token.access_token == "sdk-access-token"
+        assert migrated_oauth_state.token.refresh_token == "legacy-refresh-token"
+        assert migrated_oauth_state.token.expires_at == 4_102_444_800
+    finally:
+        backend.save_state(original_state)
+
+
+@pytest.mark.live
 def test_migrate_legacy_ingest_state_survives_transaction_rollback_live(
     asset: Asset,
 ) -> None:
