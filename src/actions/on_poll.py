@@ -282,11 +282,13 @@ def _record_to_items(
         asset.ingest_state[CONTAINER_SDI_SALT_STATE_KEY] = salt
 
     container_sdi = hashlib.sha256(f"{salt}:{sobject}:{record_id}".encode()).hexdigest()
+    legacy_artifact = {
+        "cef": cef,
+        "cef_types": cef_types,
+        "name": sobject,
+    }
     artifact_sdi = hashlib.sha256(
-        json.dumps(
-            {"name": sobject, "cef": cef, "cef_types": cef_types},
-            sort_keys=True,
-        ).encode()
+        json.dumps(legacy_artifact).encode()
     ).hexdigest()
 
     severity_value = record.get("Incident_Severity__c")
