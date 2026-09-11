@@ -28,6 +28,9 @@ INVALID_API_VERSIONS_ERROR = (
 INVALID_LATEST_API_ERROR = (
     "Salesforce API versions response is missing a valid latest API URL"
 )
+MISSING_REFRESH_TOKEN_ERROR = (
+    "Unable to retrieve refresh token. Maybe app scope is set incorrectly?"
+)
 
 
 def get_latest_api_path(versions: object) -> str:
@@ -42,6 +45,11 @@ def get_latest_api_path(versions: object) -> str:
     if not isinstance(latest_url, str) or not latest_url.startswith(API_VERSIONS_PATH):
         raise ValueError(INVALID_LATEST_API_ERROR)
     return latest_url
+
+
+def require_browser_refresh_token(token: OAuthToken) -> None:
+    if not token.refresh_token:
+        raise ValueError(MISSING_REFRESH_TOKEN_ERROR)
 
 
 def authenticate_with_browser(
@@ -61,6 +69,7 @@ def authenticate_with_browser(
         logging.progress("Waiting for Salesforce authorization...")
 
     token = flow.wait_for_authorization(on_progress=report_progress)
+    require_browser_refresh_token(token)
 
     # TODO: Revisit and remove this workaround after splunk-soar-sdk fixes
     # authorization-code token persistence during OAuth session cleanup.
