@@ -241,6 +241,23 @@ asset configuration before running browser OAuth test connectivity.
 This checkbox applies to browser OAuth and the legacy username-password flow. Client Credentials
 flow uses the **My Domain URL** field instead.
 
+## REST Handlers
+
+The connector registers the following unauthenticated `GET` handlers for each configured asset:
+
+| Handler | Purpose |
+| --- | --- |
+| `/health` | Returns HTTP 200 with the text `ok`. This checks that the connector's webhook handler is reachable; it does not authenticate to Salesforce or expose asset data. |
+| `/start_oauth` | Receives the Salesforce authorization response for browser-based OAuth, completes the SDK OAuth exchange, and stores the resulting token state. Do not invoke this handler directly. |
+
+The complete handler URL has this form:
+
+`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/<handler>`
+
+Browser-based OAuth requires the user's browser to be able to reach the `/start_oauth` handler on
+the Splunk SOAR deployment. Client Credentials OAuth and legacy username-password authentication do
+not use the callback handler.
+
 ## Ingestion
 
 ### Common points for scheduled interval polling and manual polling
