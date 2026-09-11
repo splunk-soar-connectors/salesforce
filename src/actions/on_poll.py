@@ -287,9 +287,7 @@ def _record_to_items(
         "cef_types": cef_types,
         "name": sobject,
     }
-    artifact_sdi = hashlib.sha256(
-        json.dumps(legacy_artifact).encode()
-    ).hexdigest()
+    artifact_sdi = hashlib.sha256(json.dumps(legacy_artifact).encode()).hexdigest()
 
     severity_value = record.get("Incident_Severity__c")
     severity = None

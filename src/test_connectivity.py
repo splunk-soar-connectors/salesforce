@@ -29,7 +29,7 @@ INVALID_LATEST_API_ERROR = (
     "Salesforce API versions response is missing a valid latest API URL"
 )
 MISSING_REFRESH_TOKEN_ERROR = (
-    "Unable to retrieve refresh token. Maybe app scope is set incorrectly?"
+    "Unable to retrieve refresh token. Maybe app scope is set incorrectly?"  # noqa: S105  # pragma: allowlist secret
 )
 
 
