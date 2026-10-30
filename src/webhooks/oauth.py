@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from hmac import compare_digest
+
 from soar_sdk.auth import create_oauth_callback_handler
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
@@ -32,8 +34,25 @@ def _first_query_value(request: WebhookRequest, name: str) -> str:
     return values[0] if values else ""
 
 
+def _has_valid_oauth_state(request: WebhookRequest) -> bool:
+    pending_session = get_oauth_client(request.asset).get_pending_session()
+    callback_state = _first_query_value(request, "state")
+    return bool(
+        pending_session is not None
+        and pending_session.state
+        and callback_state
+        and compare_digest(pending_session.state, callback_state)
+    )
+
+
 def oauth_callback(request: WebhookRequest) -> WebhookResponse:
     if error := _first_query_value(request, "error"):
+        if not _has_valid_oauth_state(request):
+            return WebhookResponse.text_response(
+                content="Invalid OAuth state",
+                status_code=400,
+            )
+
         message = f"Salesforce authorization failed: {error}"
         if description := _first_query_value(request, "error_description"):
             message = f"{message}. {description}"

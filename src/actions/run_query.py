@@ -14,7 +14,12 @@
 from urllib.parse import quote
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
+from soar_sdk.action_results import (
+    ActionOutput,
+    ActionResult,
+    OutputField,
+    PermissiveActionOutput,
+)
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Param, Params
 
@@ -53,9 +58,23 @@ class RunQuerySummary(ActionOutput):
     num_objects: int = OutputField(example_values=[20])
 
 
-def run_query(
-    params: RunQueryParams, soar: SOARClient, asset: Asset
-) -> list[RunQueryOutput]:
+def query_failure_result(
+    params: RunQueryParams,
+    records: list[RunQueryOutput],
+    error: ActionFailure,
+) -> ActionResult:
+    result = ActionResult(
+        status=False,
+        message=str(error),
+        param=params.model_dump(),
+    )
+    for record in records:
+        result.add_data(record.model_dump(by_alias=True))
+    result.set_summary(RunQuerySummary(num_objects=len(records)).model_dump())
+    return result
+
+
+def run_query(params: RunQueryParams, soar: SOARClient, asset: Asset):
     latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
@@ -69,29 +88,32 @@ def run_query(
 
     with get_salesforce_client(asset) as client:
         while True:
-            page = request_salesforce_json(
-                client,
-                "GET",
-                endpoint,
-                params=query_params,
-                invalid_response_error=INVALID_RESPONSE_ERROR,
-            )
-            page_records = page.get("records")
-            done = page.get("done")
-            if not isinstance(page_records, list) or not isinstance(done, bool):
-                raise ActionFailure(INVALID_RESPONSE_ERROR)
-
-            for record in page_records:
-                if not isinstance(record, dict):
+            try:
+                page = request_salesforce_json(
+                    client,
+                    "GET",
+                    endpoint,
+                    params=query_params,
+                    invalid_response_error=INVALID_RESPONSE_ERROR,
+                )
+                page_records = page.get("records")
+                done = page.get("done")
+                if not isinstance(page_records, list) or not isinstance(done, bool):
                     raise ActionFailure(INVALID_RESPONSE_ERROR)
-                records.append(RunQueryOutput.model_validate(record))
 
-            if done:
-                break
+                for record in page_records:
+                    if not isinstance(record, dict):
+                        raise ActionFailure(INVALID_RESPONSE_ERROR)
+                    records.append(RunQueryOutput.model_validate(record))
 
-            next_endpoint = page.get("nextRecordsUrl")
-            if not isinstance(next_endpoint, str):
-                raise ActionFailure(INVALID_RESPONSE_ERROR)
+                if done:
+                    break
+
+                next_endpoint = page.get("nextRecordsUrl")
+                if not isinstance(next_endpoint, str):
+                    raise ActionFailure(INVALID_RESPONSE_ERROR)
+            except ActionFailure as error:
+                return query_failure_result(params, records, error)
             endpoint = next_endpoint
             query_params = None
 

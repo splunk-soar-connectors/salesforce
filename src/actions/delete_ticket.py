@@ -29,7 +29,7 @@ class DeleteTicketParams(Params):
 
 def delete_ticket(
     params: DeleteTicketParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
+) -> list[ActionOutput]:
     return delete_object(
         DeleteObjectParams(sobject="Case", id=params.id),
         soar,

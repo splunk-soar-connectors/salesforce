@@ -59,7 +59,7 @@ class DeleteObjectParams(Params):
 
 def delete_object(
     params: DeleteObjectParams, soar: SOARClient, asset: Asset
-) -> ActionOutput:
+) -> list[ActionOutput]:
     for field_name, value in (("sobject", params.sobject), ("id", params.id)):
         if (
             any(character in value for character in ("/", "\\", "?", "#"))
@@ -83,4 +83,4 @@ def delete_object(
         _request_salesforce_delete(client, endpoint)
 
     soar.set_message(f"Successfully deleted the {params.sobject}")
-    return ActionOutput()
+    return []

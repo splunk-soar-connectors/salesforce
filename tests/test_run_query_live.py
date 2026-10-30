@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
+from soar_sdk.action_results import ActionResult
 from soar_sdk.app import App
-from soar_sdk.exceptions import ActionFailure
 
 from src.actions.run_query import (
     RunQueryParams,
@@ -43,9 +43,12 @@ def test_run_query_live(app: App, asset: Asset) -> None:
     assert app.soar_client.get_summary() == RunQuerySummary(num_objects=1)
     assert app.soar_client.get_message() == "Successfully retrieved query results"
 
-    with pytest.raises(ActionFailure, match="Salesforce API error 400"):
-        run_query(
-            RunQueryParams(query="not valid SOQL", endpoint="query"),
-            app.soar_client,
-            asset,
-        )
+    failure = run_query(
+        RunQueryParams(query="not valid SOQL", endpoint="query"),
+        app.soar_client,
+        asset,
+    )
+    assert isinstance(failure, ActionResult)
+    assert failure.get_status() is False
+    assert "Salesforce API error 400" in failure.get_message()
+    assert failure.get_data() == []

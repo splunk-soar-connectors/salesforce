@@ -164,7 +164,7 @@ Use this step only when **Use Client Credentials OAuth flow** is unchecked.
 
 The final callback URL looks like:
 
-`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/start_oauth`
+`https://<splunk_soar_host>:<webhook_port>/webhook/<directory>/<asset_id>/start_oauth`
 
 1. Return to **External Client App Manager** in Salesforce.
 1. Open the same external client app.
@@ -262,7 +262,7 @@ The connector registers the following unauthenticated `GET` handlers for each co
 
 The complete handler URL has this form:
 
-`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/<handler>`
+`https://<splunk_soar_host>:<webhook_port>/webhook/<directory>/<asset_id>/<handler>`
 
 Browser-based OAuth requires the user's browser to be able to reach the `/start_oauth` handler on
 the Splunk SOAR deployment. Client Credentials OAuth and legacy username-password authentication do
@@ -703,8 +703,8 @@ action_result.parameter.view_name | string | `salesforce listview name` | |
 action_result.parameter.limit | numeric | | |
 action_result.parameter.offset | numeric | | |
 action_result.data.\*.columns.Id.value | string | `salesforce object id` | 0033t000035qrSYAAY |
-action_result.summary.num_objects | numeric | | |
-action_result.summary.view_names.\* | string | | |
+action_result.summary.num_objects | numeric | | 3 |
+action_result.summary.view_names.\* | string | | MyCases |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -749,8 +749,8 @@ action_result.data.\*.columns.Owner_Id.value | string | `salesforce object id` |
 action_result.data.\*.columns.Owner_NameOrAlias.value | string | | testuser |
 action_result.data.\*.columns.RecordTypeId.value | string | | 0121I000000F7aZQAS |
 action_result.data.\*.columns.SystemModstamp.value | string | | Sat Dec 02 11:18:29 GMT 2017 |
-action_result.summary.num_objects | numeric | | |
-action_result.summary.view_names.\* | string | | |
+action_result.summary.num_objects | numeric | | 3 |
+action_result.summary.view_names.\* | string | | MyCases |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 

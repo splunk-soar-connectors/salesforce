@@ -90,6 +90,23 @@ def _get_first_ingestion_limit(asset: Asset) -> int | None:
     return _validate_integer(asset.first_ingestion_max, "first_ingestion_max")
 
 
+def failed_poll_retry_offset(
+    offset: int,
+    failed_indices: list[int],
+    records: list[tuple[int, dict[str, object]]],
+) -> int:
+    retry_index = min(failed_indices)
+    if records:
+        retry_index = min(retry_index, records[-1][0])
+    return offset + retry_index
+
+
+def is_manual_poll(params: OnPollParams) -> bool:
+    if params.container_count == 0:
+        _validate_integer(params.container_count, "container_count")
+    return params.is_manual_poll()
+
+
 def _strip_format_controls(value: object) -> object:
     if not isinstance(value, str):
         return value
@@ -332,7 +349,7 @@ def on_poll(
 
     cef_name_map = _parse_cef_name_map(asset)
     include_view_date = bool(asset.last_view_date)
-    is_manual = params.is_manual_poll()
+    is_manual = is_manual_poll(params)
     if is_manual:
         offset = 0
         max_records = _validate_integer(
@@ -392,7 +409,10 @@ def on_poll(
 
     if not is_manual:
         if failed_indices:
-            persist_poll_offset(asset, offset + min(failed_indices))
+            persist_poll_offset(
+                asset,
+                failed_poll_retry_offset(offset, failed_indices, records),
+            )
         else:
             asset.ingest_state[POLL_OFFSET_STATE_KEY] = new_offset
 

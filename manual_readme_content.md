@@ -154,7 +154,7 @@ Use this step only when **Use Client Credentials OAuth flow** is unchecked.
 
 The final callback URL looks like:
 
-`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/start_oauth`
+`https://<splunk_soar_host>:<webhook_port>/webhook/<directory>/<asset_id>/start_oauth`
 
 1. Return to **External Client App Manager** in Salesforce.
 1. Open the same external client app.
@@ -252,7 +252,7 @@ The connector registers the following unauthenticated `GET` handlers for each co
 
 The complete handler URL has this form:
 
-`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/<handler>`
+`https://<splunk_soar_host>:<webhook_port>/webhook/<directory>/<asset_id>/<handler>`
 
 Browser-based OAuth requires the user's browser to be able to reach the `/start_oauth` handler on
 the Splunk SOAR deployment. Client Credentials OAuth and legacy username-password authentication do

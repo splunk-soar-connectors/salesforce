@@ -30,31 +30,33 @@ class ListTicketsParams(Params):
 
 
 class CasenumberOutput(ActionOutput):
-    value: str = OutputField(example_values=["00001028"])
+    value: str | None = OutputField(example_values=["00001028"])
 
 
 class ContactidOutput(ActionOutput):
-    value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0033t000035qrSWABZ"]
+    value: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0033t000035qrSWABZ"],
     )
 
 
 class ContactIdOutput(ActionOutput):
-    value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0033t000035qrSWABZ"]
+    value: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0033t000035qrSWABZ"],
     )
 
 
 class ContactNameOutput(ActionOutput):
-    value: str = OutputField(example_values=["Abcd"])
+    value: str | None = OutputField(example_values=["Abcd"])
 
 
 class CreateddateOutput(ActionOutput):
-    value: str = OutputField(example_values=["Thu Nov 30 23:50:55 GMT 2017"])
+    value: str | None = OutputField(example_values=["Thu Nov 30 23:50:55 GMT 2017"])
 
 
 class ListTicketsIdOutput(ActionOutput):
-    value: str = OutputField(
+    value: str | None = OutputField(
         cef_types=["salesforce object id"],
         example_values=["5001I000002Sd2hQAC"],
         column_name="ID",
@@ -62,65 +64,69 @@ class ListTicketsIdOutput(ActionOutput):
 
 
 class LastmodifieddateOutput(ActionOutput):
-    value: str = OutputField(example_values=["Fri Dec 01 00:17:47 GMT 2017"])
+    value: str | None = OutputField(example_values=["Fri Dec 01 00:17:47 GMT 2017"])
 
 
 class OwneridOutput(ActionOutput):
-    value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    value: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0051I000000PRsCQAW"],
     )
 
 
 class OwnerIdOutput(ActionOutput):
-    value: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    value: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0051I000000PRsCQAW"],
     )
 
 
 class OwnerNameoraliasOutput(ActionOutput):
-    value: str = OutputField(example_values=["testuser"])
+    value: str | None = OutputField(example_values=["testuser"])
 
 
 class PriorityOutput(ActionOutput):
-    value: str = OutputField(example_values=["Medium"], column_name="Priority")
+    value: str | None = OutputField(example_values=["Medium"], column_name="Priority")
 
 
 class RecordtypeidOutput(ActionOutput):
-    value: str = OutputField(example_values=["0121I000000F7aZQAS"])
+    value: str | None = OutputField(example_values=["0121I000000F7aZQAS"])
 
 
 class StatusOutput(ActionOutput):
-    value: str = OutputField(example_values=["In-Progress"], column_name="Status")
+    value: str | None = OutputField(
+        example_values=["In-Progress"], column_name="Status"
+    )
 
 
 class SubjectOutput(ActionOutput):
-    value: str = OutputField(example_values=["Panic"], column_name="Subject")
+    value: str | None = OutputField(example_values=["Panic"], column_name="Subject")
 
 
 class SystemmodstampOutput(ActionOutput):
-    value: str = OutputField(example_values=["Sat Dec 02 11:18:29 GMT 2017"])
+    value: str | None = OutputField(example_values=["Sat Dec 02 11:18:29 GMT 2017"])
 
 
 class ListTicketsColumnsOutput(PermissiveActionOutput):
-    Id: ListTicketsIdOutput
-    Subject: SubjectOutput
-    Status: StatusOutput
-    Priority: PriorityOutput
-    CaseNumber: CasenumberOutput
-    ContactId: ContactidOutput
-    Contact_Id: ContactIdOutput
-    Contact_Name: ContactNameOutput
-    CreatedDate: CreateddateOutput
-    LastModifiedDate: LastmodifieddateOutput
-    OwnerId: OwneridOutput
-    Owner_Id: OwnerIdOutput
-    Owner_NameOrAlias: OwnerNameoraliasOutput
-    RecordTypeId: RecordtypeidOutput
-    SystemModstamp: SystemmodstampOutput
+    Id: ListTicketsIdOutput | None = None
+    Subject: SubjectOutput | None = None
+    Status: StatusOutput | None = None
+    Priority: PriorityOutput | None = None
+    CaseNumber: CasenumberOutput | None = None
+    ContactId: ContactidOutput | None = None
+    Contact_Id: ContactIdOutput | None = None
+    Contact_Name: ContactNameOutput | None = None
+    CreatedDate: CreateddateOutput | None = None
+    LastModifiedDate: LastmodifieddateOutput | None = None
+    OwnerId: OwneridOutput | None = None
+    Owner_Id: OwnerIdOutput | None = None
+    Owner_NameOrAlias: OwnerNameoraliasOutput | None = None
+    RecordTypeId: RecordtypeidOutput | None = None
+    SystemModstamp: SystemmodstampOutput | None = None
 
 
 class ListTicketsOutput(PermissiveActionOutput):
-    columns: ListTicketsColumnsOutput
+    columns: ListTicketsColumnsOutput | None = None
 
 
 def list_tickets(

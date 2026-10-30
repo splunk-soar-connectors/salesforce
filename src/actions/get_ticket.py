@@ -28,102 +28,117 @@ class GetTicketParams(Params):
 
 
 class AttributesOutput(ActionOutput):
-    type: str = OutputField(example_values=["Case"])
-    url: str = OutputField(
-        example_values=["/services/data/v41.0/sobjects/Case/5001I000002SfMMQA0"]
+    type: str | None = OutputField(example_values=["Case"])
+    url: str | None = OutputField(
+        example_values=["/services/data/v41.0/sobjects/Case/5001I000002SfMMQA0"],
     )
 
 
 class GetTicketOutput(PermissiveActionOutput):
-    Subject: str = OutputField(example_values=["Case Subject"], column_name="Subject")
-    Description: str = OutputField(
+    Subject: str | None = OutputField(
+        example_values=["Case Subject"], column_name="Subject"
+    )
+    Description: str | None = OutputField(
         example_values=["Case Description"], column_name="Description"
     )
-    LastModifiedDate: str = OutputField(
+    LastModifiedDate: str | None = OutputField(
         example_values=["2017-12-01T21:32:33.000+0000"],
         column_name="Last Modified",
     )
-    CreatedById: str = OutputField(
+    CreatedById: str | None = OutputField(
         cef_types=["salesforce object id"],
         example_values=["0051I000000PRsCQAW"],
         column_name="Created By ID",
     )
-    AccountId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0013t00001ZyVVTAB4"]
+    AccountId: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0013t00001ZyVVTAB4"],
     )
-    AssetId: str
-    CaseNumber: str = OutputField(example_values=["00001030"])
-    Case_Open_minutes__c: float = OutputField(example_values=[4218])
-    ClosedDate: str = OutputField(example_values=["2019-06-25T18:59:51.000+0000"])
-    Closed_Time_Days__c: str
-    ContactEmail: str = OutputField(example_values=["test@example.com"])
-    ContactFax: str = OutputField(example_values=["(1) 234 567"])
-    ContactId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0033t000035qrSWABZ"]
+    AssetId: str | None = None
+    CaseNumber: str | None = OutputField(example_values=["00001030"])
+    Case_Open_minutes__c: float | None = OutputField(example_values=[4218])
+    ClosedDate: str | None = OutputField(
+        example_values=["2019-06-25T18:59:51.000+0000"]
     )
-    ContactMobile: str = OutputField(example_values=["(1) 222 333"])
-    ContactPhone: str = OutputField(example_values=["(1) 33 444"])
-    CreatedDate: str = OutputField(example_values=["2017-12-01T21:32:33.000+0000"])
-    Customer_Impacting__c: str
-    Date_Reviewed__c: str
-    Days_Open__c: float = OutputField(example_values=[3])
-    Discovery_Method__c: str
-    Discovery_Time_Hours__c: str
-    EngineeringReqNumber__c: str = OutputField(example_values=["765810"])
-    Executive_Summary__c: str
+    Closed_Time_Days__c: str | None = None
+    ContactEmail: str | None = OutputField(example_values=["test@example.com"])
+    ContactFax: str | None = OutputField(example_values=["(1) 234 567"])
+    ContactId: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0033t000035qrSWABZ"],
+    )
+    ContactMobile: str | None = OutputField(example_values=["(1) 222 333"])
+    ContactPhone: str | None = OutputField(example_values=["(1) 33 444"])
+    CreatedDate: str | None = OutputField(
+        example_values=["2017-12-01T21:32:33.000+0000"]
+    )
+    Customer_Impacting__c: str | None = None
+    Date_Reviewed__c: str | None = None
+    Days_Open__c: float | None = OutputField(example_values=[3])
+    Discovery_Method__c: str | None = None
+    Discovery_Time_Hours__c: str | None = None
+    EngineeringReqNumber__c: str | None = OutputField(example_values=["765810"])
+    Executive_Summary__c: str | None = None
     Id: str = OutputField(
         cef_types=["salesforce object id"], example_values=["5001I000002SfMMQA0"]
     )
-    Impact_Summary__c: str
-    Impacted_Environment__c: str
-    Incident_Category__c: str
-    Incident_Date__c: str
-    Incident_Root_Cause__c: str
-    Incident_Sensitivity__c: str
-    Incident_Severity__c: str
-    Incident_Type__c: str
-    Investigation_Category__c: str
-    Investigation_Date__c: str
-    Investigation_Summary__c: str
-    Investigation_Type__c: str
-    IsClosed: bool
-    IsDeleted: bool
-    IsEscalated: bool
-    LastModifiedById: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    Impact_Summary__c: str | None = None
+    Impacted_Environment__c: str | None = None
+    Incident_Category__c: str | None = None
+    Incident_Date__c: str | None = None
+    Incident_Root_Cause__c: str | None = None
+    Incident_Sensitivity__c: str | None = None
+    Incident_Severity__c: str | None = None
+    Incident_Type__c: str | None = None
+    Investigation_Category__c: str | None = None
+    Investigation_Date__c: str | None = None
+    Investigation_Summary__c: str | None = None
+    Investigation_Type__c: str | None = None
+    IsClosed: bool | None = None
+    IsDeleted: bool | None = None
+    IsEscalated: bool | None = None
+    LastModifiedById: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0051I000000PRsCQAW"],
     )
-    LastReferencedDate: str = OutputField(
+    LastReferencedDate: str | None = OutputField(
         example_values=["2017-12-01T21:33:05.000+0000"]
     )
-    LastViewedDate: str = OutputField(example_values=["2017-12-01T21:33:05.000+0000"])
-    Origin: str
-    OwnerId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0051I000000PRsCQAW"]
+    LastViewedDate: str | None = OutputField(
+        example_values=["2017-12-01T21:33:05.000+0000"]
     )
-    ParentId: str = OutputField(
-        cef_types=["salesforce object id"], example_values=["0061I000000PRsCABC"]
+    Origin: str | None = None
+    OwnerId: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0051I000000PRsCQAW"],
     )
-    PotentialLiability__c: str = OutputField(example_values=["No"])
-    Priority: str = OutputField(example_values=["High"])
-    Product__c: str = OutputField(example_values=["GC5555"])
-    Reason: str = OutputField(example_values=["Test Complexity"])
-    RecordTypeId: str = OutputField(example_values=["0121I000000F7aZQAS"])
-    Resolution_Date__c: str
-    Resolution_Time_Hours__c: str
-    Response_Time_Hours__c: str
-    Response_Time_Minutes__c: float = OutputField(example_values=[4218])
-    SITrack_Response_Task__c: str
-    SITracker_Handoff_Notes__c: str
-    SITracker_Include_in_Handoff__c: bool
-    SLAViolation__c: str
-    Status: str = OutputField(example_values=["New"])
-    SuppliedCompany: str
-    SuppliedEmail: str
-    SuppliedName: str
-    SuppliedPhone: str
-    SystemModstamp: str = OutputField(example_values=["2017-12-02T11:18:29.000+0000"])
-    Type: str = OutputField(example_values=["Electrical"])
-    attributes: AttributesOutput
+    ParentId: str | None = OutputField(
+        cef_types=["salesforce object id"],
+        example_values=["0061I000000PRsCABC"],
+    )
+    PotentialLiability__c: str | None = OutputField(example_values=["No"])
+    Priority: str | None = OutputField(example_values=["High"])
+    Product__c: str | None = OutputField(example_values=["GC5555"])
+    Reason: str | None = OutputField(example_values=["Test Complexity"])
+    RecordTypeId: str | None = OutputField(example_values=["0121I000000F7aZQAS"])
+    Resolution_Date__c: str | None = None
+    Resolution_Time_Hours__c: str | None = None
+    Response_Time_Hours__c: str | None = None
+    Response_Time_Minutes__c: float | None = OutputField(example_values=[4218])
+    SITrack_Response_Task__c: str | None = None
+    SITracker_Handoff_Notes__c: str | None = None
+    SITracker_Include_in_Handoff__c: bool | None = None
+    SLAViolation__c: str | None = None
+    Status: str | None = OutputField(example_values=["New"])
+    SuppliedCompany: str | None = None
+    SuppliedEmail: str | None = None
+    SuppliedName: str | None = None
+    SuppliedPhone: str | None = None
+    SystemModstamp: str | None = OutputField(
+        example_values=["2017-12-02T11:18:29.000+0000"]
+    )
+    Type: str | None = OutputField(example_values=["Electrical"])
+    attributes: AttributesOutput | None = None
 
 
 def get_ticket(

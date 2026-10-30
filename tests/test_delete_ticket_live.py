@@ -45,7 +45,7 @@ def test_delete_ticket_live(app: App, asset: Asset) -> None:
             asset,
         )
 
-        assert result.model_dump() == {}
+        assert result == []
         assert app.soar_client.get_message() == "Successfully deleted the Case"
         with pytest.raises(ActionFailure, match="Salesforce API error 404"):
             get_object(

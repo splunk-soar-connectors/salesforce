@@ -13,7 +13,7 @@
 # limitations under the License.
 from urllib.parse import quote
 
-from pydantic import Field, model_serializer
+from pydantic import model_serializer
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import (
     ActionOutput,
@@ -61,7 +61,7 @@ class ListObjectsIdOutput(ActionOutput):
 
 
 class ListObjectsColumnsOutput(PermissiveActionOutput):
-    Id: ListObjectsIdOutput
+    Id: ListObjectsIdOutput | None = None
 
 
 class ListObjectsOutput(PermissiveActionOutput):
@@ -69,8 +69,8 @@ class ListObjectsOutput(PermissiveActionOutput):
 
 
 class ListObjectsSummary(ActionOutput):
-    num_objects: int | None = Field(default=None, examples=[3])
-    view_names: list[str] | None = Field(default=None, examples=[["MyCases"]])
+    num_objects: int | None = OutputField(example_values=[3])
+    view_names: list[str] | None = OutputField(example_values=["MyCases"])
 
     @model_serializer
     def serialize_summary(self) -> dict[str, int | list[str]]:

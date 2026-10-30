@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from urllib.parse import parse_qsl, urlsplit
 
 import httpx
 from soar_sdk.abstract import SOARClient
@@ -27,6 +28,19 @@ from ..state import get_latest_api_version
 MISSING_API_VERSION_ERROR = (
     "Unable to retrieve API version. Has test connectivity been run?"
 )
+QueryValue = str | int | float | bool | None
+
+
+def merge_query_parameters(
+    endpoint: str,
+    query_parameters: dict[str, QueryValue],
+) -> tuple[str, dict[str, QueryValue]]:
+    parsed_endpoint = urlsplit(endpoint)
+    merged_query: dict[str, QueryValue] = dict(
+        parse_qsl(parsed_endpoint.query, keep_blank_values=True)
+    )
+    merged_query.update(query_parameters)
+    return parsed_endpoint._replace(query="").geturl(), merged_query
 
 
 class SalesforceMakeRequestParams(MakeRequestParams):
@@ -70,7 +84,7 @@ def make_request(
             headers.pop("Content-Type")
         headers.update(parsed_headers)
 
-    query_params: dict[str, str | int | float | bool | None] | None = None
+    query_params: dict[str, QueryValue] | None = None
     if params.query_parameters:
         try:
             parsed_query_params = json.loads(params.query_parameters)
@@ -86,7 +100,10 @@ def make_request(
                 raise ActionFailure(
                     "Invalid JSON in query parameters: expected an object of scalar values"
                 )
-            query_params = parsed_query_params
+            endpoint, query_params = merge_query_parameters(
+                endpoint,
+                parsed_query_params,
+            )
 
     content: str | None = None
     json_body: object | None = None

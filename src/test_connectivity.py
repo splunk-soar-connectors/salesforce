@@ -73,7 +73,7 @@ def authenticate_with_browser(
 
     # TODO: Revisit and remove this workaround after splunk-soar-sdk fixes
     # authorization-code token persistence during OAuth session cleanup.
-    # splunk-soar-sdk 3.28.1 clears the newly stored token while cleaning up
+    # splunk-soar-sdk 7.0.3 clears the newly stored token while cleaning up
     # the OAuth session after code exchange. Persist the returned token once.
     store_token(asset, token)
     logging.info("Successfully obtained token through authorization code flow")

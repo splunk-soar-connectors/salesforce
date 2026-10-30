@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
+
 import httpx
 from soar_sdk.exceptions import ActionFailure
 
@@ -19,20 +21,15 @@ def salesforce_error_detail(response: httpx.Response) -> str:
     try:
         response_data = response.json()
     except ValueError:
-        response_data = None
-
-    if (
-        isinstance(response_data, list)
-        and response_data
-        and isinstance(response_data[0], dict)
-    ):
-        detail = response_data[0].get("message") or response.text
-    elif isinstance(response_data, dict):
-        detail = response_data.get("message") or response.text
-    else:
         detail = response.text
+    else:
+        detail = json.dumps(
+            response_data,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
-    return " ".join(str(detail).split())
+    return " ".join(detail.split())
 
 
 def request_salesforce_json(
