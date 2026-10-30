@@ -18,6 +18,23 @@ supports External Client Apps in two ways:
 > administrator, Salesforce account team, or Salesforce support to determine whether it can be
 > enabled for your org.
 
+## Version 4.0.0 Upgrade Notice
+
+Version 4.0.0 changes the callback used by browser-based OAuth from the legacy REST handler to an
+SDK webhook. Existing browser OAuth assets migrate and reuse the legacy refresh token, so they do
+not require immediate reauthorization while that token remains valid.
+
+Before the next **Test Connectivity** or browser OAuth reauthorization, update the callback URL in
+the Salesforce Connected App or External Client App:
+
+- Legacy callback: `/rest/handler/.../<asset_name>/start_oauth`
+- Version 4.0.0 callback: `/webhook/<directory>/<asset_id>/start_oauth`
+
+After saving the asset, copy the value shown in **POST incoming for Salesforce to this location**,
+append `/start_oauth`, and configure that complete URL as the Salesforce callback URL. If the
+legacy refresh token is missing, invalid, or revoked, complete browser authorization again using
+the new callback. Client Credentials and username-password authentication do not use this callback.
+
 ## Choose an Authentication Flow
 
 Choose the flow before you start setup:
@@ -154,7 +171,7 @@ Use this step only when **Use Client Credentials OAuth flow** is unchecked.
 
 The final callback URL looks like:
 
-`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/start_oauth`
+`https://<splunk_soar_host>:<webhook_port>/webhook/<directory>/<asset_id>/start_oauth`
 
 1. Return to **External Client App Manager** in Salesforce.
 1. Open the same external client app.
@@ -240,6 +257,23 @@ asset configuration before running browser OAuth test connectivity.
 
 This checkbox applies to browser OAuth and the legacy username-password flow. Client Credentials
 flow uses the **My Domain URL** field instead.
+
+## REST Handlers
+
+The connector registers the following unauthenticated `GET` handlers for each configured asset:
+
+| Handler | Purpose |
+| --- | --- |
+| `/health` | Returns HTTP 200 with the text `ok`. This checks that the connector's webhook handler is reachable; it does not authenticate to Salesforce or expose asset data. |
+| `/start_oauth` | Receives the Salesforce authorization response for browser-based OAuth, completes the SDK OAuth exchange, and stores the resulting token state. Do not invoke this handler directly. |
+
+The complete handler URL has this form:
+
+`https://<splunk_soar_host>:<webhook_port>/webhook/<directory>/<asset_id>/<handler>`
+
+Browser-based OAuth requires the user's browser to be able to reach the `/start_oauth` handler on
+the Splunk SOAR deployment. Client Credentials OAuth and legacy username-password authentication do
+not use the callback handler.
 
 ## Ingestion
 
