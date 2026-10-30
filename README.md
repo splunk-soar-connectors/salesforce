@@ -28,6 +28,23 @@ supports External Client Apps in two ways:
 > administrator, Salesforce account team, or Salesforce support to determine whether it can be
 > enabled for your org.
 
+## Version 4.0.0 Upgrade Notice
+
+Version 4.0.0 changes the callback used by browser-based OAuth from the legacy REST handler to an
+SDK webhook. Existing browser OAuth assets migrate and reuse the legacy refresh token, so they do
+not require immediate reauthorization while that token remains valid.
+
+Before the next **Test Connectivity** or browser OAuth reauthorization, update the callback URL in
+the Salesforce Connected App or External Client App:
+
+- Legacy callback: `/rest/handler/.../<asset_name>/start_oauth`
+- Version 4.0.0 callback: `/webhook/<directory>/<asset_id>/start_oauth`
+
+After saving the asset, copy the value shown in **POST incoming for Salesforce to this location**,
+append `/start_oauth`, and configure that complete URL as the Salesforce callback URL. If the
+legacy refresh token is missing, invalid, or revoked, complete browser authorization again using
+the new callback. Client Credentials and username-password authentication do not use this callback.
+
 ## Choose an Authentication Flow
 
 Choose the flow before you start setup:
