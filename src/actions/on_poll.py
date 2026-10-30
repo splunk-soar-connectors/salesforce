@@ -26,6 +26,12 @@ from soar_sdk.params import OnPollParams
 
 from ..asset import Asset
 from ..auth import get_salesforce_client
+from ..state import (
+    CONTAINER_SDI_SALT_STATE_KEY,
+    POLL_OFFSET_STATE_KEY,
+    get_latest_api_version,
+    migrate_legacy_ingest_state,
+)
 from .utils import request_salesforce_json
 
 
@@ -248,10 +254,10 @@ def _record_to_items(
     record_id = record.get("Id")
     if not isinstance(record_id, str):
         raise ActionFailure(INVALID_BATCH_RESPONSE_ERROR)
-    salt = asset.ingest_state.get("container_source_data_identifier_salt")
+    salt = asset.ingest_state.get(CONTAINER_SDI_SALT_STATE_KEY)
     if not isinstance(salt, str) or not salt:
         salt = secrets.token_urlsafe(32)
-        asset.ingest_state["container_source_data_identifier_salt"] = salt
+        asset.ingest_state[CONTAINER_SDI_SALT_STATE_KEY] = salt
 
     container_sdi = hashlib.sha256(f"{salt}:{sobject}:{record_id}".encode()).hexdigest()
     artifact_sdi = hashlib.sha256(
@@ -287,15 +293,16 @@ def _record_to_items(
 
 
 def on_poll(
-    soar: SOARClient, asset: Asset, params: OnPollParams
+    params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Container | Artifact]:
     del soar
+    migrate_legacy_ingest_state(asset)
     sobject = asset.poll_sobject or "Case"
     view_name = asset.poll_view_name
     if not view_name:
         raise ActionFailure("Error: Must specify poll_view_name")
 
-    latest_version = asset.cache_state.get("latest_version")
+    latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
     ):
@@ -312,8 +319,8 @@ def on_poll(
         )
     else:
         offset = _validate_integer(
-            asset.ingest_state.get("cur_offset", 0),
-            "cur_offset",
+            asset.ingest_state.get(POLL_OFFSET_STATE_KEY, 0),
+            POLL_OFFSET_STATE_KEY,
             allow_zero=True,
         )
         max_records = None
@@ -368,9 +375,9 @@ def on_poll(
 
     if not is_manual:
         if failed_indices:
-            asset.ingest_state["cur_offset"] = offset + min(failed_indices)
+            asset.ingest_state[POLL_OFFSET_STATE_KEY] = offset + min(failed_indices)
         else:
-            asset.ingest_state["cur_offset"] = new_offset
+            asset.ingest_state[POLL_OFFSET_STATE_KEY] = new_offset
 
     if failed_indices:
         raise ActionFailure(

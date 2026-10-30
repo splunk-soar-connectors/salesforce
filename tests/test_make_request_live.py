@@ -26,6 +26,19 @@ from src.test_connectivity import run_test_connectivity
 
 @pytest.mark.live
 def test_make_request_live(app: App, asset: Asset) -> None:
+    assert (
+        SalesforceMakeRequestParams(
+            http_method="GET", endpoint="/sobjects/Case"
+        ).verify_ssl
+        is True
+    )
+    assert (
+        SalesforceMakeRequestParams(
+            http_method="GET", endpoint="/sobjects/Case", verify_ssl=False
+        ).verify_ssl
+        is False
+    )
+
     run_test_connectivity(asset)
     action = unwrap(make_request)
 

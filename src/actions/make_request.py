@@ -21,6 +21,7 @@ from soar_sdk.params import MakeRequestParams, Param
 
 from ..asset import Asset
 from ..auth import SALESFORCE_DEFAULT_TIMEOUT, get_salesforce_client
+from ..state import get_latest_api_version
 
 
 MISSING_API_VERSION_ERROR = (
@@ -37,12 +38,17 @@ class SalesforceMakeRequestParams(MakeRequestParams):
         ),
         required=True,
     )
+    verify_ssl: bool = Param(
+        description="Whether to verify the SSL certificate. Default is True.",
+        required=False,
+        default=True,
+    )
 
 
 def make_request(
     params: SalesforceMakeRequestParams, soar: SOARClient, asset: Asset
 ) -> MakeRequestOutput:
-    latest_version = asset.cache_state.get("latest_version")
+    latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
     ):
@@ -102,12 +108,11 @@ def make_request(
             content = params.body
 
     timeout = float(params.timeout or SALESFORCE_DEFAULT_TIMEOUT)
-    verify_ssl = bool(params.verify_ssl)
     try:
         with get_salesforce_client(
             asset,
             timeout=timeout,
-            verify=verify_ssl,
+            verify=params.verify_ssl,
         ) as client:
             response = client.request(
                 params.http_method,

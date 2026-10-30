@@ -251,6 +251,23 @@ asset configuration before running browser OAuth test connectivity.
 This checkbox applies to browser OAuth and the legacy username-password flow. Client Credentials
 flow uses the **My Domain URL** field instead.
 
+## REST Handlers
+
+The connector registers the following unauthenticated `GET` handlers for each configured asset:
+
+| Handler | Purpose |
+| --- | --- |
+| `/health` | Returns HTTP 200 with the text `ok`. This checks that the connector's webhook handler is reachable; it does not authenticate to Salesforce or expose asset data. |
+| `/start_oauth` | Receives the Salesforce authorization response for browser-based OAuth, completes the SDK OAuth exchange, and stores the resulting token state. Do not invoke this handler directly. |
+
+The complete handler URL has this form:
+
+`https://<splunk_soar_host>/rest/handler/salesforce_6c1316b0-88a7-4864-b684-3170f6c455be/<asset_name>/<handler>`
+
+Browser-based OAuth requires the user's browser to be able to reach the `/start_oauth` handler on
+the Splunk SOAR deployment. Client Credentials OAuth and legacy username-password authentication do
+not use the callback handler.
+
 ## Ingestion
 
 ### Common points for scheduled interval polling and manual polling
@@ -405,7 +422,7 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 **query_parameters** | optional | Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2 | string | |
 **body** | optional | The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'} | string | |
 **timeout** | optional | The timeout for the request in seconds. | numeric | |
-**verify_ssl** | optional | Whether to verify the SSL certificate. Default is False. | boolean | |
+**verify_ssl** | optional | Whether to verify the SSL certificate. Default is True. | boolean | |
 
 #### Action Output
 
@@ -466,8 +483,8 @@ To run a query that includes a wildcard character, use <code>%25</code> instead 
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**query** | required | SOQL Query | string | |
 **endpoint** | required | Which Query endpoint to use | string | |
+**query** | required | SOQL Query | string | |
 
 #### Action Output
 
@@ -475,8 +492,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.query | string | | |
 action_result.parameter.endpoint | string | | |
+action_result.parameter.query | string | | |
 action_result.data.\*.attributes.type | string | | |
 action_result.data.\*.attributes.url | string | | |
 action_result.summary.num_objects | numeric | | 20 |

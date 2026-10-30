@@ -20,6 +20,7 @@ from soar_sdk.params import Param, Params
 
 from ..asset import Asset
 from ..auth import get_salesforce_client
+from ..state import get_latest_api_version
 from .utils import request_salesforce_json
 
 
@@ -30,13 +31,13 @@ INVALID_RESPONSE_ERROR = "Salesforce returned an unexpected query response"
 
 
 class RunQueryParams(Params):
-    query: str = Param(description="SOQL Query", column_name="QUERY")
     endpoint: str = Param(
         description="Which Query endpoint to use",
         default="query",
         value_list=["query", "queryAll"],
         column_name="ENDPOINT",
     )
+    query: str = Param(description="SOQL Query", column_name="QUERY")
 
 
 class RunQueryRecordAttributes(ActionOutput):
@@ -55,7 +56,7 @@ class RunQuerySummary(ActionOutput):
 def run_query(
     params: RunQueryParams, soar: SOARClient, asset: Asset
 ) -> list[RunQueryOutput]:
-    latest_version = asset.cache_state.get("latest_version")
+    latest_version = get_latest_api_version(asset)
     if not isinstance(latest_version, str) or not latest_version.startswith(
         "/services/data/"
     ):
