@@ -11,13 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections.abc import Iterator
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
-from soar_sdk.params import OnPollParams
 from soar_sdk.logging import getLogger
-from soar_sdk.models.container import Container
-from soar_sdk.models.artifact import Artifact
 
 from .asset import Asset
 from .actions import register_actions
@@ -58,13 +54,6 @@ def create_salesforce_connector_app() -> App:
 
 
 app = create_salesforce_connector_app()
-
-
-@app.on_poll()
-def on_poll(
-    soar: SOARClient, asset: Asset, params: OnPollParams
-) -> Iterator[Container | Artifact]:
-    raise NotImplementedError()
 
 
 if __name__ == "__main__":

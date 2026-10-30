@@ -64,4 +64,11 @@ def asset(test_config: RedactedTestConfig, app: App) -> Asset:
         app_id=APP_ID,
         encrypted=True,
     )
+    salesforce_asset._ingest_state = AssetState(
+        app.actions_manager,
+        "ingest",
+        asset_id,
+        app_id=APP_ID,
+        encrypted=True,
+    )
     return salesforce_asset
