@@ -14,6 +14,7 @@
 import os
 from pathlib import Path
 
+import pytest
 from dotenv import load_dotenv
 
 
@@ -31,7 +32,7 @@ def load_test_config() -> RedactedTestConfig:
     load_dotenv(ENV_FILE, override=False)
     missing = [name for name in REQUIRED_ENV_KEYS if not os.environ.get(name)]
     if missing:
-        raise AssertionError(
+        pytest.skip(
             "Missing required live test environment variables: " + ", ".join(missing)
         )
 
