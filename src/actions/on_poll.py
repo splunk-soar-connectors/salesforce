@@ -31,6 +31,7 @@ from ..state import (
     POLL_OFFSET_STATE_KEY,
     get_latest_api_version,
     migrate_legacy_ingest_state,
+    persist_poll_offset,
 )
 from .utils import request_salesforce_json
 
@@ -47,6 +48,10 @@ INVALID_BATCH_RESPONSE_ERROR = (
 MAX_OBJECTS_PER_PAGE = 2000
 MAX_PAGES_PER_POLL = 100
 BATCH_SIZE = 25
+OFFSET_LIMIT_ERROR_MARKERS = (
+    "Maximum SOQL offset allowed is",
+    "pageToken parameter must be between",
+)
 
 SEVERITY_MAP = {
     "severity 1 (high impact)": "high",
@@ -77,6 +82,12 @@ def _validate_integer(value: float | int, key: str, *, allow_zero: bool = False)
     if not allow_zero and integer == 0:
         raise ActionFailure(f'Please provide non-zero positive integer in "{key}"')
     return integer
+
+
+def _get_first_ingestion_limit(asset: Asset) -> int | None:
+    if asset.first_ingestion_max is None:
+        return None
+    return _validate_integer(asset.first_ingestion_max, "first_ingestion_max")
 
 
 def _strip_format_controls(value: object) -> object:
@@ -153,9 +164,17 @@ def _poll_list_view(
                     invalid_response_error=INVALID_LIST_RESPONSE_ERROR,
                 )
             except ActionFailure as error:
-                if "Maximum SOQL offset allowed is" in str(error) and records:
-                    return offset, records
-                if "The requested resource does not exist" in str(error):
+                error_message = str(error)
+                if any(
+                    marker in error_message for marker in OFFSET_LIMIT_ERROR_MARKERS
+                ):
+                    if records:
+                        return offset, records
+                    raise ActionFailure(
+                        f"Polling offset {offset} exceeds the Salesforce limit; "
+                        "reset the asset polling state to resume ingestion"
+                    ) from error
+                if "The requested resource does not exist" in error_message:
                     raise ActionFailure(
                         "No listview with that specified name was found"
                     ) from error
@@ -184,6 +203,9 @@ def _batch_get_records(
     sobject: str,
     indexed_ids: list[tuple[int, str]],
 ) -> tuple[list[tuple[int, dict[str, object]]], list[int]]:
+    if not indexed_ids:
+        return [], []
+
     records: list[tuple[int, dict[str, object]]] = []
     failed_indices: list[int] = []
 
@@ -260,12 +282,12 @@ def _record_to_items(
         asset.ingest_state[CONTAINER_SDI_SALT_STATE_KEY] = salt
 
     container_sdi = hashlib.sha256(f"{salt}:{sobject}:{record_id}".encode()).hexdigest()
-    artifact_sdi = hashlib.sha256(
-        json.dumps(
-            {"name": sobject, "cef": cef, "cef_types": cef_types},
-            sort_keys=True,
-        ).encode()
-    ).hexdigest()
+    legacy_artifact = {
+        "cef": cef,
+        "cef_types": cef_types,
+        "name": sobject,
+    }
+    artifact_sdi = hashlib.sha256(json.dumps(legacy_artifact).encode()).hexdigest()
 
     severity_value = record.get("Incident_Severity__c")
     severity = None
@@ -325,12 +347,7 @@ def on_poll(
         )
         max_records = None
         if offset == 0:
-            max_records = _validate_integer(
-                asset.first_ingestion_max
-                if asset.first_ingestion_max is not None
-                else 10,
-                "first_ingestion_max",
-            )
+            max_records = _get_first_ingestion_limit(asset)
 
     list_endpoint = (
         f"{latest_version.rstrip('/')}/ui-api/list-records/"
@@ -375,7 +392,7 @@ def on_poll(
 
     if not is_manual:
         if failed_indices:
-            asset.ingest_state[POLL_OFFSET_STATE_KEY] = offset + min(failed_indices)
+            persist_poll_offset(asset, offset + min(failed_indices))
         else:
             asset.ingest_state[POLL_OFFSET_STATE_KEY] = new_offset
 

@@ -29,7 +29,7 @@ CONTAINER_SDI_SALT_STATE_KEY = "container_source_data_identifier_salt"
 
 
 def _put_state_durably(state: AssetState, value: dict[str, object]) -> None:
-    """Persist migration values even during an SDK-managed state transaction."""
+    """Persist values even during an SDK-managed state transaction."""
     if not state.in_transaction:
         state.put_all(value)
         return
@@ -45,6 +45,13 @@ def _put_state_durably(state: AssetState, value: dict[str, object]) -> None:
     state.put_all(value)
 
 
+def persist_poll_offset(asset: Asset, offset: int) -> None:
+    """Persist a retry offset even when the current poll transaction rolls back."""
+    ingest_state = asset.ingest_state.get_all()
+    ingest_state[POLL_OFFSET_STATE_KEY] = offset
+    _put_state_durably(asset.ingest_state, ingest_state)
+
+
 def _load_legacy_state(asset: Asset) -> dict[str, object]:
     backend = asset.auth_state.backend
     legacy_state = backend.load_state() or {}
@@ -57,7 +64,7 @@ def migrate_legacy_oauth_state(asset: Asset) -> None:
     """Seed SDK OAuth state only when a legacy refresh token is needed."""
     auth_state = asset.auth_state.get_all()
     oauth_state = OAuthState.model_validate(auth_state.get("oauth") or {})
-    if oauth_state.token is not None:
+    if oauth_state.token is not None and oauth_state.token.refresh_token:
         return
 
     legacy_state = _load_legacy_state(asset)
@@ -84,14 +91,19 @@ def migrate_legacy_oauth_state(asset: Asset) -> None:
     # conditional state update, so this narrows but cannot eliminate that race.
     auth_state = asset.auth_state.get_all()
     oauth_state = OAuthState.model_validate(auth_state.get("oauth") or {})
-    if oauth_state.token is not None:
+    if oauth_state.token is not None and oauth_state.token.refresh_token:
         return
 
-    oauth_state.token = OAuthToken(
-        access_token="",
-        refresh_token=refresh_token,
-        expires_at=0,
-    )
+    if oauth_state.token is None:
+        oauth_state.token = OAuthToken(
+            access_token="",
+            refresh_token=refresh_token,
+            expires_at=0,
+        )
+    else:
+        oauth_state.token = oauth_state.token.model_copy(
+            update={"refresh_token": refresh_token}
+        )
     oauth_state.client_id = asset.client_id
     auth_state["oauth"] = oauth_state.model_dump(mode="json", exclude_none=True)
     asset.auth_state.put_all(auth_state)

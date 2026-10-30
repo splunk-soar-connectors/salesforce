@@ -17,12 +17,28 @@ from soar_sdk.auth.models import OAuthState
 from soar_sdk.crypto import encrypt
 
 from src.asset import Asset
+from src.auth import get_salesforce_client
 from src.state import (
     get_latest_api_version,
     migrate_legacy_ingest_state,
     migrate_legacy_oauth_state,
 )
-from src.test_connectivity import API_VERSIONS_PATH, run_test_connectivity
+from src.test_connectivity import (
+    API_VERSIONS_PATH,
+    require_browser_refresh_token,
+    run_test_connectivity,
+)
+
+
+@pytest.mark.live
+def test_browser_oauth_requires_refresh_token() -> None:
+    token = OAuthToken(
+        access_token="access-token",
+        instance_url="https://example.my.salesforce.com",
+    )
+
+    with pytest.raises(ValueError, match="Unable to retrieve refresh token"):
+        require_browser_refresh_token(token)
 
 
 @pytest.mark.live
@@ -32,6 +48,31 @@ def test_client_credentials_test_connectivity_live(asset: Asset) -> None:
     latest_version = asset.cache_state["latest_version"]
     assert isinstance(latest_version, str)
     assert latest_version.startswith(API_VERSIONS_PATH)
+
+
+@pytest.mark.live
+def test_client_credentials_preserves_browser_oauth_state_live(asset: Asset) -> None:
+    backend = asset.auth_state.backend
+    original_state = backend.load_state() or {}
+    browser_oauth_state = OAuthState(
+        token=OAuthToken(
+            access_token="browser-access-token",
+            refresh_token="browser-refresh-token",
+            expires_at=4_102_444_800,
+        ),
+        client_id=asset.client_id,
+    ).model_dump(mode="json", exclude_none=True)
+
+    try:
+        asset.auth_state.put_all({"oauth": browser_oauth_state})
+
+        with get_salesforce_client(asset) as client:
+            response = client.get(API_VERSIONS_PATH)
+            response.raise_for_status()
+
+        assert asset.auth_state.get_all() == {"oauth": browser_oauth_state}
+    finally:
+        backend.save_state(original_state)
 
 
 @pytest.mark.live
@@ -134,6 +175,44 @@ def test_migrate_legacy_state_lazily_live(asset: Asset) -> None:
             "container_source_data_identifier_salt",
         ):
             assert key in retained_legacy_state
+    finally:
+        backend.save_state(original_state)
+
+
+@pytest.mark.live
+def test_legacy_refresh_token_augments_access_only_sdk_state_live(
+    asset: Asset,
+) -> None:
+    backend = asset.auth_state.backend
+    original_state = backend.load_state() or {}
+
+    try:
+        legacy_state = dict(original_state)
+        legacy_state["refresh_token"] = encrypt(
+            "legacy-refresh-token", asset.auth_state.asset_id
+        )
+        backend.save_state(legacy_state)
+
+        access_only_token = OAuthToken(
+            access_token="sdk-access-token",
+            expires_at=4_102_444_800,
+        )
+        asset.auth_state.put_all(
+            {
+                "oauth": OAuthState(
+                    token=access_only_token,
+                    client_id=asset.client_id,
+                ).model_dump(mode="json", exclude_none=True)
+            }
+        )
+
+        migrate_legacy_oauth_state(asset)
+
+        migrated_oauth_state = OAuthState.model_validate(asset.auth_state["oauth"])
+        assert migrated_oauth_state.token is not None
+        assert migrated_oauth_state.token.access_token == "sdk-access-token"
+        assert migrated_oauth_state.token.refresh_token == "legacy-refresh-token"
+        assert migrated_oauth_state.token.expires_at == 4_102_444_800
     finally:
         backend.save_state(original_state)
 
