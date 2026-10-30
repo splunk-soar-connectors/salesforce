@@ -21,6 +21,7 @@ from .get_object import get_object
 from .get_ticket import get_ticket
 from .list_objects import ListObjectsSummary, list_objects
 from .list_tickets import list_tickets
+from .make_request import make_request
 from .on_poll import on_poll
 from .post_chatter import PostChatterSummary, post_chatter
 from .run_query import RunQuerySummary, run_query
@@ -40,6 +41,7 @@ def register_actions(app: App) -> App:
     """
 
     app.on_poll()(on_poll)
+    app.make_request()(make_request)
 
     app.register_action(
         action=get_object,  # type: ignore[arg-type]

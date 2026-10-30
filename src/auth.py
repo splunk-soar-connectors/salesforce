@@ -271,7 +271,12 @@ def _get_action_token_endpoint(asset: Asset) -> str:
     return get_token_endpoint(asset)
 
 
-def get_salesforce_client(asset: Asset) -> AbstractContextManager[httpx.Client]:
+def get_salesforce_client(
+    asset: Asset,
+    *,
+    timeout: float = SALESFORCE_DEFAULT_TIMEOUT,
+    verify: bool = True,
+) -> AbstractContextManager[httpx.Client]:
     """Return an SDK-authenticated client for Salesforce action requests."""
     token = get_access_token(asset)
     instance_origin = get_instance_origin(asset, token)
@@ -282,5 +287,6 @@ def get_salesforce_client(asset: Asset) -> AbstractContextManager[httpx.Client]:
         client_secret=asset.client_secret,
         token_endpoint=_get_action_token_endpoint(asset),
         base_url=instance_origin,
-        timeout=SALESFORCE_DEFAULT_TIMEOUT,
+        timeout=timeout,
+        verify=verify,
     )
