@@ -25,7 +25,11 @@ APP_ID = "6c1316b0-88a7-4864-b684-3170f6c455be"
 
 def _asset_with_pending_oauth_session(state: str) -> Asset:
     app = create_salesforce_connector_app()
-    asset = Asset(client_id="client-id", client_secret="client-secret")
+    asset = Asset(
+        client_id="client-id",
+        client_secret="client-secret",  # pragma: allowlist secret
+        domain_url="example.my.salesforce.com",
+    )
     asset._auth_state = AssetState(
         app.actions_manager,
         "auth",

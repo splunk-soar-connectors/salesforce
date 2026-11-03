@@ -347,10 +347,10 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 **client_id** | required | string | Salesforce OAuth client identifier, also called the consumer key. |
 **client_secret** | required | password | Salesforce OAuth client secret, also called the consumer secret. |
 **use_client_credentials** | optional | boolean | Use Salesforce Client Credentials OAuth flow. |
-**domain_url** | optional | string | Salesforce Current My Domain URL used for Client Credentials flow. |
+**domain_url** | optional | string | Salesforce Current My Domain URL used for Client Credentials and authorization-code flows. |
 **username** | optional | string | (Legacy) Username for username-password OAuth flow. Not required for External Client App setup. |
 **password** | optional | password | (Legacy) Password with security token appended. Not required for External Client App setup. |
-**is_test_environment** | optional | boolean | Use a Salesforce test environment for browser OAuth and legacy username-password flows |
+**is_test_environment** | optional | boolean | Use a Salesforce test environment for the legacy username-password flow |
 **poll_sobject** | optional | string | Poll for this Salesforce Object |
 **poll_view_name** | optional | string | Poll this List View |
 **first_ingestion_max** | optional | numeric | Get this many results on first ingestion |

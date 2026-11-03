@@ -26,7 +26,7 @@ class Asset(BaseAsset):
         description="Use Salesforce Client Credentials OAuth flow."
     )
     domain_url: str | None = AssetField(
-        description="Salesforce Current My Domain URL used for Client Credentials flow."
+        description="Salesforce Current My Domain URL used for Client Credentials and authorization-code flows."
     )
     username: str | None = AssetField(
         description="(Legacy) Username for username-password OAuth flow. Not required for External Client App setup."
@@ -36,7 +36,7 @@ class Asset(BaseAsset):
         sensitive=True,
     )
     is_test_environment: bool | None = AssetField(
-        description="Use a Salesforce test environment for browser OAuth and legacy username-password flows"
+        description="Use a Salesforce test environment for the legacy username-password flow"
     )
     poll_sobject: str | None = AssetField(
         description="Poll for this Salesforce Object",

@@ -45,7 +45,7 @@ SALESFORCE_DEFAULT_TIMEOUT = 30.0
 MISSING_PASSWORD_ERROR = "Password must be specified with a username"  # noqa: S105  # pragma: allowlist secret
 MISSING_USERNAME_ERROR = "Username must be specified for Username Password flow"
 MISSING_MY_DOMAIN_ERROR = (
-    "My Domain URL must be specified for Client Credentials flow. In Salesforce "
+    "My Domain URL must be specified for Client Credentials and authorization-code flows. In Salesforce "
     "Setup, open My Domain and copy the Current My Domain URL (for example, "
     "https://d3t000000example-dev-ed.my.salesforce.com)."
 )
@@ -83,7 +83,7 @@ def get_login_origin(asset: Asset) -> str:
 
 
 def get_authorization_endpoint(asset: Asset) -> str:
-    return f"{get_login_origin(asset)}{SALESFORCE_AUTHORIZATION_PATH}"
+    return f"{normalize_my_domain_url(asset.domain_url)}{SALESFORCE_AUTHORIZATION_PATH}"
 
 
 def get_token_endpoint(asset: Asset) -> str:
@@ -95,7 +95,7 @@ def get_oauth_client(asset: Asset) -> SOARAssetOAuthClient:
         OAuthConfig(
             client_id=asset.client_id,
             client_secret=asset.client_secret,
-            token_endpoint=get_token_endpoint(asset),
+            token_endpoint=get_oauth_token_endpoint(asset),
         ),
         asset.auth_state,
     )
@@ -133,6 +133,10 @@ def normalize_my_domain_url(value: str | None) -> str:
 
 
 def get_client_credentials_token_endpoint(asset: Asset) -> str:
+    return get_oauth_token_endpoint(asset)
+
+
+def get_oauth_token_endpoint(asset: Asset) -> str:
     return f"{normalize_my_domain_url(asset.domain_url)}{SALESFORCE_TOKEN_PATH}"
 
 
@@ -203,7 +207,7 @@ def get_auth_code_flow(
         client_id=asset.client_id,
         client_secret=asset.client_secret,
         authorization_endpoint=get_authorization_endpoint(asset),
-        token_endpoint=get_token_endpoint(asset),
+        token_endpoint=get_oauth_token_endpoint(asset),
         redirect_uri=redirect_uri,
         use_pkce=True,
         poll_timeout=AUTHORIZATION_POLL_TIMEOUT_SECONDS,
@@ -303,7 +307,7 @@ def get_salesforce_client(
         asset,
         client_id=asset.client_id,
         client_secret=asset.client_secret,
-        token_endpoint=get_token_endpoint(asset),
+        token_endpoint=get_oauth_token_endpoint(asset),
         base_url=instance_origin,
         timeout=timeout,
         verify=verify,
